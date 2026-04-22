@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taco Parado · Únete al Club</title>
+<meta name="theme-color" content="#FF9000">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Archivo+Black&family=Space+Mono:wght@400;700&family=Archivo:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+  const SUPABASE_URL = 'https://xyqyhabhujmmjofnfizg.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5cXloYWJodWptbWpvZm5maXpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODE5NzAsImV4cCI6MjA5MjM1Nzk3MH0.9Cj7XZUjLUiBHPWw6Br4FWz2_g8T1hgg20zyrrThhZQ'
+  window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+</script>
+<style>
+  :root {
+    --tp-orange: #FF9000;
+    --tp-blue: #5271FF;
+    --tp-deep-blue: #1A3F91;
+    --tp-dark-orange: #EC7020;
+    --tp-ink: #0B1530;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { overflow-x: hidden; }
+  body {
+    min-height: 100vh;
+    background: var(--tp-orange);
+    background-image:
+      radial-gradient(circle at 20% 10%, #FFB14D 0%, transparent 50%),
+      radial-gradient(circle at 80% 90%, var(--tp-dark-orange) 0%, transparent 50%);
+    font-family: 'Archivo', sans-serif;
+    color: var(--tp-ink);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0;
+    background-image: repeating-linear-gradient(-45deg, transparent 0 10px, rgba(255,255,255,0.04) 10px 11px);
+    pointer-events: none; z-index: 0;
+  }
+  .container { max-width: 440px; width: 100%; position: relative; z-index: 1; }
+
+  .welcome-card, .form-card, .already-card {
+    background: #fff; border-radius: 24px; padding: 40px 28px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+    text-align: center; position: relative; overflow: hidden;
+    border: 3px solid var(--tp-deep-blue);
+  }
+  .welcome-card::before, .form-card::before, .already-card::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 8px;
+    background: linear-gradient(90deg, var(--tp-orange) 0%, var(--tp-blue) 50%, var(--tp-deep-blue) 100%);
+  }
+  .form-card, .already-card { padding: 32px 28px; }
+
+  .mascot-welcome {
+    width: 120px; height: 120px; margin: 0 auto 20px;
+    filter: drop-shadow(4px 4px 0 var(--tp-deep-blue));
+  }
+  .brand {
+    font-family: 'Bungee', sans-serif; font-size: 32px;
+    color: var(--tp-deep-blue); letter-spacing: 1.5px; line-height: 1; margin-bottom: 6px;
+  }
+  .brand .accent { color: var(--tp-orange); }
+  .tagline {
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    letter-spacing: 2.5px; color: var(--tp-dark-orange);
+    margin-bottom: 24px; font-weight: 700;
+  }
+  h1 {
+    font-family: 'Archivo Black', sans-serif; font-size: 22px;
+    color: var(--tp-ink); line-height: 1.2; margin-bottom: 10px; text-transform: uppercase;
+  }
+  h1 .hl {
+    background: var(--tp-orange); color: #fff; padding: 2px 8px;
+    border-radius: 6px; display: inline-block; transform: rotate(-2deg);
+  }
+  .intro-text { font-size: 15px; color: #555; line-height: 1.5; margin-bottom: 28px; }
+  .perks { display: grid; gap: 10px; margin-bottom: 28px; text-align: left; }
+  .perk {
+    display: flex; align-items: center; gap: 12px;
+    background: #FFF9EE; padding: 10px 14px; border-radius: 10px;
+    border-left: 3px solid var(--tp-orange);
+  }
+  .perk-icon { font-size: 22px; flex-shrink: 0; }
+  .perk-text { font-size: 13px; color: var(--tp-ink); font-weight: 500; }
+
+  .google-btn {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    width: 100%; background: #fff; color: #3c4043;
+    padding: 14px 20px; border: 2px solid #dadce0; border-radius: 12px;
+    font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 15px;
+    cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .google-btn:hover {
+    background: #f8f9fa; border-color: var(--tp-orange);
+    transform: translateY(-2px); box-shadow: 0 6px 16px rgba(255,144,0,0.25);
+  }
+  .google-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .google-btn svg { width: 20px; height: 20px; }
+
+  .legal {
+    margin-top: 20px; font-family: 'Space Mono', monospace;
+    font-size: 10px; color: #888; letter-spacing: 0.5px; line-height: 1.5;
+  }
+
+  .user-greet {
+    display: flex; align-items: center; gap: 12px;
+    background: #FFF9EE; padding: 12px 14px; border-radius: 12px;
+    margin-bottom: 20px; border: 1px solid rgba(255,144,0,0.3);
+  }
+  .user-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--tp-orange); display: flex; align-items: center; justify-content: center;
+    color: #fff; font-family: 'Archivo Black', sans-serif; font-size: 18px;
+    flex-shrink: 0; overflow: hidden; border: 2px solid var(--tp-deep-blue);
+  }
+  .user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .user-greet-text { flex: 1; min-width: 0; text-align: left; }
+  .user-greet-hi {
+    font-size: 10px; color: var(--tp-dark-orange);
+    font-family: 'Space Mono', monospace; font-weight: 700; letter-spacing: 1.5px;
+  }
+  .user-greet-email {
+    font-size: 13px; color: var(--tp-ink); font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .form-title {
+    font-family: 'Bungee', sans-serif; font-size: 18px;
+    color: var(--tp-deep-blue); letter-spacing: 1px; margin-bottom: 6px; text-align: left;
+  }
+  .form-sub { font-size: 13px; color: #666; margin-bottom: 20px; text-align: left; }
+
+  label {
+    display: block; font-family: 'Space Mono', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+    color: var(--tp-deep-blue); margin-bottom: 6px; text-transform: uppercase; text-align: left;
+  }
+  input[type="text"], input[type="tel"], input[type="email"] {
+    width: 100%; padding: 12px 14px; border: 2px solid #E5DFD2;
+    border-radius: 10px; font-family: 'Archivo', sans-serif; font-size: 15px;
+    background: #FAFAF7; transition: border-color 0.2s; color: var(--tp-ink);
+  }
+  input:focus { outline: none; border-color: var(--tp-orange); background: #fff; }
+  .form-row { margin-bottom: 14px; }
+
+  .btn-submit {
+    width: 100%; padding: 14px 20px; border: none; border-radius: 12px;
+    background: var(--tp-orange); color: #fff; font-family: 'Archivo', sans-serif;
+    font-weight: 700; font-size: 15px; letter-spacing: 0.5px; cursor: pointer;
+    margin-top: 10px; transition: all 0.2s; box-shadow: 0 4px 14px rgba(255,144,0,0.4);
+    text-transform: uppercase;
+  }
+  .btn-submit:hover { background: var(--tp-dark-orange); transform: translateY(-2px); }
+  .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .logout-link {
+    display: block; text-align: center; margin-top: 16px;
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    color: #888; background: transparent; border: none; cursor: pointer;
+    letter-spacing: 1px; width: 100%;
+  }
+  .logout-link:hover { color: var(--tp-dark-orange); text-decoration: underline; }
+
+  .error-box {
+    background: #FCEBE5; color: #B5351A; padding: 10px 14px;
+    border-radius: 8px; font-family: 'Space Mono', monospace;
+    font-size: 12px; margin-bottom: 14px; display: none; text-align: left;
+  }
+  .error-box.show { display: block; }
+
+  .loading-screen { text-align: center; color: #fff; padding: 60px 20px; }
+  .spinner {
+    width: 50px; height: 50px; border: 4px solid rgba(255,255,255,0.3);
+    border-top-color: #fff; border-radius: 50%; animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-screen p { font-family: 'Space Mono', monospace; letter-spacing: 2px; font-size: 13px; color: #fff; }
+
+  .already-emoji { font-size: 60px; margin-bottom: 16px; }
+</style>
+</head>
+<body>
+
+<div class="container" id="root"></div>
+
+<script>
+let currentUser = null;
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function tacoSVG() {
+  return `<svg class="mascot-welcome" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <circle cx='100' cy='100' r='85' fill='#5271FF' stroke='#1A3F91' stroke-width='4'/>
+    <ellipse cx='100' cy='115' rx='48' ry='38' fill='#FFD24D' stroke='#1A3F91' stroke-width='3'/>
+    <path d='M 58 105 Q 70 90, 85 95 Q 100 85, 115 95 Q 130 88, 142 105 L 140 108 Q 125 100, 115 108 Q 100 98, 85 108 Q 70 102, 60 108 Z' fill='#5BAE4C' stroke='#1A3F91' stroke-width='2'/>
+    <circle cx='88' cy='122' r='8' fill='#fff' stroke='#1A3F91' stroke-width='2'/>
+    <circle cx='112' cy='122' r='8' fill='#fff' stroke='#1A3F91' stroke-width='2'/>
+    <circle cx='90' cy='124' r='3.5' fill='#1A3F91'/>
+    <circle cx='114' cy='124' r='3.5' fill='#1A3F91'/>
+    <path d='M 90 138 Q 100 146, 110 138' stroke='#1A3F91' stroke-width='2.5' fill='none' stroke-linecap='round'/>
+    <path d='M 135 95 Q 148 80, 152 60' stroke='#FFD24D' stroke-width='8' fill='none' stroke-linecap='round'/>
+    <path d='M 135 95 Q 148 80, 152 60' stroke='#1A3F91' stroke-width='2' fill='none' stroke-linecap='round'/>
+    <circle cx='152' cy='55' r='10' fill='#B8D84A' stroke='#1A3F91' stroke-width='2'/>
+  </svg>`;
+}
+
+function renderLoading(msg = 'CARGANDO…') {
+  document.getElementById('root').innerHTML = `<div class="loading-screen"><div class="spinner"></div><p>${msg}</p></div>`;
+}
+
+function renderWelcome() {
+  document.getElementById('root').innerHTML = `
+    <div class="welcome-card">
+      ${tacoSVG()}
+      <div class="brand">TACO <span class="accent">PARADO</span></div>
+      <div class="tagline">CLUB DE FIDELIZACIÓN</div>
+      <h1>Únete al <span class="hl">club</span></h1>
+      <p class="intro-text">Regístrate en 30 segundos y recibe tu carnet físico la próxima vez que visites cualquier sede.</p>
+      <div class="perks">
+        <div class="perk"><span class="perk-icon">🎂</span><span class="perk-text">Taco gratis en tu cumpleaños</span></div>
+        <div class="perk"><span class="perk-icon">🥤</span><span class="perk-text">Bebida gratis al acumular visitas</span></div>
+        <div class="perk"><span class="perk-icon">⚡</span><span class="perk-text">Promociones exclusivas para miembros</span></div>
+      </div>
+      <button class="google-btn" onclick="loginGoogle()" id="google-btn">
+        <svg viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        Continuar con Google
+      </button>
+      <p class="legal">Al continuar aceptas recibir información sobre promociones. Puedes darte de baja cuando quieras.</p>
+    </div>
+  `;
+}
+
+function renderForm() {
+  const user = currentUser;
+  const displayName = user.user_metadata?.full_name || user.user_metadata?.name || '';
+  const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
+  const initial = (displayName || user.email).charAt(0).toUpperCase();
+
+  document.getElementById('root').innerHTML = `
+    <div class="form-card">
+      <div class="user-greet">
+        <div class="user-avatar">${avatarUrl ? `<img src="${avatarUrl}" alt="" referrerpolicy="no-referrer">` : initial}</div>
+        <div class="user-greet-text">
+          <div class="user-greet-hi">AUTENTICADO CON GOOGLE</div>
+          <div class="user-greet-email">${escapeHtml(user.email)}</div>
+        </div>
+      </div>
+      <div class="form-title">ÚLTIMO PASO 🌮</div>
+      <p class="form-sub">Completa estos datos y quedas registrado como miembro.</p>
+      <div class="error-box" id="error-box"></div>
+      <form id="registro-form">
+        <div class="form-row">
+          <label>Nombre que irá en tu carnet *</label>
+          <input type="text" id="reg-nombre" required maxlength="28" value="${escapeHtml(displayName)}" placeholder="Ej: Carlos Ramírez">
+        </div>
+        <div class="form-row">
+          <label>Teléfono / Celular *</label>
+          <input type="tel" id="reg-tel" required placeholder="300 123 4567">
+        </div>
+        <div class="form-row">
+          <label>📱 Instagram (opcional)</label>
+          <input type="text" id="reg-instagram" placeholder="@tuusuario">
+        </div>
+        <button type="submit" class="btn-submit" id="btn-submit">✨ Crear mi carnet</button>
+      </form>
+      <button class="logout-link" onclick="logout()">Cancelar y salir</button>
+    </div>
+  `;
+  document.getElementById('registro-form').onsubmit = submitRegistro;
+}
+
+function renderAlreadyMember(cliente) {
+  document.getElementById('root').innerHTML = `
+    <div class="already-card">
+      <div class="already-emoji">🎉</div>
+      <div class="brand">TACO <span class="accent">PARADO</span></div>
+      <div class="tagline" style="margin-bottom:20px;">YA ERES MIEMBRO</div>
+      <h1 style="margin-bottom: 12px;">¡Hola de nuevo, ${escapeHtml(cliente.nombre.split(' ')[0])}!</h1>
+      <p class="intro-text">Tu ID de miembro es <strong style="color: var(--tp-deep-blue); font-family: 'Space Mono', monospace;">${cliente.id}</strong></p>
+      <a href="mi-carnet.html" class="btn-submit" style="display:block; text-decoration:none; text-align:center;">VER MI CARNET</a>
+      <button class="logout-link" onclick="logout()">Cerrar sesión</button>
+    </div>
+  `;
+}
+
+async function waitForSupabase() {
+  while (!window.supabase) await new Promise(r => setTimeout(r, 50));
+}
+
+window.loginGoogle = async function() {
+  const btn = document.getElementById('google-btn');
+  if (btn) btn.disabled = true;
+  await waitForSupabase();
+  const { error } = await window.supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin + window.location.pathname }
+  });
+  if (error) { alert('Error: ' + error.message); if (btn) btn.disabled = false; }
+};
+
+window.logout = async function() {
+  await window.supabase.auth.signOut();
+  window.location.reload();
+};
+
+async function checkSession() {
+  renderLoading();
+  await waitForSupabase();
+  const { data: { session } } = await window.supabase.auth.getSession();
+
+  if (!session) { renderWelcome(); return; }
+  currentUser = session.user;
+
+  const { data } = await window.supabase
+    .from('clientes')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .maybeSingle();
+
+  if (data) renderAlreadyMember(data);
+  else renderForm();
+}
+
+async function submitRegistro(e) {
+  e.preventDefault();
+  const nombre = document.getElementById('reg-nombre').value.trim();
+  const tel = document.getElementById('reg-tel').value.trim();
+  const instagram = document.getElementById('reg-instagram').value.trim();
+  if (!nombre || !tel) return;
+
+  const btn = document.getElementById('btn-submit');
+  const errBox = document.getElementById('error-box');
+  btn.disabled = true;
+  btn.textContent = 'Creando tu carnet…';
+  errBox.classList.remove('show');
+
+  try {
+    const { data: existentes } = await window.supabase.from('clientes').select('id');
+    let max = 4270;
+    (existentes || []).forEach(c => {
+      const n = parseInt(c.id.replace(/\D/g,'')) || 0;
+      if (n > max) max = n;
+    });
+    const nuevoId = 'TP-' + String(max + 1).padStart(6, '0');
+
+    const { error } = await window.supabase.from('clientes').insert({
+      id: nuevoId,
+      user_id: currentUser.id,
+      nombre, tel, instagram: instagram || null,
+      email: currentUser.email,
+      tier: 'bronce',
+      imagen: null,
+      alta: new Date().toISOString().slice(0,10),
+      provider: 'google',
+      carnet_entregado: false
+    });
+
+    if (error) throw error;
+    window.location.href = 'mi-carnet.html';
+  } catch (err) {
+    console.error(err);
+    errBox.textContent = '⚠️ ' + (err.message || 'Error al crear el registro.');
+    errBox.classList.add('show');
+    btn.disabled = false;
+    btn.textContent = '✨ Crear mi carnet';
+  }
+}
+
+checkSession();
+waitForSupabase().then(() => {
+  window.supabase.auth.onAuthStateChange((event) => {
+    if (event === 'SIGNED_IN' && !currentUser) checkSession();
+  });
+});
+</script>
+</body>
+</html>

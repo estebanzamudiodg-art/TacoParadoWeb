@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taco Parado · Mi Perfil</title>
+<meta name="theme-color" content="#FF9000">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Archivo+Black&family=Space+Mono:wght@400;700&family=Archivo:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+  const SUPABASE_URL = 'https://xyqyhabhujmmjofnfizg.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5cXloYWJodWptbWpvZm5maXpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODE5NzAsImV4cCI6MjA5MjM1Nzk3MH0.9Cj7XZUjLUiBHPWw6Br4FWz2_g8T1hgg20zyrrThhZQ'
+  window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+</script>
+<style>
+  :root {
+    --tp-orange: #FF9000;
+    --tp-blue: #5271FF;
+    --tp-deep-blue: #1A3F91;
+    --tp-dark-orange: #EC7020;
+    --tp-ink: #0B1530;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { overflow-x: hidden; }
+
+  body {
+    min-height: 100vh;
+    background: var(--tp-deep-blue);
+    background-image:
+      radial-gradient(circle at 20% 0%, #2855B8 0%, transparent 50%),
+      radial-gradient(circle at 80% 100%, #0D2468 0%, transparent 50%);
+    font-family: 'Archivo', sans-serif;
+    color: #fff;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+  }
+
+  /* Background pattern */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: repeating-linear-gradient(-45deg, transparent 0 10px, rgba(255,255,255,0.02) 10px 11px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 420px;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Logo header */
+  .brand-header {
+    text-align: center;
+    padding: 20px 0 30px;
+  }
+  .brand-header .mark {
+    font-family: 'Bungee', sans-serif;
+    font-size: 28px;
+    color: var(--tp-orange);
+    letter-spacing: 1.5px;
+    text-shadow: 3px 3px 0 #000;
+  }
+  .brand-header .mark .accent {
+    color: #fff;
+    -webkit-text-stroke: 2px var(--tp-orange);
+  }
+  .brand-header .tagline {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: rgba(255, 144, 0, 0.8);
+    margin-top: 4px;
+  }
+
+  /* Card */
+  .member-card {
+    background: linear-gradient(160deg, var(--tp-orange) 0%, var(--tp-dark-orange) 100%);
+    border-radius: 24px;
+    padding: 28px 24px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4), 0 8px 16px rgba(255, 144, 0, 0.3);
+    position: relative;
+    overflow: hidden;
+    border: 3px solid var(--tp-deep-blue);
+    margin-bottom: 20px;
+  }
+  .member-card::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(-45deg, transparent 0 8px, rgba(255,255,255,0.04) 8px 9px);
+    pointer-events: none;
+  }
+  .member-card::after {
+    content: "TACO PARADO MEMBER · ";
+    position: absolute;
+    top: -8px; left: -8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 7px;
+    letter-spacing: 2px;
+    color: rgba(26, 63, 145, 0.4);
+    white-space: nowrap;
+    transform: rotate(-2deg);
+    line-height: 1;
+  }
+
+  .tier-ribbon {
+    position: absolute;
+    top: 16px; right: -38px;
+    background: var(--tp-deep-blue);
+    color: var(--tp-orange);
+    padding: 6px 40px;
+    transform: rotate(35deg);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    z-index: 2;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .tier-ribbon.tier-bronce { background: #5A3A1E; color: #D6B18B; }
+  .tier-ribbon.tier-plata { background: #2F3640; color: #D8DADE; }
+  .tier-ribbon.tier-master { background: #000; color: var(--tp-orange); }
+
+  .mascot-big {
+    width: 160px;
+    height: 160px;
+    margin: 10px auto 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+  }
+  .mascot-big img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(4px 4px 0 var(--tp-deep-blue));
+  }
+
+  .member-name {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 28px;
+    color: #fff;
+    text-align: center;
+    line-height: 1;
+    text-shadow: 3px 3px 0 var(--tp-deep-blue);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    position: relative;
+    z-index: 1;
+    word-break: break-word;
+  }
+
+  .member-label {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2.5px;
+    color: var(--tp-deep-blue);
+    font-weight: 700;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    margin-bottom: 18px;
+  }
+
+  .id-card {
+    background: var(--tp-deep-blue);
+    border-radius: 12px;
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+    border: 2px solid rgba(255,255,255,0.1);
+  }
+  .id-card .id-label-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--tp-orange);
+    font-weight: 700;
+  }
+  .id-card .id-big {
+    font-family: 'Space Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 3px;
+  }
+
+  /* Info cards below */
+  .info-section {
+    background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 20px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 144, 0, 0.2);
+    margin-bottom: 14px;
+  }
+  .info-section h3 {
+    font-family: 'Bungee', sans-serif;
+    font-size: 14px;
+    color: var(--tp-orange);
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .benefit-item {
+    display: flex;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px dashed rgba(255,255,255,0.1);
+    align-items: flex-start;
+  }
+  .benefit-item:last-child { border-bottom: none; }
+  .benefit-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 144, 0, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .benefit-text { flex: 1; }
+  .benefit-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+    margin-bottom: 2px;
+  }
+  .benefit-desc {
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.4;
+  }
+
+  /* Footer CTA */
+  .cta-footer {
+    text-align: center;
+    padding: 20px 0 40px;
+  }
+  .cta-footer p {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.6);
+    letter-spacing: 1px;
+    margin-bottom: 14px;
+  }
+  .ig-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(90deg, #FFE0E9 0%, #FFD2E2 50%, #F5C8F5 100%);
+    color: #C13584;
+    padding: 12px 22px;
+    border-radius: 24px;
+    text-decoration: none;
+    font-family: 'Archivo', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 6px 16px rgba(193, 53, 132, 0.4);
+    transition: transform 0.2s;
+  }
+  .ig-btn:hover { transform: translateY(-2px); }
+
+  /* Loading state */
+  .loading-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #fff;
+  }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid rgba(255, 144, 0, 0.2);
+    border-top-color: var(--tp-orange);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 20px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Not found state */
+  .error-state {
+    background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 40px 24px;
+    text-align: center;
+    backdrop-filter: blur(10px);
+  }
+  .error-state .emoji { font-size: 64px; margin-bottom: 16px; }
+  .error-state h2 {
+    font-family: 'Bungee', sans-serif;
+    color: var(--tp-orange);
+    font-size: 22px;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .error-state p {
+    color: rgba(255,255,255,0.7);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Alta badge */
+  .since-badge {
+    display: inline-block;
+    background: rgba(26, 63, 145, 0.9);
+    color: var(--tp-orange);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    font-weight: 700;
+    margin-top: 10px;
+  }
+
+  @media (max-width: 380px) {
+    .member-name { font-size: 22px; }
+    .id-card .id-big { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="brand-header">
+    <div class="mark">TACO <span class="accent">PARADO</span></div>
+    <div class="tagline">MEMBER · FIDELIZACIÓN</div>
+  </div>
+
+  <div id="content">
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p style="font-family: 'Space Mono', monospace; letter-spacing: 2px; font-size: 12px; color: var(--tp-orange);">CARGANDO PERFIL…</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// Leer ID de la URL
+const params = new URLSearchParams(window.location.search);
+const memberId = params.get('id');
+
+function defaultTacoSVG() {
+  const svg = `<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'>
+    <circle cx='100' cy='100' r='85' fill='%235271FF' stroke='%231A3F91' stroke-width='4'/>
+    <ellipse cx='100' cy='115' rx='48' ry='38' fill='%23FFD24D' stroke='%231A3F91' stroke-width='3'/>
+    <path d='M 58 105 Q 70 90, 85 95 Q 100 85, 115 95 Q 130 88, 142 105 L 140 108 Q 125 100, 115 108 Q 100 98, 85 108 Q 70 102, 60 108 Z' fill='%235BAE4C' stroke='%231A3F91' stroke-width='2'/>
+    <circle cx='88' cy='122' r='8' fill='%23fff' stroke='%231A3F91' stroke-width='2'/>
+    <circle cx='112' cy='122' r='8' fill='%23fff' stroke='%231A3F91' stroke-width='2'/>
+    <circle cx='90' cy='124' r='3.5' fill='%231A3F91'/>
+    <circle cx='114' cy='124' r='3.5' fill='%231A3F91'/>
+    <path d='M 90 138 Q 100 146, 110 138' stroke='%231A3F91' stroke-width='2.5' fill='none' stroke-linecap='round'/>
+  </svg>`;
+  return 'data:image/svg+xml;utf8,' + svg;
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function formatFecha(fecha) {
+  if (!fecha) return '';
+  const d = new Date(fecha);
+  const meses = ['ENE','FEB','MAR','ABR','MAY','JUN','JUL','AGO','SEP','OCT','NOV','DIC'];
+  return meses[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function normalizarInstagram(input) {
+  if (!input) return null;
+  let v = input.trim();
+  if (!v) return null;
+  v = v.replace(/\s+/g, '');
+  if (v.startsWith('@')) {
+    const user = v.slice(1).replace(/[^a-zA-Z0-9._]/g, '');
+    return user ? `https://instagram.com/${user}` : null;
+  }
+  v = v.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+  if (v.toLowerCase().startsWith('instagram.com/') || v.toLowerCase().startsWith('instagr.am/')) {
+    const path = v.split('/').slice(1).join('/').split('?')[0].split('#')[0];
+    const user = path.replace(/\/$/, '').replace(/[^a-zA-Z0-9._]/g, '');
+    return user ? `https://instagram.com/${user}` : null;
+  }
+  if (/^[a-zA-Z0-9._]+$/.test(v)) {
+    return `https://instagram.com/${v}`;
+  }
+  return null;
+}
+
+// Beneficios por nivel
+const beneficiosPorTier = {
+  bronce: [
+    { icon: '🎂', title: 'Taco gratis de cumpleaños', desc: 'Reclama tu taco favorito el día de tu cumpleaños' },
+    { icon: '📱', title: 'Notificaciones exclusivas', desc: 'Entérate primero de nuevas sedes y promociones' }
+  ],
+  plata: [
+    { icon: '🎂', title: 'Taco gratis de cumpleaños', desc: 'Reclama tu taco favorito el día de tu cumpleaños' },
+    { icon: '🥤', title: 'Bebida gratis cada 5 visitas', desc: 'Acumula visitas y reclama tu bebida' },
+    { icon: '📱', title: 'Notificaciones exclusivas', desc: 'Promociones antes que nadie' }
+  ],
+  oro: [
+    { icon: '🌮', title: 'Combo gratis de cumpleaños', desc: 'Combo completo el día de tu cumpleaños' },
+    { icon: '🥤', title: 'Bebida gratis cada 3 visitas', desc: 'Más visitas, más beneficios' },
+    { icon: '⚡', title: 'Fila rápida', desc: 'Pase preferencial en horas pico' },
+    { icon: '🎁', title: 'Sorpresas mensuales', desc: 'Regalo exclusivo cada mes como miembro ORO' }
+  ],
+  master: [
+    { icon: '👑', title: 'Beneficios ORO ilimitados', desc: 'Todos los beneficios del nivel ORO sin restricción' },
+    { icon: '🌮', title: 'Combo gratis mensual', desc: 'Un combo completo gratis cada mes' },
+    { icon: '⚡', title: 'Fila rápida siempre', desc: 'Prioridad en todas las sedes' },
+    { icon: '🎉', title: 'Invitaciones VIP', desc: 'Acceso a eventos y lanzamientos exclusivos' },
+    { icon: '🤝', title: 'Atención personalizada', desc: 'Tu pedido, como lo prefieras' }
+  ]
+};
+
+const tierNames = {
+  bronce: '★ BRONCE',
+  plata: '★★ PLATA',
+  oro: '★★★ ORO',
+  master: '♛ MASTER'
+};
+
+async function cargarPerfil() {
+  if (!memberId) {
+    mostrarError('ID no proporcionado', 'La URL no contiene un identificador de miembro válido.');
+    return;
+  }
+
+  // Esperar a que supabase cargue
+  while (!window.supabase) {
+    await new Promise(r => setTimeout(r, 50));
+  }
+
+  try {
+    const { data, error } = await window.supabase
+      .from('clientes')
+      .select('*')
+      .eq('id', memberId)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+      mostrarError('Perfil no encontrado', `No existe un miembro con ID <strong>${escapeHtml(memberId)}</strong>.<br><br>Verifica que el QR esté bien escaneado o contacta al equipo de Taco Parado.`);
+      return;
+    }
+
+    mostrarPerfil(data);
+  } catch (err) {
+    console.error(err);
+    mostrarError('Error al cargar', 'Hubo un problema conectando con el servidor. Intenta de nuevo en unos segundos.');
+  }
+}
+
+function mostrarPerfil(c) {
+  const tierClass = 'tier-' + c.tier;
+  const beneficios = beneficiosPorTier[c.tier] || beneficiosPorTier.bronce;
+  const imagen = c.imagen || defaultTacoSVG();
+  const ig = normalizarInstagram(c.instagram);
+  const fechaAlta = formatFecha(c.alta);
+
+  let igButton = '';
+  if (ig) {
+    const user = ig.replace('https://instagram.com/', '');
+    igButton = `
+      <div class="cta-footer">
+        <p>Conecta con este miembro</p>
+        <a href="${ig}" target="_blank" rel="noopener" class="ig-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+          </svg>
+          Seguir @${escapeHtml(user)}
+        </a>
+      </div>
+    `;
+  }
+
+  document.getElementById('content').innerHTML = `
+    <div class="member-card">
+      <div class="tier-ribbon ${tierClass}">${tierNames[c.tier]}</div>
+      <div class="mascot-big">
+        <img src="${imagen}" alt="Personaje del miembro">
+      </div>
+      <div class="member-name">${escapeHtml(c.nombre)}</div>
+      <div class="member-label">CLIENTE FIEL TACO PARADO</div>
+      <div class="id-card">
+        <div>
+          <div class="id-label-tag">ID MIEMBRO</div>
+          <div class="id-big">${c.id}</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-family: 'Space Mono', monospace; font-size: 9px; color: var(--tp-orange); letter-spacing: 1.5px; font-weight: 700;">MIEMBRO DESDE</div>
+          <div style="font-family: 'Archivo Black', sans-serif; font-size: 14px; color: #fff; letter-spacing: 1px;">${fechaAlta}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="info-section">
+      <h3>🎁 TUS BENEFICIOS</h3>
+      ${beneficios.map(b => `
+        <div class="benefit-item">
+          <div class="benefit-icon">${b.icon}</div>
+          <div class="benefit-text">
+            <div class="benefit-title">${b.title}</div>
+            <div class="benefit-desc">${b.desc}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="info-section">
+      <h3>📍 ¿CÓMO USAR TU CARNET?</h3>
+      <div class="benefit-item">
+        <div class="benefit-icon">1️⃣</div>
+        <div class="benefit-text">
+          <div class="benefit-title">Presenta tu carnet</div>
+          <div class="benefit-desc">Muéstralo al cajero antes de pagar en cualquier sede Taco Parado.</div>
+        </div>
+      </div>
+      <div class="benefit-item">
+        <div class="benefit-icon">2️⃣</div>
+        <div class="benefit-text">
+          <div class="benefit-title">Acumula visitas</div>
+          <div class="benefit-desc">Cada vez que vengas sumamos una visita a tu cuenta.</div>
+        </div>
+      </div>
+      <div class="benefit-item">
+        <div class="benefit-icon">3️⃣</div>
+        <div class="benefit-text">
+          <div class="benefit-title">Reclama tus premios</div>
+          <div class="benefit-desc">Cuando tengas las visitas necesarias, reclama tu beneficio.</div>
+        </div>
+      </div>
+    </div>
+
+    ${igButton}
+
+    <div class="cta-footer">
+      <p style="margin-top: 20px;">SÍGUENOS EN REDES</p>
+      <a href="https://instagram.com/tacoparado.co" target="_blank" rel="noopener" class="ig-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+        </svg>
+        @tacoparado.co
+      </a>
+    </div>
+  `;
+}
+
+function mostrarError(titulo, mensaje) {
+  document.getElementById('content').innerHTML = `
+    <div class="error-state">
+      <div class="emoji">🌮</div>
+      <h2>${titulo}</h2>
+      <p>${mensaje}</p>
+    </div>
+  `;
+}
+
+cargarPerfil();
+</script>
+</body>
+</html>

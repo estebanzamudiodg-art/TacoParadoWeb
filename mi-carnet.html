@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mi Carnet · Taco Parado</title>
+<meta name="theme-color" content="#1A3F91">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Archivo+Black&family=Space+Mono:wght@400;700&family=Archivo:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+  const SUPABASE_URL = 'https://xyqyhabhujmmjofnfizg.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5cXloYWJodWptbWpvZm5maXpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODE5NzAsImV4cCI6MjA5MjM1Nzk3MH0.9Cj7XZUjLUiBHPWw6Br4FWz2_g8T1hgg20zyrrThhZQ'
+  window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+</script>
+<style>
+  :root {
+    --tp-orange: #FF9000;
+    --tp-blue: #5271FF;
+    --tp-deep-blue: #1A3F91;
+    --tp-dark-orange: #EC7020;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { overflow-x: hidden; }
+
+  body {
+    min-height: 100vh;
+    background: var(--tp-deep-blue);
+    background-image:
+      radial-gradient(circle at 20% 0%, #2855B8 0%, transparent 50%),
+      radial-gradient(circle at 80% 100%, #0D2468 0%, transparent 50%);
+    font-family: 'Archivo', sans-serif;
+    color: #fff;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  body::before {
+    content: ""; position: fixed; inset: 0;
+    background-image: repeating-linear-gradient(-45deg, transparent 0 10px, rgba(255,255,255,0.02) 10px 11px);
+    pointer-events: none; z-index: 0;
+  }
+
+  .container { max-width: 440px; width: 100%; position: relative; z-index: 1; }
+
+  .header-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 4px; margin-bottom: 10px;
+  }
+  .header-bar .brand-mini {
+    font-family: 'Bungee', sans-serif; font-size: 20px;
+    color: var(--tp-orange); letter-spacing: 1px;
+  }
+  .header-bar .brand-mini .acc { color: #fff; }
+  .header-bar .logout {
+    background: rgba(255,255,255,0.1); color: #fff;
+    border: 1px solid rgba(255,144,0,0.3); padding: 6px 12px;
+    border-radius: 20px; font-family: 'Space Mono', monospace;
+    font-size: 10px; cursor: pointer; letter-spacing: 1px; font-weight: 700;
+  }
+
+  .success-banner {
+    background: linear-gradient(90deg, #86efac 0%, #22c55e 100%);
+    color: #0a3d1e; padding: 12px 16px; border-radius: 12px;
+    margin-bottom: 20px; display: flex; align-items: center; gap: 10px;
+    box-shadow: 0 4px 14px rgba(34, 197, 94, 0.3);
+    animation: slideIn 0.5s ease-out;
+  }
+  @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+  .success-banner .ico { font-size: 24px; }
+  .success-banner .txt { font-size: 13px; font-weight: 700; line-height: 1.3; }
+
+  /* ===== CARNET DIGITAL ===== */
+  .carnet {
+    background: linear-gradient(160deg, var(--tp-orange) 0%, var(--tp-dark-orange) 100%);
+    border-radius: 20px; padding: 24px; margin-bottom: 20px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4), 0 8px 16px rgba(255, 144, 0, 0.3);
+    position: relative; overflow: hidden;
+    border: 3px solid var(--tp-deep-blue);
+  }
+  .carnet::before {
+    content: ""; position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(-45deg, transparent 0 8px, rgba(255,255,255,0.05) 8px 9px);
+    pointer-events: none;
+  }
+  .tier-ribbon {
+    position: absolute; top: 18px; right: -38px;
+    background: var(--tp-deep-blue); color: var(--tp-orange);
+    padding: 6px 40px; transform: rotate(35deg);
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    font-weight: 700; letter-spacing: 2px; z-index: 2;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  }
+  .tier-ribbon.tier-plata { background: #2F3640; color: #D8DADE; }
+  .tier-ribbon.tier-oro { background: #6B4A00; color: #FFD77A; }
+  .tier-ribbon.tier-master { background: #000; color: var(--tp-orange); }
+
+  .mascot-big {
+    width: 140px; height: 140px; margin: 10px auto 10px;
+    display: flex; align-items: center; justify-content: center;
+    position: relative; z-index: 1;
+  }
+  .mascot-big img, .mascot-big svg {
+    max-width: 100%; max-height: 100%; object-fit: contain;
+    filter: drop-shadow(4px 4px 0 var(--tp-deep-blue));
+  }
+
+  .member-name {
+    font-family: 'Archivo Black', sans-serif; font-size: 24px;
+    color: #fff; text-align: center; line-height: 1;
+    text-shadow: 3px 3px 0 var(--tp-deep-blue);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 6px; position: relative; z-index: 1; word-break: break-word;
+  }
+  .member-label {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    letter-spacing: 2.5px; color: var(--tp-deep-blue);
+    font-weight: 700; text-align: center; position: relative;
+    z-index: 1; margin-bottom: 16px;
+  }
+
+  .id-card {
+    background: var(--tp-deep-blue); border-radius: 12px;
+    padding: 14px 18px; display: flex; justify-content: space-between;
+    align-items: center; position: relative; z-index: 1;
+    border: 2px solid rgba(255,255,255,0.1);
+  }
+  .id-card .id-label-tag {
+    font-family: 'Space Mono', monospace; font-size: 9px;
+    letter-spacing: 2px; color: var(--tp-orange); font-weight: 700;
+  }
+  .id-card .id-big {
+    font-family: 'Space Mono', monospace; font-size: 20px;
+    font-weight: 700; color: #fff; letter-spacing: 3px;
+  }
+
+  /* ===== ESTADO DEL CARNET ===== */
+  .status-card {
+    background: rgba(255,255,255,0.08); backdrop-filter: blur(10px);
+    border-radius: 16px; padding: 18px; margin-bottom: 16px;
+    border: 1px solid rgba(255, 144, 0, 0.3);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .status-icon {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: rgba(255, 144, 0, 0.2); display: flex;
+    align-items: center; justify-content: center;
+    font-size: 24px; flex-shrink: 0;
+  }
+  .status-icon.delivered { background: rgba(34, 197, 94, 0.3); }
+  .status-text { flex: 1; }
+  .status-text .st-title {
+    font-weight: 700; font-size: 14px; color: #fff; margin-bottom: 4px;
+  }
+  .status-text .st-desc { font-size: 12px; color: rgba(255,255,255,0.7); line-height: 1.4; }
+
+  /* ===== QR SECTION ===== */
+  .qr-section {
+    background: rgba(255,255,255,0.08); backdrop-filter: blur(10px);
+    border-radius: 16px; padding: 24px; text-align: center;
+    border: 1px solid rgba(255, 144, 0, 0.3); margin-bottom: 16px;
+  }
+  .qr-section h3 {
+    font-family: 'Bungee', sans-serif; font-size: 14px;
+    color: var(--tp-orange); letter-spacing: 1px; margin-bottom: 14px;
+  }
+  .qr-box {
+    width: 180px; height: 180px; background: #fff;
+    border-radius: 12px; padding: 10px; margin: 0 auto 14px;
+    border: 3px solid var(--tp-orange);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .qr-box canvas, .qr-box img { width: 100% !important; height: 100% !important; display: block; }
+  .qr-hint {
+    font-size: 11px; color: rgba(255,255,255,0.7);
+    font-family: 'Space Mono', monospace; letter-spacing: 1px; line-height: 1.5;
+  }
+
+  /* ===== BENEFICIOS ===== */
+  .info-section {
+    background: rgba(255,255,255,0.05); border-radius: 16px;
+    padding: 20px; backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 144, 0, 0.2); margin-bottom: 14px;
+  }
+  .info-section h3 {
+    font-family: 'Bungee', sans-serif; font-size: 14px;
+    color: var(--tp-orange); letter-spacing: 1px; margin-bottom: 12px;
+  }
+  .benefit-item {
+    display: flex; gap: 12px; padding: 10px 0;
+    border-bottom: 1px dashed rgba(255,255,255,0.1); align-items: flex-start;
+  }
+  .benefit-item:last-child { border-bottom: none; }
+  .benefit-icon {
+    font-size: 20px; flex-shrink: 0; width: 36px; height: 36px;
+    background: rgba(255, 144, 0, 0.2); border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .benefit-title { font-weight: 700; font-size: 14px; color: #fff; margin-bottom: 2px; }
+  .benefit-desc { font-size: 12px; color: rgba(255,255,255,0.7); line-height: 1.4; }
+
+  /* ===== BOTÓN COMPARTIR ===== */
+  .share-btn {
+    width: 100%; background: var(--tp-orange); color: #fff;
+    padding: 14px 20px; border: none; border-radius: 12px;
+    font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 14px;
+    letter-spacing: 0.5px; cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 6px 16px rgba(255,144,0,0.4); margin-bottom: 10px;
+    text-transform: uppercase; display: flex; align-items: center;
+    justify-content: center; gap: 8px;
+  }
+  .share-btn:hover { background: var(--tp-dark-orange); transform: translateY(-2px); }
+
+  .loading-state { text-align: center; padding: 60px 20px; }
+  .spinner {
+    width: 40px; height: 40px; border: 3px solid rgba(255, 144, 0, 0.2);
+    border-top-color: var(--tp-orange); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin: 0 auto 20px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error-state {
+    background: rgba(255,255,255,0.05); border-radius: 16px;
+    padding: 40px 24px; text-align: center; backdrop-filter: blur(10px);
+  }
+  .error-state .emoji { font-size: 60px; margin-bottom: 16px; }
+  .error-state h2 {
+    font-family: 'Bungee', sans-serif; color: var(--tp-orange);
+    font-size: 20px; letter-spacing: 1px; margin-bottom: 8px;
+  }
+  .error-state p { color: rgba(255,255,255,0.7); font-size: 14px; line-height: 1.5; margin-bottom: 20px; }
+  .error-state a {
+    display: inline-block; background: var(--tp-orange); color: #fff;
+    padding: 12px 22px; border-radius: 10px; text-decoration: none;
+    font-weight: 700;
+  }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--tp-deep-blue); color: #fff;
+    padding: 12px 24px; border-radius: 10px;
+    font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.3); z-index: 1000;
+    transition: transform 0.3s; border-left: 4px solid var(--tp-orange);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header-bar">
+    <div class="brand-mini">TACO <span class="acc">PARADO</span></div>
+    <button class="logout" onclick="logout()">SALIR</button>
+  </div>
+
+  <div id="content">
+    <div class="loading-state">
+      <div class="spinner"></div>
+      <p style="font-family: 'Space Mono', monospace; letter-spacing: 2px; font-size: 12px; color: var(--tp-orange);">CARGANDO TU CARNET…</p>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let currentUser = null;
+let cliente = null;
+const PUBLIC_PROFILE_BASE = window.location.origin + window.location.pathname.replace(/\/mi-carnet\.html$/, '') + '/perfil.html?id=';
+
+async function waitForSupabase() {
+  while (!window.supabase) await new Promise(r => setTimeout(r, 50));
+}
+
+function escapeHtml(s) {
+  return (s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function tacoSVG() {
+  return `<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <circle cx='100' cy='100' r='85' fill='#5271FF' stroke='#1A3F91' stroke-width='4'/>
+    <ellipse cx='100' cy='115' rx='48' ry='38' fill='#FFD24D' stroke='#1A3F91' stroke-width='3'/>
+    <path d='M 58 105 Q 70 90, 85 95 Q 100 85, 115 95 Q 130 88, 142 105 L 140 108 Q 125 100, 115 108 Q 100 98, 85 108 Q 70 102, 60 108 Z' fill='#5BAE4C' stroke='#1A3F91' stroke-width='2'/>
+    <circle cx='88' cy='122' r='8' fill='#fff' stroke='#1A3F91' stroke-width='2'/>
+    <circle cx='112' cy='122' r='8' fill='#fff' stroke='#1A3F91' stroke-width='2'/>
+    <circle cx='90' cy='124' r='3.5' fill='#1A3F91'/>
+    <circle cx='114' cy='124' r='3.5' fill='#1A3F91'/>
+    <path d='M 90 138 Q 100 146, 110 138' stroke='#1A3F91' stroke-width='2.5' fill='none' stroke-linecap='round'/>
+    <path d='M 135 95 Q 148 80, 152 60' stroke='#FFD24D' stroke-width='8' fill='none' stroke-linecap='round'/>
+    <path d='M 135 95 Q 148 80, 152 60' stroke='#1A3F91' stroke-width='2' fill='none' stroke-linecap='round'/>
+    <circle cx='152' cy='55' r='10' fill='#B8D84A' stroke='#1A3F91' stroke-width='2'/>
+  </svg>`;
+}
+
+const beneficiosPorTier = {
+  bronce: [
+    { icon: '🎂', title: 'Taco gratis de cumpleaños', desc: 'Reclama tu taco favorito el día de tu cumpleaños' },
+    { icon: '📱', title: 'Notificaciones exclusivas', desc: 'Entérate primero de nuevas sedes y promociones' }
+  ],
+  plata: [
+    { icon: '🎂', title: 'Taco gratis de cumpleaños', desc: 'Reclama tu taco favorito el día de tu cumpleaños' },
+    { icon: '🥤', title: 'Bebida gratis cada 5 visitas', desc: 'Acumula visitas y reclama tu bebida' },
+    { icon: '📱', title: 'Notificaciones exclusivas', desc: 'Promociones antes que nadie' }
+  ],
+  oro: [
+    { icon: '🌮', title: 'Combo gratis de cumpleaños', desc: 'Combo completo el día de tu cumpleaños' },
+    { icon: '🥤', title: 'Bebida gratis cada 3 visitas', desc: 'Más visitas, más beneficios' },
+    { icon: '⚡', title: 'Fila rápida', desc: 'Pase preferencial en horas pico' },
+    { icon: '🎁', title: 'Sorpresas mensuales', desc: 'Regalo exclusivo cada mes' }
+  ],
+  master: [
+    { icon: '👑', title: 'Beneficios ORO ilimitados', desc: 'Todos los beneficios sin restricción' },
+    { icon: '🌮', title: 'Combo gratis mensual', desc: 'Un combo completo cada mes' },
+    { icon: '🎉', title: 'Invitaciones VIP', desc: 'Eventos y lanzamientos exclusivos' }
+  ]
+};
+
+const tierNames = { bronce: '★ BRONCE', plata: '★★ PLATA', oro: '★★★ ORO', master: '♛ MASTER' };
+
+window.logout = async function() {
+  await window.supabase.auth.signOut();
+  window.location.href = 'registro.html';
+};
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+window.compartir = async function() {
+  const url = PUBLIC_PROFILE_BASE + cliente.id;
+  const texto = `¡Soy miembro de Taco Parado! 🌮 Mi ID: ${cliente.id}`;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'Mi carnet Taco Parado', text: texto, url });
+    } catch(e) { /* cancelado */ }
+  } else {
+    try {
+      await navigator.clipboard.writeText(url);
+      toast('✓ Link copiado al portapapeles');
+    } catch {
+      toast('No se pudo compartir');
+    }
+  }
+};
+
+async function cargarCarnet() {
+  await waitForSupabase();
+  const { data: { session } } = await window.supabase.auth.getSession();
+
+  if (!session) {
+    window.location.href = 'registro.html';
+    return;
+  }
+
+  currentUser = session.user;
+
+  const { data, error } = await window.supabase
+    .from('clientes')
+    .select('*')
+    .eq('user_id', currentUser.id)
+    .maybeSingle();
+
+  if (error || !data) {
+    document.getElementById('content').innerHTML = `
+      <div class="error-state">
+        <div class="emoji">🌮</div>
+        <h2>No encontramos tu registro</h2>
+        <p>Parece que aún no completaste tu registro como miembro.</p>
+        <a href="registro.html">COMPLETAR REGISTRO</a>
+      </div>
+    `;
+    return;
+  }
+
+  cliente = data;
+  mostrarCarnet();
+}
+
+function mostrarCarnet() {
+  const c = cliente;
+  const tierClass = 'tier-' + c.tier;
+  const beneficios = beneficiosPorTier[c.tier] || beneficiosPorTier.bronce;
+  const recienRegistrado = sessionStorage.getItem('tp_welcome') !== 'seen';
+  sessionStorage.setItem('tp_welcome', 'seen');
+
+  // Banner bienvenida si viene de registro
+  const fromRegistro = document.referrer.includes('registro.html');
+  const showWelcome = fromRegistro || recienRegistrado;
+
+  // Estado de carnet entregado
+  let statusHTML;
+  if (c.carnet_entregado) {
+    statusHTML = `
+      <div class="status-card">
+        <div class="status-icon delivered">✓</div>
+        <div class="status-text">
+          <div class="st-title">Carnet físico entregado</div>
+          <div class="st-desc">Ya tienes tu tarjeta. Preséntala en cada visita para acumular beneficios.</div>
+        </div>
+      </div>
+    `;
+  } else {
+    statusHTML = `
+      <div class="status-card">
+        <div class="status-icon">📍</div>
+        <div class="status-text">
+          <div class="st-title">Recoge tu carnet físico</div>
+          <div class="st-desc">Pasa por cualquier sede Taco Parado y menciona tu ID ${c.id}. Te entregaremos tu tarjeta.</div>
+        </div>
+      </div>
+    `;
+  }
+
+  document.getElementById('content').innerHTML = `
+    ${showWelcome ? `
+      <div class="success-banner">
+        <span class="ico">🎉</span>
+        <span class="txt">¡Bienvenido al club, ${escapeHtml(c.nombre.split(' ')[0])}!<br>Tu registro quedó completo.</span>
+      </div>
+    ` : ''}
+
+    <div class="carnet">
+      <div class="tier-ribbon ${tierClass}">${tierNames[c.tier]}</div>
+      <div class="mascot-big">${tacoSVG()}</div>
+      <div class="member-name">${escapeHtml(c.nombre)}</div>
+      <div class="member-label">CLIENTE FIEL TACO PARADO</div>
+      <div class="id-card">
+        <div>
+          <div class="id-label-tag">ID MIEMBRO</div>
+          <div class="id-big">${c.id}</div>
+        </div>
+        <div style="text-align: right;">
+          <div style="font-family: 'Space Mono', monospace; font-size: 9px; color: var(--tp-orange); letter-spacing: 1.5px; font-weight: 700;">DESDE</div>
+          <div style="font-family: 'Archivo Black', sans-serif; font-size: 13px; color: #fff; letter-spacing: 1px;">${c.alta.slice(5,7)}/${c.alta.slice(2,4)}</div>
+        </div>
+      </div>
+    </div>
+
+    ${statusHTML}
+
+    <div class="qr-section">
+      <h3>📱 TU CÓDIGO QR</h3>
+      <div class="qr-box"><div id="qr-el"></div></div>
+      <p class="qr-hint">Muéstralo en el local o compártelo con amigos.<br>Válido en todas las sedes.</p>
+      <button class="share-btn" onclick="compartir()" style="margin-top: 14px;">📤 COMPARTIR MI CARNET</button>
+    </div>
+
+    <div class="info-section">
+      <h3>🎁 TUS BENEFICIOS</h3>
+      ${beneficios.map(b => `
+        <div class="benefit-item">
+          <div class="benefit-icon">${b.icon}</div>
+          <div>
+            <div class="benefit-title">${b.title}</div>
+            <div class="benefit-desc">${b.desc}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="info-section">
+      <h3>📍 ¿CÓMO USAR TU CARNET?</h3>
+      <div class="benefit-item">
+        <div class="benefit-icon">1️⃣</div>
+        <div>
+          <div class="benefit-title">Presenta tu carnet</div>
+          <div class="benefit-desc">Muestra este QR o tu tarjeta física al cajero antes de pagar.</div>
+        </div>
+      </div>
+      <div class="benefit-item">
+        <div class="benefit-icon">2️⃣</div>
+        <div>
+          <div class="benefit-title">Acumula visitas</div>
+          <div class="benefit-desc">Cada vez que vengas sumamos una visita a tu cuenta.</div>
+        </div>
+      </div>
+      <div class="benefit-item">
+        <div class="benefit-icon">3️⃣</div>
+        <div>
+          <div class="benefit-title">Reclama tus premios</div>
+          <div class="benefit-desc">Cuando tengas las visitas necesarias, reclama tu beneficio.</div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Generar QR
+  setTimeout(() => {
+    const qrEl = document.getElementById('qr-el');
+    if (qrEl) {
+      new QRCode(qrEl, {
+        text: PUBLIC_PROFILE_BASE + c.id,
+        width: 360, height: 360,
+        colorDark: '#1A3F91', colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H
+      });
+    }
+  }, 100);
+}
+
+cargarCarnet();
+</script>
+</body>
+</html>
