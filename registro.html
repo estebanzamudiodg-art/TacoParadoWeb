@@ -167,6 +167,36 @@
   }
   .logout-link:hover { color: var(--tp-dark-orange); text-decoration: underline; }
 
+  .divider-or {
+    display: flex; align-items: center; gap: 12px;
+    margin: 18px 0 12px;
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    color: #999; letter-spacing: 2px; text-transform: uppercase;
+  }
+  .divider-or::before, .divider-or::after {
+    content: ""; flex: 1; height: 1px; background: #E5DFD2;
+  }
+
+  .admin-link {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%;
+    background: transparent; border: 1.5px solid var(--tp-deep-blue);
+    color: var(--tp-deep-blue);
+    padding: 10px 16px; border-radius: 10px;
+    font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 12px;
+    letter-spacing: 0.5px;
+    cursor: pointer; text-decoration: none;
+    transition: all 0.2s;
+  }
+  .admin-link:hover {
+    background: var(--tp-deep-blue); color: #fff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(26,63,145,0.25);
+  }
+  .admin-link .lock-ico {
+    font-size: 13px;
+  }
+
   .error-box {
     background: #FCEBE5; color: #B5351A; padding: 10px 14px;
     border-radius: 8px; font-family: 'Space Mono', monospace;
@@ -253,6 +283,13 @@ function renderWelcome() {
         Continuar con Google
       </button>
       <p class="legal">Al continuar aceptas recibir información sobre promociones. Puedes darte de baja cuando quieras.</p>
+
+      <div class="divider-or">o</div>
+
+      <a href="index.html" class="admin-link">
+        <span class="lock-ico">🔐</span>
+        <span>Soy administrador</span>
+      </a>
     </div>
   `;
 }
