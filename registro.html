@@ -141,7 +141,7 @@
     font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
     color: var(--tp-deep-blue); margin-bottom: 6px; text-transform: uppercase; text-align: left;
   }
-  input[type="text"], input[type="tel"], input[type="email"] {
+  input[type="text"], input[type="tel"], input[type="email"], input[type="date"] {
     width: 100%; padding: 12px 14px; border: 2px solid #E5DFD2;
     border-radius: 10px; font-family: 'Archivo', sans-serif; font-size: 15px;
     background: #FAFAF7; transition: border-color 0.2s; color: var(--tp-ink);
@@ -250,6 +250,11 @@ function renderForm() {
   const avatarUrl = user.user_metadata?.avatar_url || user.user_metadata?.picture;
   const initial = (displayName || user.email).charAt(0).toUpperCase();
 
+  // Fecha máxima: hoy - 10 años (mínimo 10 años de edad)
+  const maxDate = new Date();
+  maxDate.setFullYear(maxDate.getFullYear() - 10);
+  const maxDateStr = maxDate.toISOString().slice(0, 10);
+
   document.getElementById('root').innerHTML = `
     <div class="form-card">
       <div class="user-greet">
@@ -265,11 +270,17 @@ function renderForm() {
       <form id="registro-form">
         <div class="form-row">
           <label>Nombre que irá en tu carnet *</label>
-          <input type="text" id="reg-nombre" required maxlength="28" value="${escapeHtml(displayName)}" placeholder="Ej: Carlos Ramírez">
+          <input type="text" id="reg-nombre" required maxlength="22" value="${escapeHtml(displayName)}" placeholder="Ej: Carlos Ramírez">
+          <div style="font-family: 'Space Mono', monospace; font-size: 10px; color: #7A7366; margin-top: 4px; letter-spacing: 0.3px;">💡 Usa tu primer nombre y primer apellido (máx 22 caracteres)</div>
         </div>
         <div class="form-row">
           <label>Teléfono / Celular *</label>
           <input type="tel" id="reg-tel" required placeholder="300 123 4567">
+        </div>
+        <div class="form-row">
+          <label>🎂 Fecha de cumpleaños *</label>
+          <input type="date" id="reg-cumpleanos" required max="${maxDateStr}" min="1920-01-01">
+          <div style="font-family: 'Space Mono', monospace; font-size: 10px; color: #7A7366; margin-top: 4px; letter-spacing: 0.3px;">🎁 Te daremos un beneficio especial en tu cumpleaños</div>
         </div>
         <div class="form-row">
           <label>📱 Instagram (opcional)</label>
@@ -340,7 +351,8 @@ async function submitRegistro(e) {
   const nombre = document.getElementById('reg-nombre').value.trim();
   const tel = document.getElementById('reg-tel').value.trim();
   const instagram = document.getElementById('reg-instagram').value.trim();
-  if (!nombre || !tel) return;
+  const cumpleanos = document.getElementById('reg-cumpleanos').value;
+  if (!nombre || !tel || !cumpleanos) return;
 
   const btn = document.getElementById('btn-submit');
   const errBox = document.getElementById('error-box');
@@ -361,6 +373,7 @@ async function submitRegistro(e) {
       id: nuevoId,
       user_id: currentUser.id,
       nombre, tel, instagram: instagram || null,
+      cumpleanos,
       email: currentUser.email,
       tier: 'bronce',
       imagen: null,

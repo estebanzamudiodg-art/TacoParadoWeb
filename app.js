@@ -19,7 +19,7 @@ const TOKEN_TYPES = {
   },
   qr: {
     label: 'Código QR', desc: '{{qr}}', icon: '▦', iconColor: '#1A3F91',
-    type: 'qr', defaults: { w: 120, h: 120 }
+    type: 'qr', defaults: { w: 90, h: 90 }
   },
   foto: {
     label: 'Foto / Personaje', desc: '{{foto}}', icon: '🖼', iconColor: '#EC7020',
@@ -48,7 +48,29 @@ let currentUser = null;
 let selectedId = null;
 let editingId = null;
 let currentFilter = 'all';
-let config = { qrBase: '', ig: '@tacoparado.co', prefijo: 'TP-', logoUrl: null };
+let config = {
+  qrBase: '',
+  ig: '@tacoparado.co',
+  prefijo: 'TP-',
+  logoUrl: null,
+  sedeNombre: 'Sede 6ta Etapa La Esperanza',
+  sedeDireccion: 'Cra. 33c #7-15',
+  sedeHorario: 'Lun-Dom · 5:00 PM - 10:00 PM',
+  sedeMapsUrl: 'https://maps.google.com/?q=Cra+33c+7-15+Villavicencio',
+  mensajeRecogida: `¡Hola {nombre}! 🌮
+
+Somos de *TACO PARADO* — tu carnet de fidelización ya está listo. 🎉
+
+📍 Puedes recogerlo en:
+*{sede}*
+{direccion}
+
+🕒 {horario}
+
+Muéstranos este mensaje o tu ID: *{id}*
+
+¡Te esperamos! 🥳`
+};
 let plantillas = [];
 let plantillaActiva = null;
 
@@ -221,6 +243,11 @@ async function loadData() {
         if (r.key === 'ig') config.ig = r.value;
         if (r.key === 'prefijo') config.prefijo = r.value;
         if (r.key === 'logoUrl') config.logoUrl = r.value;
+        if (r.key === 'sedeNombre') config.sedeNombre = r.value;
+        if (r.key === 'sedeDireccion') config.sedeDireccion = r.value;
+        if (r.key === 'sedeHorario') config.sedeHorario = r.value;
+        if (r.key === 'sedeMapsUrl') config.sedeMapsUrl = r.value;
+        if (r.key === 'mensajeRecogida' && r.value) config.mensajeRecogida = r.value;
       });
     }
     if (!config.qrBase) config.qrBase = PUBLIC_BASE;
@@ -231,6 +258,16 @@ async function loadData() {
 
     document.getElementById('cfg-qr-base').value = config.qrBase;
     document.getElementById('cfg-ig').value = config.ig;
+    const sedeNombreEl = document.getElementById('cfg-sede-nombre');
+    const sedeDirEl = document.getElementById('cfg-sede-direccion');
+    const sedeHorEl = document.getElementById('cfg-sede-horario');
+    const sedeMapsEl = document.getElementById('cfg-sede-maps');
+    if (sedeNombreEl) sedeNombreEl.value = config.sedeNombre || '';
+    if (sedeDirEl) sedeDirEl.value = config.sedeDireccion || '';
+    if (sedeHorEl) sedeHorEl.value = config.sedeHorario || '';
+    if (sedeMapsEl) sedeMapsEl.value = config.sedeMapsUrl || '';
+    const msgEl = document.getElementById('cfg-mensaje-recogida');
+    if (msgEl) msgEl.value = config.mensajeRecogida || '';
     actualizarLogoUI();
 
     actualizarPlantillaUI();
@@ -375,6 +412,81 @@ window.toggleEntrega = async function(id, estado) {
   }
 };
 
+// Notificar cliente que ya puede recoger el carnet
+window.notificarRecogida = function(id) {
+  const c = clientes.find(x => x.id === id);
+  if (!c) return;
+  abrirModalNotificacion(c);
+};
+
+function abrirModalNotificacion(cliente) {
+  const modal = document.getElementById('notify-modal');
+  if (!modal) return;
+
+  const primerNombre = cliente.nombre.split(' ')[0];
+  const telLimpio = (cliente.tel || '').replace(/\D/g, '');
+  const telConPais = telLimpio.startsWith('57') ? telLimpio : ('57' + telLimpio);
+
+  // Reemplazar variables en el template
+  const template = config.mensajeRecogida || '';
+  const mensaje = template
+    .replace(/\{nombre\}/g, primerNombre)
+    .replace(/\{nombreCompleto\}/g, cliente.nombre)
+    .replace(/\{id\}/g, cliente.id)
+    .replace(/\{sede\}/g, config.sedeNombre || '')
+    .replace(/\{direccion\}/g, config.sedeDireccion || '')
+    .replace(/\{horario\}/g, config.sedeHorario || '')
+    .replace(/\{maps\}/g, config.sedeMapsUrl || '')
+    .replace(/\{tier\}/g, tierName(cliente.tier || 'bronce'));
+
+  const mensajeEncoded = encodeURIComponent(mensaje);
+  const whatsappUrl = telLimpio
+    ? `https://wa.me/${telConPais}?text=${mensajeEncoded}`
+    : null;
+
+  const asunto = encodeURIComponent(`Tu carnet Taco Parado ya está listo 🌮`);
+  const cuerpoEmail = encodeURIComponent(mensaje.replace(/\*/g, ''));
+  const emailUrl = cliente.email
+    ? `mailto:${cliente.email}?subject=${asunto}&body=${cuerpoEmail}`
+    : null;
+
+  document.getElementById('notify-target').textContent = `${cliente.nombre} · ${cliente.id}`;
+  document.getElementById('notify-msg-preview').textContent = mensaje;
+
+  const btnWA = document.getElementById('notify-btn-whatsapp');
+  const btnEmail = document.getElementById('notify-btn-email');
+  const btnCopy = document.getElementById('notify-btn-copy');
+
+  if (whatsappUrl) {
+    btnWA.style.display = 'block';
+    btnWA.onclick = () => { window.open(whatsappUrl, '_blank'); };
+  } else {
+    btnWA.style.display = 'none';
+  }
+
+  if (emailUrl) {
+    btnEmail.style.display = 'block';
+    btnEmail.onclick = () => { window.open(emailUrl, '_blank'); };
+  } else {
+    btnEmail.style.display = 'none';
+  }
+
+  btnCopy.onclick = async () => {
+    try {
+      await navigator.clipboard.writeText(mensaje);
+      toast('✓ Mensaje copiado');
+    } catch {
+      toast('⚠️ No se pudo copiar', 'error');
+    }
+  };
+
+  modal.classList.add('show');
+}
+
+window.closeNotifyModal = function() {
+  document.getElementById('notify-modal').classList.remove('show');
+};
+
 // ==============================================================
 // TABLA
 // ==============================================================
@@ -422,7 +534,8 @@ function renderTabla() {
         <button onclick="editarCliente('${c.id}')">✎</button>
         ${c.carnet_entregado
           ? `<button class="undeliver-btn" onclick="toggleEntrega('${c.id}', false)" title="Marcar pendiente">↩</button>`
-          : `<button class="deliver-btn" onclick="toggleEntrega('${c.id}', true)" title="Marcar entregado">✓ ENTREGAR</button>`}
+          : `<button class="notify-btn" onclick="notificarRecogida('${c.id}')" title="Avisar al cliente">📱 AVISAR</button>
+             <button class="deliver-btn" onclick="toggleEntrega('${c.id}', true)" title="Marcar entregado">✓ ENTREGAR</button>`}
         <button onclick="eliminarCliente('${c.id}')" style="color:#B5351A;">🗑</button>
       </div></td>
     `;
@@ -521,7 +634,6 @@ function renderCarnetDinamico(cliente, face, options = {}) {
     if (tokenDef.type === 'text') {
       el.className = 'dyn-field';
       el.style.fontFamily = `'${field.font}', sans-serif`;
-      el.style.fontSize = (field.size * scale) + 'px';
       el.style.color = field.color;
       el.style.fontWeight = field.weight || '700';
       el.style.justifyContent = field.align === 'center' ? 'center' : (field.align === 'right' ? 'flex-end' : 'flex-start');
@@ -537,18 +649,38 @@ function renderCarnetDinamico(cliente, face, options = {}) {
         const ig = normalizarInstagram(cliente.instagram);
         texto = ig ? '@' + ig.replace('https://instagram.com/', '') : (cliente.instagram || '');
       }
+
+      // Auto-shrink para nombre: si es largo, reduce el tamaño de fuente
+      let fontSize = field.size;
+      if (field.tokenType === 'nombre' && texto.length > 14) {
+        // Cálculo proporcional: cada char extra sobre 14 reduce proporcionalmente
+        const shrinkFactor = Math.max(0.6, 14 / texto.length);
+        fontSize = field.size * shrinkFactor;
+      }
+      el.style.fontSize = (fontSize * scale) + 'px';
       el.textContent = texto;
     } else if (tokenDef.type === 'qr') {
       el.className = 'dyn-qr';
+      // Mejor padding y estética
+      el.style.background = '#fff';
+      el.style.padding = (6 * scale) + 'px';
+      el.style.borderRadius = (6 * scale) + 'px';
+      el.style.boxShadow = `0 ${2 * scale}px ${6 * scale}px rgba(0,0,0,0.15)`;
       const qrInner = document.createElement('div');
+      qrInner.style.width = '100%';
+      qrInner.style.height = '100%';
+      qrInner.style.display = 'flex';
+      qrInner.style.alignItems = 'center';
+      qrInner.style.justifyContent = 'center';
       el.appendChild(qrInner);
       const destino = obtenerDestinoQR(cliente);
       setTimeout(() => {
         qrInner.innerHTML = '';
+        const qrSize = Math.min(field.w, field.h) * scale - (12 * scale);
         new QRCode(qrInner, {
           text: destino.url,
-          width: (field.w - 8) * scale,
-          height: (field.h - 8) * scale,
+          width: qrSize,
+          height: qrSize,
           colorDark: destino.tipo === 'instagram' ? '#C13584' : '#1A3F91',
           colorLight: '#ffffff',
           correctLevel: QRCode.CorrectLevel.H
@@ -1148,11 +1280,23 @@ window.eliminarLogo = async function() {
 window.guardarConfig = async function() {
   config.qrBase = document.getElementById('cfg-qr-base').value.trim() || PUBLIC_BASE;
   config.ig = document.getElementById('cfg-ig').value.trim() || '@tacoparado.co';
+  config.sedeNombre = document.getElementById('cfg-sede-nombre').value.trim() || 'Taco Parado';
+  config.sedeDireccion = document.getElementById('cfg-sede-direccion').value.trim() || '';
+  config.sedeHorario = document.getElementById('cfg-sede-horario').value.trim() || '';
+  config.sedeMapsUrl = document.getElementById('cfg-sede-maps').value.trim() || '';
+  const msgEl = document.getElementById('cfg-mensaje-recogida');
+  if (msgEl) config.mensajeRecogida = msgEl.value;
+
   showSync(true);
   try {
     const rows = [
       { key: 'qrBase', value: config.qrBase },
-      { key: 'ig', value: config.ig }
+      { key: 'ig', value: config.ig },
+      { key: 'sedeNombre', value: config.sedeNombre },
+      { key: 'sedeDireccion', value: config.sedeDireccion },
+      { key: 'sedeHorario', value: config.sedeHorario },
+      { key: 'sedeMapsUrl', value: config.sedeMapsUrl },
+      { key: 'mensajeRecogida', value: config.mensajeRecogida }
     ];
     for (const row of rows) {
       const { error } = await window.supabase.from('config').upsert(row, { onConflict: 'key' });
@@ -1167,8 +1311,70 @@ window.guardarConfig = async function() {
 };
 
 // ==============================================================
+// EDITOR DE MENSAJE DE NOTIFICACIÓN
+// ==============================================================
+const MENSAJE_DEFAULT = `¡Hola {nombre}! 🌮
+
+Somos de *TACO PARADO* — tu carnet de fidelización ya está listo. 🎉
+
+📍 Puedes recogerlo en:
+*{sede}*
+{direccion}
+
+🕒 {horario}
+
+Muéstranos este mensaje o tu ID: *{id}*
+
+¡Te esperamos! 🥳`;
+
+window.insertarVariable = function(variable) {
+  const textarea = document.getElementById('cfg-mensaje-recogida');
+  if (!textarea) return;
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const text = textarea.value;
+  textarea.value = text.substring(0, start) + variable + text.substring(end);
+  textarea.focus();
+  textarea.setSelectionRange(start + variable.length, start + variable.length);
+};
+
+window.previsualizarMensaje = function() {
+  const textarea = document.getElementById('cfg-mensaje-recogida');
+  if (!textarea) return;
+
+  // Cliente de ejemplo para la vista previa
+  const clienteDemo = {
+    nombre: 'Carlos Ramírez',
+    id: 'TP-000271',
+    tier: 'oro',
+    tel: '3001234567',
+    email: 'carlos@ejemplo.com'
+  };
+
+  // Guardar temporalmente la config actual de sede + mensaje
+  const tempConfig = { ...config, mensajeRecogida: textarea.value };
+  const originalConfig = config;
+  config = tempConfig;
+
+  abrirModalNotificacion(clienteDemo);
+
+  // Restaurar config (no guardamos realmente)
+  config = originalConfig;
+};
+
+window.restaurarMensajeDefault = function() {
+  if (!confirm('¿Restaurar el mensaje al texto por defecto?')) return;
+  const textarea = document.getElementById('cfg-mensaje-recogida');
+  if (textarea) {
+    textarea.value = MENSAJE_DEFAULT;
+    toast('✓ Mensaje restaurado · recuerda guardar');
+  }
+};
+
+// ==============================================================
 // EXPORT
 // ==============================================================
+
 window.openExportModal = function() {
   if (!selectedId || !plantillaActiva) return;
   const c = clientes.find(x => x.id === selectedId);

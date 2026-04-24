@@ -124,6 +124,8 @@ tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, trans
 .row-actions button.deliver-btn { background: #22c55e; color: #fff; border-color: #22c55e; }
 .row-actions button.deliver-btn:hover { background: #16a34a; }
 .row-actions button.undeliver-btn { background: #fff; color: #7A7366; }
+.row-actions button.notify-btn { background: #25D366; color: #fff; border-color: #25D366; }
+.row-actions button.notify-btn:hover { background: #128C7E; border-color: #128C7E; }
 
 .empty-state { padding: 50px 20px; text-align: center; color: var(--muted); }
 .empty-state .ico { font-size: 44px; margin-bottom: 10px; }
@@ -259,6 +261,22 @@ tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, trans
 .plantilla-item.active { background: #FFF4DC; border-color: var(--tp-orange); }
 .plantilla-item .p-name { font-weight: 700; font-size: 12px; flex: 1; min-width: 100px; }
 .plantilla-item .p-active-badge { background: #22c55e; color: #fff; padding: 2px 6px; border-radius: 10px; font-size: 9px; letter-spacing: 0.5px; font-family: 'Space Mono', monospace; font-weight: 700; }
+
+.var-chip {
+  display: inline-block;
+  padding: 4px 9px;
+  background: #fff;
+  border: 1px solid var(--tp-orange);
+  color: var(--tp-dark-orange);
+  border-radius: 12px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  letter-spacing: 0.3px;
+}
+.var-chip:hover { background: var(--tp-orange); color: #fff; transform: translateY(-1px); }
 </style>
 </head>
 <body>
@@ -455,7 +473,47 @@ tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, trans
       <div class="sub">Configuración sincronizada</div>
       <div class="form-row"><label>URL base del QR</label><input type="text" id="cfg-qr-base" placeholder="https://tuapp.vercel.app/perfil.html?id="></div>
       <div class="form-row"><label>Handle de Instagram</label><input type="text" id="cfg-ig" placeholder="@tacoparado.co"></div>
-      <div class="form-actions"><button class="btn btn-primary" onclick="guardarConfig()">Guardar</button></div>
+
+      <hr style="margin:20px 0; border:none; border-top:1px solid var(--border);">
+
+      <h2>📍 SEDE DE RECOGIDA</h2>
+      <div class="sub">Esta info aparece en la notificación al cliente</div>
+      <div class="form-row"><label>Nombre de la sede</label><input type="text" id="cfg-sede-nombre" placeholder="Sede 6ta Etapa La Esperanza"></div>
+      <div class="form-row"><label>Dirección</label><input type="text" id="cfg-sede-direccion" placeholder="Cra. 33c #7-15"></div>
+      <div class="form-row"><label>Horario</label><input type="text" id="cfg-sede-horario" placeholder="Lun-Dom · 4:00 PM - 10:00 PM"></div>
+      <div class="form-row"><label>URL de Google Maps</label><input type="text" id="cfg-sede-maps" placeholder="https://maps.google.com/?q=..."></div>
+
+      <hr style="margin:20px 0; border:none; border-top:1px solid var(--border);">
+
+      <h2>💬 MENSAJE DE NOTIFICACIÓN</h2>
+      <div class="sub">Se envía por WhatsApp/email cuando uses "📱 AVISAR"</div>
+
+      <div class="form-row">
+        <label>Texto del mensaje</label>
+        <textarea id="cfg-mensaje-recogida" rows="11" style="width:100%; padding:12px 14px; border:2px solid var(--border); border-radius:8px; font-family:'Space Mono',monospace; font-size:12px; background:#FAFAF7; color:var(--ink); resize:vertical; line-height:1.5;" placeholder="Escribe tu mensaje aquí..."></textarea>
+      </div>
+
+      <div style="background:#FFF4DC; padding:12px 14px; border-radius:8px; border-left:3px solid var(--tp-orange); font-size:11px; line-height:1.7; margin-bottom:14px;">
+        <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1.5px; color:var(--tp-dark-orange); font-weight:700; margin-bottom:6px;">🔤 VARIABLES DISPONIBLES (CLIC PARA INSERTAR):</div>
+        <div style="display:flex; flex-wrap:wrap; gap:6px;">
+          <button type="button" class="var-chip" onclick="insertarVariable('{nombre}')">{nombre}</button>
+          <button type="button" class="var-chip" onclick="insertarVariable('{nombreCompleto}')">{nombreCompleto}</button>
+          <button type="button" class="var-chip" onclick="insertarVariable('{id}')">{id}</button>
+          <button type="button" class="var-chip" onclick="insertarVariable('{tier}')">{tier}</button>
+          <button type="button" class="var-chip" onclick="insertarVariable('{sede}')">{sede}</button>
+          <button type="button" class="var-chip" onclick="insertarVariable('{direccion}')">{direccion}</button>
+          <button type="button" class="var-chip" onclick="insertarVariable('{horario}')">{horario}</button>
+          <button type="button" class="var-chip" onclick="insertarVariable('{maps}')">{maps}</button>
+        </div>
+        <div style="margin-top:8px; font-family:'Space Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:0.3px;">💡 En WhatsApp: rodea texto con *asteriscos* para <strong>negrita</strong>, _guiones_ para <em>cursiva</em></div>
+      </div>
+
+      <div class="form-actions">
+        <button class="btn btn-ghost" onclick="previsualizarMensaje()" style="flex:1;">👁 Vista previa</button>
+        <button class="btn btn-ghost" onclick="restaurarMensajeDefault()" style="flex:1;">↺ Restaurar default</button>
+      </div>
+
+      <div class="form-actions"><button class="btn btn-primary" onclick="guardarConfig()">Guardar ajustes</button></div>
 
       <hr style="margin:20px 0; border:none; border-top:1px solid var(--border);">
 
@@ -479,6 +537,23 @@ tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, trans
       <button class="btn btn-secondary" onclick="exportarPDF('todos-lamina')">📚 TODOS · Lámina A4</button>
     </div>
     <button class="btn btn-ghost modal-close" onclick="closeExportModal()">Cancelar</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="notify-modal">
+  <div class="modal" style="max-width:520px;">
+    <h3>📱 AVISAR AL CLIENTE</h3>
+    <p id="notify-target" style="color:var(--tp-dark-orange); font-weight:700; font-family:'Archivo',sans-serif; font-size:13px; letter-spacing:0.3px;"></p>
+
+    <div style="background:#FAFAF7; border:2px solid var(--border); border-radius:10px; padding:14px; margin-bottom:16px; font-family:'Space Mono',monospace; font-size:11px; white-space:pre-wrap; line-height:1.5; color:var(--ink); max-height:260px; overflow-y:auto;" id="notify-msg-preview"></div>
+
+    <div style="display:grid; gap:8px;">
+      <button class="btn" id="notify-btn-whatsapp" style="background:#25D366; color:#fff; display:none; box-shadow:0 2px 8px rgba(37,211,102,0.35);">💬 ENVIAR POR WHATSAPP</button>
+      <button class="btn btn-secondary" id="notify-btn-email" style="display:none;">📧 ENVIAR POR EMAIL</button>
+      <button class="btn btn-ghost" id="notify-btn-copy">📋 COPIAR MENSAJE</button>
+    </div>
+
+    <button class="btn btn-ghost modal-close" onclick="closeNotifyModal()">Cerrar</button>
   </div>
 </div>
 
