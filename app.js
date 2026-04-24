@@ -297,11 +297,14 @@ async function loadData() {
 
 function updateStats() {
   document.getElementById('stat-total').textContent = clientes.length;
-  const pending = clientes.filter(c => !c.carnet_entregado).length;
+  // "Pendientes" = habilitados pero no entregados (listos para recoger)
+  const pending = clientes.filter(c => c.carnet_habilitado && !c.carnet_entregado).length;
   document.getElementById('stat-pending').textContent = pending;
   document.getElementById('count-all').textContent = clientes.length;
   document.getElementById('count-pending').textContent = pending;
-  document.getElementById('count-delivered').textContent = clientes.length - pending;
+  document.getElementById('count-delivered').textContent = clientes.filter(c => c.carnet_entregado).length;
+  const acumEl = document.getElementById('count-acumulando');
+  if (acumEl) acumEl.textContent = clientes.filter(c => !c.carnet_habilitado && !c.carnet_entregado).length;
 }
 
 // ==============================================================
@@ -414,6 +417,8 @@ window.toggleEntrega = async function(id, estado) {
   showSync(true);
   try {
     const update = { carnet_entregado: estado, fecha_entrega: estado ? new Date().toISOString() : null };
+    // Si marca como entregado, también debe estar habilitado
+    if (estado) update.carnet_habilitado = true;
     const { error } = await window.supabase.from('clientes').update(update).eq('id', id);
     if (error) throw error;
     await loadData();
@@ -425,10 +430,47 @@ window.toggleEntrega = async function(id, estado) {
   }
 };
 
+// Habilitar / deshabilitar para recoger el carnet físico
+window.toggleHabilitado = async function(id, estado) {
+  const c = clientes.find(x => x.id === id);
+  if (!c) return;
+
+  if (estado) {
+    if (!confirm(`¿Habilitar a ${c.nombre} para recoger su carnet físico?\n\nRecibirá una notificación en su app diciéndole que ya puede pasar a recogerlo en la sede.`)) return;
+  } else {
+    if (!confirm(`¿Quitar la habilitación de ${c.nombre}?\n\nSu app volverá a mostrar "acumulando visitas".`)) return;
+  }
+
+  showSync(true);
+  try {
+    const update = { carnet_habilitado: estado };
+    // Si deshabilita, también debe dejar de estar entregado
+    if (!estado) update.carnet_entregado = false;
+    const { error } = await window.supabase.from('clientes').update(update).eq('id', id);
+    if (error) throw error;
+    await loadData();
+    if (estado) {
+      toast('✓ Cliente habilitado · ahora puedes avisarle');
+      // Abrir modal de notificación automáticamente
+      setTimeout(() => notificarRecogida(id), 400);
+    } else {
+      toast('✓ Habilitación quitada');
+    }
+  } catch (err) {
+    toast('⚠️ ' + err.message, 'error');
+  } finally {
+    showSync(false);
+  }
+};
+
 // Notificar cliente que ya puede recoger el carnet
 window.notificarRecogida = function(id) {
   const c = clientes.find(x => x.id === id);
   if (!c) return;
+  if (!c.carnet_habilitado) {
+    toast('⚠️ Primero debes habilitar al cliente con 🏆 HABILITAR', 'error');
+    return;
+  }
   abrirModalNotificacion(c);
 };
 
@@ -517,7 +559,8 @@ function renderTabla() {
   const empty = document.getElementById('empty-state');
 
   let filtrados = clientes;
-  if (currentFilter === 'pending') filtrados = filtrados.filter(c => !c.carnet_entregado);
+  if (currentFilter === 'acumulando') filtrados = filtrados.filter(c => !c.carnet_habilitado && !c.carnet_entregado);
+  if (currentFilter === 'pending') filtrados = filtrados.filter(c => c.carnet_habilitado && !c.carnet_entregado);
   if (currentFilter === 'delivered') filtrados = filtrados.filter(c => c.carnet_entregado);
   if (q) filtrados = filtrados.filter(c => c.nombre.toLowerCase().includes(q) || c.id.toLowerCase().includes(q));
 
@@ -553,20 +596,46 @@ function renderTabla() {
       <td><span class="tier-badge tier-${c.tier}">${tierLabels[c.tier]}</span></td>
       <td>${visitasCell}</td>
       <td style="font-family:'Space Mono',monospace; font-size:11px;">${c.tel || '—'}</td>
-      <td>${c.carnet_entregado ? '<span class="entrega-status entrega-done"><span class="entrega-dot"></span>ENTREGADO</span>' : '<span class="entrega-status entrega-pending"><span class="entrega-dot"></span>PENDIENTE</span>'}</td>
+      <td>${renderEstadoCarnet(c)}</td>
       <td><div class="row-actions">
         <button class="visit-btn" onclick="abrirConfirmacionVisita('${c.id}')" title="Registrar visita">➕ VISITA</button>
         <button onclick="seleccionarCliente('${c.id}')">👁 VER</button>
         <button onclick="editarCliente('${c.id}')">✎</button>
-        ${c.carnet_entregado
-          ? `<button class="undeliver-btn" onclick="toggleEntrega('${c.id}', false)" title="Marcar pendiente">↩</button>`
-          : `<button class="notify-btn" onclick="notificarRecogida('${c.id}')" title="Avisar al cliente">📱 AVISAR</button>
-             <button class="deliver-btn" onclick="toggleEntrega('${c.id}', true)" title="Marcar entregado">✓ ENTREGAR</button>`}
+        ${renderBotonesCarnet(c)}
         <button onclick="eliminarCliente('${c.id}')" style="color:#B5351A;">🗑</button>
       </div></td>
     `;
     body.appendChild(tr);
   });
+}
+
+// Renderiza el estado visual del carnet según su situación
+function renderEstadoCarnet(c) {
+  if (c.carnet_entregado) {
+    return '<span class="entrega-status entrega-done"><span class="entrega-dot"></span>ENTREGADO</span>';
+  }
+  if (c.carnet_habilitado) {
+    return '<span class="entrega-status entrega-habilitado"><span class="entrega-dot"></span>LISTO RECOGER</span>';
+  }
+  return '<span class="entrega-status entrega-acumulando"><span class="entrega-dot"></span>ACUMULANDO</span>';
+}
+
+// Renderiza los botones de acción según el estado
+function renderBotonesCarnet(c) {
+  // Estado 3: Ya entregado → solo revertir
+  if (c.carnet_entregado) {
+    return `<button class="undeliver-btn" onclick="toggleEntrega('${c.id}', false)" title="Marcar pendiente">↩</button>`;
+  }
+  // Estado 2: Habilitado pero no entregado → avisar + entregar + revertir habilitación
+  if (c.carnet_habilitado) {
+    return `
+      <button class="notify-btn" onclick="notificarRecogida('${c.id}')" title="Avisar al cliente">📱 AVISAR</button>
+      <button class="deliver-btn" onclick="toggleEntrega('${c.id}', true)" title="Marcar entregado">✓ ENTREGAR</button>
+      <button onclick="toggleHabilitado('${c.id}', false)" title="Quitar habilitación" style="background:#fff; color:#7A7366;">↩ NO LISTO</button>
+    `;
+  }
+  // Estado 1: Acumulando → habilitar
+  return `<button class="habilitar-btn" onclick="toggleHabilitado('${c.id}', true)" title="Habilitar para recoger carnet">🏆 HABILITAR</button>`;
 }
 
 // ==============================================================

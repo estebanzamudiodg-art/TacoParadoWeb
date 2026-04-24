@@ -497,9 +497,14 @@ function mostrarCarnet() {
     </div>
   `;
 
-  // Estado de carnet entregado
+  // Estado del carnet: 3 casos
+  // 1. carnet_entregado → ya lo tiene en físico
+  // 2. carnet_habilitado && !entregado → admin lo habilitó, puede ir a recogerlo
+  // 3. ninguno de los dos → sigue acumulando visitas
   let statusHTML;
+
   if (c.carnet_entregado) {
+    // ESTADO 3: Entregado
     statusHTML = `
       <div class="status-card">
         <div class="status-icon delivered">✓</div>
@@ -509,7 +514,8 @@ function mostrarCarnet() {
         </div>
       </div>
     `;
-  } else {
+  } else if (c.carnet_habilitado) {
+    // ESTADO 2: Habilitado - listo para recoger
     const mapsBtn = sedeInfo.mapsUrl ? `
       <a href="${sedeInfo.mapsUrl}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:var(--tp-orange); color:#fff; padding:10px 16px; border-radius:10px; font-family:'Archivo',sans-serif; font-weight:700; font-size:13px; text-decoration:none; letter-spacing:0.3px; box-shadow:0 4px 14px rgba(255,144,0,0.4); margin-top:10px;">
         📍 Cómo llegar
@@ -535,15 +541,20 @@ function mostrarCarnet() {
         </div>
       </div>
       <style>
-        @keyframes pulse-ready {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(255, 144, 0, 0.4); }
-          50% { box-shadow: 0 0 0 8px rgba(255, 144, 0, 0); }
-        }
-        @keyframes bounce {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
-        }
+        @keyframes pulse-ready { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 144, 0, 0.4); } 50% { box-shadow: 0 0 0 8px rgba(255, 144, 0, 0); } }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
       </style>
+    `;
+  } else {
+    // ESTADO 1: Acumulando visitas - muestra mensaje motivacional
+    statusHTML = `
+      <div style="background: linear-gradient(135deg, rgba(26,63,145,0.2) 0%, rgba(82,113,255,0.12) 100%); border: 1.5px solid rgba(82,113,255,0.3); border-radius: 14px; padding: 16px 18px; margin: 14px 0; display: flex; align-items: center; gap: 14px;">
+        <div style="width:42px; height:42px; background:var(--tp-blue); border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0;">💳</div>
+        <div style="flex:1;">
+          <div style="font-family:'Archivo Black',sans-serif; font-size:14px; color:#fff; letter-spacing:0.3px; line-height:1.3;">Carnet digital activo</div>
+          <div style="font-family:'Space Mono',monospace; font-size:11px; color:rgba(255,255,255,0.75); margin-top:3px; letter-spacing:0.3px; line-height:1.5;">Muestra tu QR al personal para acumular visitas y subir de nivel</div>
+        </div>
+      </div>
     `;
   }
 

@@ -117,7 +117,10 @@ tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, trans
 .entrega-status { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-family: 'Space Mono', monospace; font-weight: 700; letter-spacing: 0.5px; padding: 3px 8px; border-radius: 10px; }
 .entrega-pending { background: #FFEDD5; color: #C2410C; }
 .entrega-done { background: #DCFCE7; color: #166534; }
+.entrega-habilitado { background: #FFEDD5; color: #C2410C; animation: pulse-orange 2s ease-in-out infinite; }
+.entrega-acumulando { background: #DBEAFE; color: #1E40AF; }
 .entrega-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+@keyframes pulse-orange { 0%, 100% { box-shadow: 0 0 0 0 rgba(194, 65, 12, 0.3); } 50% { box-shadow: 0 0 0 4px rgba(194, 65, 12, 0); } }
 
 .row-actions { display: flex; gap: 5px; flex-wrap: wrap; }
 .row-actions button { padding: 4px 8px; font-size: 10px; border-radius: 5px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-family: 'Space Mono', monospace; font-weight: 700; letter-spacing: 0.5px; color: var(--tp-deep-blue); }
@@ -127,6 +130,8 @@ tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, trans
 .row-actions button.undeliver-btn { background: #fff; color: #7A7366; }
 .row-actions button.notify-btn { background: #25D366; color: #fff; border-color: #25D366; }
 .row-actions button.notify-btn:hover { background: #128C7E; border-color: #128C7E; }
+.row-actions button.habilitar-btn { background: linear-gradient(135deg, #FFB347 0%, #FF9000 100%); color: #fff; border-color: #FF9000; font-weight: 800; }
+.row-actions button.habilitar-btn:hover { background: #EC7020; border-color: #EC7020; }
 
 .empty-state { padding: 50px 20px; text-align: center; color: var(--muted); }
 .empty-state .ico { font-size: 44px; margin-bottom: 10px; }
@@ -399,7 +404,7 @@ tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, trans
     <div class="header-right">
       <div class="stats">
         <div class="stat"><div class="num" id="stat-total">0</div><div class="lbl">MIEMBROS</div></div>
-        <div class="stat pending"><div class="num" id="stat-pending">0</div><div class="lbl">PENDIENTES</div></div>
+        <div class="stat pending"><div class="num" id="stat-pending">0</div><div class="lbl">POR RECOGER</div></div>
       </div>
       <div class="user-chip"><span class="user-email" id="user-email">...</span><button onclick="logout()">SALIR</button></div>
     </div>
@@ -459,7 +464,8 @@ tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, trans
             <h2>CLIENTES AUTOREGISTRADOS</h2>
             <div class="filter-tabs">
               <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">TODOS <span class="count" id="count-all">0</span></button>
-              <button class="filter-tab" data-filter="pending" onclick="setFilter('pending')">⏳ PENDIENTES <span class="count" id="count-pending">0</span></button>
+              <button class="filter-tab" data-filter="acumulando" onclick="setFilter('acumulando')">📈 ACUMULANDO <span class="count" id="count-acumulando">0</span></button>
+              <button class="filter-tab" data-filter="pending" onclick="setFilter('pending')">🏆 LISTO RECOGER <span class="count" id="count-pending">0</span></button>
               <button class="filter-tab" data-filter="delivered" onclick="setFilter('delivered')">✓ ENTREGADOS <span class="count" id="count-delivered">0</span></button>
             </div>
             <div class="search-box"><input type="text" id="search" placeholder="Buscar…"></div>
