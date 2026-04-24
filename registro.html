@@ -197,7 +197,20 @@ function escapeHtml(s) {
   return (s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 }
 
+let brandLogoUrl = null;
+
+async function cargarLogo() {
+  try {
+    const { data } = await window.supabase.from('config').select('value').eq('key', 'logoUrl').maybeSingle();
+    if (data?.value) brandLogoUrl = data.value;
+  } catch (e) { /* silent */ }
+}
+
 function tacoSVG() {
+  // Si hay logo configurado, mostrar el logo en lugar del taco genérico
+  if (brandLogoUrl) {
+    return `<img src="${brandLogoUrl}" alt="Logo Taco Parado" class="mascot-welcome" style="width:130px; height:130px; object-fit:contain; margin: 0 auto 14px; display:block;">`;
+  }
   return `<svg class="mascot-welcome" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
     <circle cx='100' cy='100' r='85' fill='#5271FF' stroke='#1A3F91' stroke-width='4'/>
     <ellipse cx='100' cy='115' rx='48' ry='38' fill='#FFD24D' stroke='#1A3F91' stroke-width='3'/>
@@ -331,6 +344,7 @@ window.logout = async function() {
 async function checkSession() {
   renderLoading();
   await waitForSupabase();
+  await cargarLogo();
   const { data: { session } } = await window.supabase.auth.getSession();
 
   if (!session) { renderWelcome(); return; }
