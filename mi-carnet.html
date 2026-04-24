@@ -272,6 +272,7 @@
 let currentUser = null;
 let cliente = null;
 let brandLogoUrl = null;
+let umbralesConfig = { plata: 5, oro: 10, master: 20 };
 let sedeInfo = {
   nombre: 'Taco Parado',
   direccion: '',
@@ -289,6 +290,29 @@ async function cargarLogo() {
     const { data } = await window.supabase.from('config').select('value').eq('key', 'logoUrl').maybeSingle();
     if (data?.value) brandLogoUrl = data.value;
   } catch (e) { /* silent */ }
+}
+
+async function cargarUmbrales() {
+  try {
+    const { data } = await window.supabase.from('config').select('key, value').in('key', ['tierPlataMin', 'tierOroMin', 'tierMasterMin']);
+    (data || []).forEach(r => {
+      if (r.key === 'tierPlataMin') umbralesConfig.plata = parseInt(r.value) || 5;
+      if (r.key === 'tierOroMin') umbralesConfig.oro = parseInt(r.value) || 10;
+      if (r.key === 'tierMasterMin') umbralesConfig.master = parseInt(r.value) || 20;
+    });
+  } catch (e) { /* silent */ }
+}
+
+function progresoTier(visitas) {
+  if (visitas < umbralesConfig.plata) {
+    return { siguiente: 'plata', desde: 0, hasta: umbralesConfig.plata, faltan: umbralesConfig.plata - visitas, progreso: Math.round((visitas / umbralesConfig.plata) * 100) };
+  } else if (visitas < umbralesConfig.oro) {
+    return { siguiente: 'oro', desde: umbralesConfig.plata, hasta: umbralesConfig.oro, faltan: umbralesConfig.oro - visitas, progreso: Math.round(((visitas - umbralesConfig.plata) / (umbralesConfig.oro - umbralesConfig.plata)) * 100) };
+  } else if (visitas < umbralesConfig.master) {
+    return { siguiente: 'master', desde: umbralesConfig.oro, hasta: umbralesConfig.master, faltan: umbralesConfig.master - visitas, progreso: Math.round(((visitas - umbralesConfig.oro) / (umbralesConfig.master - umbralesConfig.oro)) * 100) };
+  } else {
+    return { siguiente: null, desde: umbralesConfig.master, hasta: umbralesConfig.master, faltan: 0, progreso: 100 };
+  }
 }
 
 async function cargarSede() {
@@ -389,6 +413,7 @@ async function cargarCarnet() {
   await waitForSupabase();
   await cargarLogo();
   await cargarSede();
+  await cargarUmbrales();
   const { data: { session } } = await window.supabase.auth.getSession();
 
   if (!session) {
@@ -430,6 +455,47 @@ function mostrarCarnet() {
   // Banner bienvenida si viene de registro
   const fromRegistro = document.referrer.includes('registro.html');
   const showWelcome = fromRegistro || recienRegistrado;
+
+  // Bloque de progreso de visitas
+  const visitasActuales = c.visitas_totales || 0;
+  const prog = progresoTier(visitasActuales);
+  const tierNombreSiguiente = { plata: '★★ PLATA', oro: '★★★ ORO', master: '♛ MASTER' }[prog.siguiente] || '';
+
+  const visitasHTML = `
+    <div style="background: linear-gradient(135deg, rgba(82,113,255,0.2) 0%, rgba(26,63,145,0.3) 100%); border: 2px solid rgba(82,113,255,0.4); border-radius: 16px; padding: 20px; margin-top: 18px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:14px;">
+        <div>
+          <div style="font-family:'Space Mono',monospace; font-size:10px; color:var(--tp-orange); letter-spacing:1.8px; font-weight:700;">TUS VISITAS</div>
+          <div style="font-family:'Bungee',sans-serif; font-size:38px; color:#fff; line-height:1; margin-top:4px;">${visitasActuales}</div>
+        </div>
+        ${prog.siguiente ? `
+          <div style="text-align:right;">
+            <div style="font-family:'Space Mono',monospace; font-size:9px; color:rgba(255,255,255,0.7); letter-spacing:1.5px;">PRÓXIMO NIVEL</div>
+            <div style="font-family:'Archivo Black',sans-serif; font-size:14px; color:var(--tp-orange); margin-top:2px;">${tierNombreSiguiente}</div>
+            <div style="font-family:'Space Mono',monospace; font-size:10px; color:#fff; margin-top:2px; letter-spacing:0.5px;">
+              Faltan <strong style="color:var(--tp-orange); font-size:14px;">${prog.faltan}</strong> visita${prog.faltan === 1 ? '' : 's'}
+            </div>
+          </div>
+        ` : `
+          <div style="text-align:right;">
+            <div style="font-family:'Bungee',sans-serif; font-size:16px; color:var(--tp-orange); letter-spacing:1px;">👑 MÁXIMO</div>
+            <div style="font-family:'Space Mono',monospace; font-size:10px; color:rgba(255,255,255,0.8); margin-top:3px; letter-spacing:0.5px;">
+              ¡Eres VIP Taco Parado!
+            </div>
+          </div>
+        `}
+      </div>
+
+      <div style="height:10px; background:rgba(255,255,255,0.15); border-radius:5px; overflow:hidden;">
+        <div style="width:${prog.progreso}%; height:100%; background:linear-gradient(90deg, var(--tp-orange), #FFB84D); border-radius:5px; transition:width 0.6s; box-shadow:0 0 8px rgba(255,144,0,0.5);"></div>
+      </div>
+      <div style="display:flex; justify-content:space-between; margin-top:6px; font-family:'Space Mono',monospace; font-size:9px; color:rgba(255,255,255,0.6); letter-spacing:1px;">
+        <span>${prog.desde}</span>
+        <span>${prog.progreso}%</span>
+        <span>${prog.hasta}</span>
+      </div>
+    </div>
+  `;
 
   // Estado de carnet entregado
   let statusHTML;
@@ -514,6 +580,8 @@ function mostrarCarnet() {
       <p class="qr-hint">Muéstralo en el local o compártelo con amigos.<br>Válido en todas las sedes.</p>
       <button class="share-btn" onclick="compartir()" style="margin-top: 14px;">📤 COMPARTIR MI CARNET</button>
     </div>
+
+    ${visitasHTML}
 
     <div class="info-section">
       <h3>🎁 TUS BENEFICIOS</h3>

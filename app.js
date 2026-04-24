@@ -55,8 +55,11 @@ let config = {
   logoUrl: null,
   sedeNombre: 'Sede 6ta Etapa La Esperanza',
   sedeDireccion: 'Cra. 33c #7-15',
-  sedeHorario: 'Lun-Dom · 5:00 PM - 10:00 PM',
+  sedeHorario: 'Lun-Dom · 4:00 PM - 10:00 PM',
   sedeMapsUrl: 'https://maps.google.com/?q=Cra+33c+7-15+Villavicencio',
+  tierPlataMin: 5,
+  tierOroMin: 10,
+  tierMasterMin: 20,
   mensajeRecogida: `¡Hola {nombre}! 🌮
 
 Somos de *TACO PARADO* — tu carnet de fidelización ya está listo. 🎉
@@ -199,6 +202,7 @@ async function showApp() {
   document.getElementById('user-email').textContent = currentUser.email;
   await loadData();
   setupRealtime();
+  procesarQueryVisita();
 }
 
 window.logout = async function() {
@@ -248,6 +252,9 @@ async function loadData() {
         if (r.key === 'sedeHorario') config.sedeHorario = r.value;
         if (r.key === 'sedeMapsUrl') config.sedeMapsUrl = r.value;
         if (r.key === 'mensajeRecogida' && r.value) config.mensajeRecogida = r.value;
+        if (r.key === 'tierPlataMin') config.tierPlataMin = parseInt(r.value) || 5;
+        if (r.key === 'tierOroMin') config.tierOroMin = parseInt(r.value) || 10;
+        if (r.key === 'tierMasterMin') config.tierMasterMin = parseInt(r.value) || 20;
       });
     }
     if (!config.qrBase) config.qrBase = PUBLIC_BASE;
@@ -268,6 +275,12 @@ async function loadData() {
     if (sedeMapsEl) sedeMapsEl.value = config.sedeMapsUrl || '';
     const msgEl = document.getElementById('cfg-mensaje-recogida');
     if (msgEl) msgEl.value = config.mensajeRecogida || '';
+    const tPlata = document.getElementById('cfg-tier-plata');
+    const tOro = document.getElementById('cfg-tier-oro');
+    const tMaster = document.getElementById('cfg-tier-master');
+    if (tPlata) tPlata.value = config.tierPlataMin;
+    if (tOro) tOro.value = config.tierOroMin;
+    if (tMaster) tMaster.value = config.tierMasterMin;
     actualizarLogoUI();
 
     actualizarPlantillaUI();
@@ -520,16 +533,29 @@ function renderTabla() {
 
     const inicial = c.nombre.charAt(0).toUpperCase();
     const tierLabels = { bronce: '★ Bronce', plata: '★★ Plata', oro: '★★★ Oro', master: '♛ Master' };
+    const visitas = c.visitas_totales || 0;
+    const prog = progresoSiguienteTier(visitas);
+
+    const visitasCell = `
+      <div style="display:flex; flex-direction:column; gap:3px; min-width:90px;">
+        <div style="display:flex; align-items:center; gap:5px;">
+          <span style="font-family:'Archivo Black',sans-serif; font-size:14px; color:var(--tp-orange);">${visitas}</span>
+          <span style="font-family:'Space Mono',monospace; font-size:9px; color:var(--muted); letter-spacing:0.5px;">${prog.siguiente ? `/ ${prog.hasta}` : '👑'}</span>
+        </div>
+        ${prog.siguiente ? `<div style="height:4px; background:var(--border); border-radius:2px; overflow:hidden;"><div style="width:${prog.progreso}%; height:100%; background:var(--tp-orange);"></div></div>` : ''}
+      </div>
+    `;
 
     tr.innerHTML = `
       <td><div class="mini-avatar">${c.imagen ? `<img src="${c.imagen}">` : `<span class="initial">${inicial}</span>`}</div></td>
       <td><span class="id-tag">${c.id}</span></td>
       <td><strong>${escapeHtml(c.nombre)}</strong>${esHoy && !c.carnet_entregado ? ' <span style="background:#22c55e; color:#fff; padding:1px 5px; border-radius:3px; font-size:9px; font-family: Space Mono; letter-spacing: 0.5px;">NUEVO</span>' : ''}</td>
       <td><span class="tier-badge tier-${c.tier}">${tierLabels[c.tier]}</span></td>
+      <td>${visitasCell}</td>
       <td style="font-family:'Space Mono',monospace; font-size:11px;">${c.tel || '—'}</td>
-      <td style="font-family:'Space Mono',monospace; font-size:10px; color:var(--muted);">${c.alta}</td>
       <td>${c.carnet_entregado ? '<span class="entrega-status entrega-done"><span class="entrega-dot"></span>ENTREGADO</span>' : '<span class="entrega-status entrega-pending"><span class="entrega-dot"></span>PENDIENTE</span>'}</td>
       <td><div class="row-actions">
+        <button class="visit-btn" onclick="abrirConfirmacionVisita('${c.id}')" title="Registrar visita">➕ VISITA</button>
         <button onclick="seleccionarCliente('${c.id}')">👁 VER</button>
         <button onclick="editarCliente('${c.id}')">✎</button>
         ${c.carnet_entregado
@@ -1286,6 +1312,17 @@ window.guardarConfig = async function() {
   config.sedeMapsUrl = document.getElementById('cfg-sede-maps').value.trim() || '';
   const msgEl = document.getElementById('cfg-mensaje-recogida');
   if (msgEl) config.mensajeRecogida = msgEl.value;
+  const tPlata = parseInt(document.getElementById('cfg-tier-plata')?.value) || 5;
+  const tOro = parseInt(document.getElementById('cfg-tier-oro')?.value) || 10;
+  const tMaster = parseInt(document.getElementById('cfg-tier-master')?.value) || 20;
+  // Validación
+  if (tPlata >= tOro || tOro >= tMaster) {
+    toast('⚠️ Umbrales inválidos: Plata < Oro < Master', 'error');
+    return;
+  }
+  config.tierPlataMin = tPlata;
+  config.tierOroMin = tOro;
+  config.tierMasterMin = tMaster;
 
   showSync(true);
   try {
@@ -1296,7 +1333,10 @@ window.guardarConfig = async function() {
       { key: 'sedeDireccion', value: config.sedeDireccion },
       { key: 'sedeHorario', value: config.sedeHorario },
       { key: 'sedeMapsUrl', value: config.sedeMapsUrl },
-      { key: 'mensajeRecogida', value: config.mensajeRecogida }
+      { key: 'mensajeRecogida', value: config.mensajeRecogida },
+      { key: 'tierPlataMin', value: String(tPlata) },
+      { key: 'tierOroMin', value: String(tOro) },
+      { key: 'tierMasterMin', value: String(tMaster) }
     ];
     for (const row of rows) {
       const { error } = await window.supabase.from('config').upsert(row, { onConflict: 'key' });
@@ -1372,8 +1412,369 @@ window.restaurarMensajeDefault = function() {
 };
 
 // ==============================================================
+// SISTEMA DE VISITAS
+// ==============================================================
+function tierFromVisitas(n) {
+  if (n >= config.tierMasterMin) return 'master';
+  if (n >= config.tierOroMin) return 'oro';
+  if (n >= config.tierPlataMin) return 'plata';
+  return 'bronce';
+}
+
+function progresoSiguienteTier(visitas) {
+  let siguiente, faltan, desde, hasta;
+  if (visitas < config.tierPlataMin) {
+    siguiente = 'plata';
+    desde = 0;
+    hasta = config.tierPlataMin;
+  } else if (visitas < config.tierOroMin) {
+    siguiente = 'oro';
+    desde = config.tierPlataMin;
+    hasta = config.tierOroMin;
+  } else if (visitas < config.tierMasterMin) {
+    siguiente = 'master';
+    desde = config.tierOroMin;
+    hasta = config.tierMasterMin;
+  } else {
+    siguiente = null;
+    desde = config.tierMasterMin;
+    hasta = config.tierMasterMin;
+  }
+  faltan = hasta - visitas;
+  const progreso = hasta === desde ? 100 : Math.round(((visitas - desde) / (hasta - desde)) * 100);
+  return { siguiente, faltan, progreso, desde, hasta };
+}
+
+// Abrir modal de confirmación de visita (cuando se escanea QR desde el panel)
+window.abrirConfirmacionVisita = async function(clienteId) {
+  const c = clientes.find(x => x.id === clienteId);
+  if (!c) {
+    toast('⚠️ Cliente no encontrado: ' + clienteId, 'error');
+    return;
+  }
+
+  // Verificar si ya visitó hoy
+  const hoy = new Date().toISOString().slice(0, 10);
+  const { data: visitaHoy } = await window.supabase
+    .from('visitas')
+    .select('id, fecha_hora')
+    .eq('cliente_id', clienteId)
+    .eq('fecha', hoy)
+    .maybeSingle();
+
+  const tierActual = c.tier;
+  const visitasActuales = c.visitas_totales || 0;
+  const prog = progresoSiguienteTier(visitasActuales);
+  const yaVino = !!visitaHoy;
+
+  const modal = document.getElementById('visit-modal');
+  const content = document.getElementById('visit-modal-content');
+  const inicial = c.nombre.charAt(0).toUpperCase();
+
+  content.innerHTML = `
+    <div style="display:flex; align-items:center; gap:14px; margin-bottom:18px;">
+      <div class="mini-avatar" style="width:54px; height:54px;">
+        ${c.imagen ? `<img src="${c.imagen}">` : `<span class="initial" style="font-size:22px;">${inicial}</span>`}
+      </div>
+      <div style="flex:1;">
+        <div style="font-family:'Archivo Black',sans-serif; font-size:17px; color:var(--ink); line-height:1.1;">${escapeHtml(c.nombre)}</div>
+        <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+          <span class="id-tag" style="font-size:11px;">${c.id}</span>
+          <span class="tier-badge tier-${tierActual}" style="font-size:10px;">${tierName(tierActual)}</span>
+        </div>
+      </div>
+    </div>
+
+    ${yaVino ? `
+      <div style="background:#FEF3C7; border-left:3px solid #D97706; padding:14px; border-radius:8px; margin-bottom:16px;">
+        <div style="font-family:'Archivo Black',sans-serif; font-size:13px; color:#92400E; margin-bottom:4px;">⚠️ YA REGISTRÓ VISITA HOY</div>
+        <div style="font-family:'Space Mono',monospace; font-size:11px; color:#78350F; letter-spacing:0.3px; line-height:1.4;">
+          Se registró a las ${new Date(visitaHoy.fecha_hora).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}.<br>
+          Solo cuenta una visita por día.
+        </div>
+      </div>
+    ` : `
+      <div style="background:#DCFCE7; border-left:3px solid #16a34a; padding:14px; border-radius:8px; margin-bottom:16px;">
+        <div style="font-family:'Archivo Black',sans-serif; font-size:13px; color:#166534; margin-bottom:4px;">✓ LISTO PARA REGISTRAR</div>
+        <div style="font-family:'Space Mono',monospace; font-size:11px; color:#14532d; letter-spacing:0.3px;">
+          Sumará visita #${visitasActuales + 1}${prog.siguiente ? ` (faltan ${prog.faltan - 1} para ${tierName(prog.siguiente).replace('★','').replace('♛','').trim()})` : ''}
+        </div>
+      </div>
+    `}
+
+    <div style="background:#FAFAF7; padding:14px; border-radius:10px; margin-bottom:16px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+        <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1.5px; color:var(--tp-deep-blue); font-weight:700;">VISITAS TOTALES</span>
+        <span style="font-family:'Archivo Black',sans-serif; font-size:18px; color:var(--tp-orange); line-height:1;">${visitasActuales}</span>
+      </div>
+      ${prog.siguiente ? `
+        <div style="height:8px; background:#E5DFD2; border-radius:4px; overflow:hidden;">
+          <div style="width:${prog.progreso}%; height:100%; background:linear-gradient(90deg, var(--tp-orange), var(--tp-dark-orange)); border-radius:4px; transition:width 0.4s;"></div>
+        </div>
+        <div style="font-family:'Space Mono',monospace; font-size:9px; color:var(--muted); margin-top:6px; text-align:right; letter-spacing:1px;">
+          ${prog.progreso}% HACIA ${tierName(prog.siguiente).toUpperCase()}
+        </div>
+      ` : `
+        <div style="font-family:'Archivo Black',sans-serif; font-size:12px; color:var(--tp-dark-orange); text-align:center; padding:6px;">👑 NIVEL MÁXIMO ALCANZADO</div>
+      `}
+    </div>
+
+    <div class="form-row">
+      <label>Nota (opcional)</label>
+      <input type="text" id="visit-nota" placeholder="Ej: compró 3 tacos al pastor" maxlength="100">
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:16px;">
+      <button class="btn btn-ghost" onclick="closeVisitModal()">Cancelar</button>
+      <button class="btn btn-primary" id="btn-confirm-visit" ${yaVino ? 'disabled' : ''} onclick="confirmarVisita('${c.id}')">
+        ${yaVino ? '⚠️ YA VISITÓ HOY' : '✓ REGISTRAR VISITA'}
+      </button>
+    </div>
+
+    <div style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+      <button class="btn btn-ghost" style="width:100%; font-size:11px;" onclick="verHistorialVisitas('${c.id}')">
+        📊 Ver historial de visitas
+      </button>
+    </div>
+  `;
+  modal.classList.add('show');
+};
+
+window.confirmarVisita = async function(clienteId) {
+  const btn = document.getElementById('btn-confirm-visit');
+  const nota = document.getElementById('visit-nota').value.trim();
+
+  btn.disabled = true;
+  btn.textContent = 'REGISTRANDO…';
+  showSync(true);
+
+  try {
+    const { error } = await window.supabase.from('visitas').insert({
+      cliente_id: clienteId,
+      registrado_por: currentUser.id,
+      nota: nota || null
+    });
+
+    if (error) {
+      // Si el error es por duplicado (ya visitó hoy)
+      if (error.code === '23505') {
+        toast('⚠️ Ya registró visita hoy', 'error');
+      } else {
+        throw error;
+      }
+      return;
+    }
+
+    closeVisitModal();
+    await loadData();
+
+    const cliente = clientes.find(x => x.id === clienteId);
+    if (cliente) {
+      const nuevasVisitas = cliente.visitas_totales || 0;
+      const prog = progresoSiguienteTier(nuevasVisitas);
+      toast(`✓ Visita #${nuevasVisitas} registrada · ${cliente.nombre.split(' ')[0]}${prog.siguiente ? ` · Faltan ${prog.faltan} para ${tierName(prog.siguiente).replace('★','').replace('♛','').trim()}` : ''}`);
+    } else {
+      toast('✓ Visita registrada');
+    }
+  } catch (err) {
+    console.error(err);
+    toast('⚠️ ' + err.message, 'error');
+    btn.disabled = false;
+    btn.textContent = '✓ REGISTRAR VISITA';
+  } finally {
+    showSync(false);
+  }
+};
+
+window.closeVisitModal = function() {
+  document.getElementById('visit-modal').classList.remove('show');
+};
+
+// Ver historial de visitas de un cliente
+window.verHistorialVisitas = async function(clienteId) {
+  const c = clientes.find(x => x.id === clienteId);
+  if (!c) return;
+
+  closeVisitModal();
+
+  showLoading('Cargando historial…');
+  try {
+    const { data: visitas } = await window.supabase
+      .from('visitas')
+      .select('*')
+      .eq('cliente_id', clienteId)
+      .order('fecha_hora', { ascending: false });
+
+    hideLoading();
+
+    const modal = document.getElementById('visit-modal');
+    const content = document.getElementById('visit-modal-content');
+
+    const hoy = new Date().toISOString().slice(0, 10);
+    const lista = (visitas || []).map(v => {
+      const esHoy = v.fecha === hoy;
+      const d = new Date(v.fecha_hora);
+      const fechaFmt = d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+      const horaFmt = d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+      return `
+        <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; background:#FAFAF7; border-radius:8px; border-left:3px solid ${esHoy ? 'var(--tp-orange)' : 'var(--border)'};">
+          <div style="flex:1;">
+            <div style="font-family:'Archivo',sans-serif; font-size:13px; font-weight:700; color:var(--ink);">
+              ${fechaFmt} ${esHoy ? '<span style="color:var(--tp-orange); font-size:10px; font-family:Space Mono; letter-spacing:1px;">· HOY</span>' : ''}
+            </div>
+            <div style="font-family:'Space Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:0.5px; margin-top:2px;">
+              ${horaFmt}${v.nota ? ` · ${escapeHtml(v.nota)}` : ''}
+            </div>
+          </div>
+          <button class="btn btn-ghost" style="font-size:10px; padding:4px 8px; color:#B5351A; border-color:#FCA5A5;" onclick="eliminarVisita('${v.id}', '${clienteId}')">🗑</button>
+        </div>
+      `;
+    }).join('');
+
+    content.innerHTML = `
+      <div style="display:flex; align-items:center; gap:14px; margin-bottom:18px;">
+        <div style="flex:1;">
+          <div style="font-family:'Bungee',sans-serif; font-size:15px; color:var(--tp-deep-blue); letter-spacing:1px;">📊 HISTORIAL</div>
+          <div style="font-family:'Archivo',sans-serif; font-size:13px; color:var(--ink); margin-top:2px;">${escapeHtml(c.nombre)} · ${c.id}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-family:'Archivo Black',sans-serif; font-size:26px; color:var(--tp-orange); line-height:1;">${visitas?.length || 0}</div>
+          <div style="font-family:'Space Mono',monospace; font-size:9px; color:var(--muted); letter-spacing:1.5px;">VISITAS</div>
+        </div>
+      </div>
+
+      <div style="display:grid; gap:6px; max-height:360px; overflow-y:auto;">
+        ${lista || '<div style="text-align:center; padding:30px; color:var(--muted); font-family:Space Mono; font-size:11px; letter-spacing:1px;">AÚN NO HAY VISITAS REGISTRADAS</div>'}
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:16px;">
+        <button class="btn btn-ghost" onclick="closeVisitModal()">Cerrar</button>
+        <button class="btn btn-primary" onclick="abrirConfirmacionVisita('${c.id}')">➕ Registrar visita</button>
+      </div>
+    `;
+
+    modal.classList.add('show');
+  } catch (err) {
+    hideLoading();
+    toast('⚠️ ' + err.message, 'error');
+  }
+};
+
+window.eliminarVisita = async function(visitaId, clienteId) {
+  if (!confirm('¿Eliminar esta visita? El tier se recalculará automáticamente.')) return;
+  showSync(true);
+  try {
+    const { error } = await window.supabase.from('visitas').delete().eq('id', visitaId);
+    if (error) throw error;
+    await loadData();
+    await verHistorialVisitas(clienteId);
+    toast('✓ Visita eliminada');
+  } catch (err) {
+    toast('⚠️ ' + err.message, 'error');
+  } finally {
+    showSync(false);
+  }
+};
+
+// Leer ?visita=TP-XXXXXX en la URL para abrir confirmación automáticamente
+async function procesarQueryVisita() {
+  const params = new URLSearchParams(window.location.search);
+  const visitaId = params.get('visita') || params.get('v');
+  if (!visitaId) return;
+
+  const newUrl = window.location.pathname;
+  window.history.replaceState({}, '', newUrl);
+
+  await new Promise(r => setTimeout(r, 500));
+
+  if (currentUser) {
+    await abrirConfirmacionVisita(visitaId.toUpperCase().trim());
+  }
+}
+
+// ============ ESCÁNER DE CÁMARA ============
+let scannerStream = null;
+let scannerActive = false;
+
+window.abrirEscaneoCamara = async function() {
+  const modal = document.getElementById('scanner-modal');
+  const video = document.getElementById('scanner-video');
+  const status = document.getElementById('scanner-status');
+  modal.classList.add('show');
+  status.textContent = 'INICIANDO CÁMARA…';
+
+  try {
+    scannerStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }
+    });
+    video.srcObject = scannerStream;
+    await video.play();
+    status.textContent = 'BUSCANDO CÓDIGO QR…';
+    scannerActive = true;
+    escanearFrame();
+  } catch (err) {
+    console.error(err);
+    status.textContent = '⚠️ No se pudo acceder a la cámara';
+    toast('⚠️ Permite el acceso a la cámara', 'error');
+  }
+};
+
+function escanearFrame() {
+  if (!scannerActive) return;
+  const video = document.getElementById('scanner-video');
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+
+  if (video.readyState === video.HAVE_ENOUGH_DATA) {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = window.jsQR ? window.jsQR(imageData.data, imageData.width, imageData.height) : null;
+
+    if (code && code.data) {
+      // Extraer ID del cliente desde la URL escaneada
+      let clienteId = null;
+
+      // Intentar formato URL con ?id=TP-XXXXXX
+      try {
+        const url = new URL(code.data);
+        clienteId = url.searchParams.get('id');
+      } catch (e) { /* no es URL válida */ }
+
+      // Si no es URL, buscar patrón TP-XXXXXX
+      if (!clienteId) {
+        const match = code.data.match(/TP-\d+/i);
+        if (match) clienteId = match[0].toUpperCase();
+      }
+
+      if (clienteId) {
+        document.getElementById('scanner-status').textContent = '✓ CARNET DETECTADO: ' + clienteId;
+        cerrarEscaneoCamara();
+        abrirConfirmacionVisita(clienteId);
+        return;
+      } else {
+        document.getElementById('scanner-status').textContent = '⚠️ QR no válido. Prueba otro.';
+      }
+    }
+  }
+
+  requestAnimationFrame(escanearFrame);
+}
+
+window.cerrarEscaneoCamara = function() {
+  scannerActive = false;
+  if (scannerStream) {
+    scannerStream.getTracks().forEach(t => t.stop());
+    scannerStream = null;
+  }
+  document.getElementById('scanner-modal').classList.remove('show');
+};
+
+// ==============================================================
 // EXPORT
 // ==============================================================
+
 
 window.openExportModal = function() {
   if (!selectedId || !plantillaActiva) return;

@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Archivo+Black&family=Space+Mono:wght@400;700&family=Archivo:wght@400;500;600;700;900&family=Permanent+Marker&family=Rubik+Mono+One&family=Bebas+Neue&family=Anton&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script type="module">
@@ -277,6 +278,99 @@ tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, trans
   letter-spacing: 0.3px;
 }
 .var-chip:hover { background: var(--tp-orange); color: #fff; transform: translateY(-1px); }
+
+/* ============ SCAN BAR ============ */
+.scan-bar {
+  background: linear-gradient(135deg, var(--tp-deep-blue) 0%, #0E2560 100%);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  box-shadow: 0 4px 14px rgba(26,63,145,0.2);
+  position: relative;
+  overflow: hidden;
+}
+.scan-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(45deg, transparent 0 10px, rgba(255,144,0,0.04) 10px 11px);
+  pointer-events: none;
+}
+.scan-bar-label { display: flex; align-items: center; gap: 10px; position: relative; }
+.scan-bar-icon {
+  width: 40px; height: 40px;
+  background: var(--tp-orange);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 2px 8px rgba(255,144,0,0.4);
+}
+.scan-bar-title {
+  font-family: 'Bungee', sans-serif;
+  font-size: 13px;
+  color: var(--tp-orange);
+  letter-spacing: 1px;
+  line-height: 1;
+}
+.scan-bar-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: #fff;
+  letter-spacing: 1px;
+  margin-top: 3px;
+  opacity: 0.7;
+}
+.scan-bar-form {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  min-width: 280px;
+  position: relative;
+}
+.scan-bar-form input {
+  flex: 1;
+  padding: 10px 14px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.95);
+  font-size: 14px;
+  color: var(--ink);
+}
+.scan-bar-form input:focus { outline: none; border-color: var(--tp-orange); }
+.scan-bar-form .btn { padding: 10px 14px; font-size: 11px; white-space: nowrap; }
+
+.row-actions button.visit-btn { background: var(--tp-deep-blue); color: #fff; border-color: var(--tp-deep-blue); }
+.row-actions button.visit-btn:hover { background: #0E2560; }
+
+/* Scanner de cámara */
+.scanner-modal video {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 12px;
+  background: #000;
+}
+.scanner-modal .scan-target {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  margin: 10px 0;
+}
+.scanner-modal .scan-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border: 2px dashed var(--tp-orange);
+  border-radius: 12px;
+  pointer-events: none;
+  animation: scan-pulse 2s ease-in-out infinite;
+}
+@keyframes scan-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
 </style>
 </head>
 <body>
@@ -322,6 +416,21 @@ tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, trans
       <div class="no-template-warn">⚠️ <strong>Aún no hay un diseño de carnet activo.</strong> Ve a <a onclick="switchTab('plantillas')">🎨 Diseño de carnet</a> para crear una plantilla.</div>
     </div>
 
+    <div class="scan-bar">
+      <div class="scan-bar-label">
+        <div class="scan-bar-icon">📸</div>
+        <div>
+          <div class="scan-bar-title">REGISTRAR VISITA</div>
+          <div class="scan-bar-sub">Escanea o escribe el ID del cliente</div>
+        </div>
+      </div>
+      <form class="scan-bar-form" onsubmit="event.preventDefault(); abrirConfirmacionVisita(document.getElementById('scan-input').value); document.getElementById('scan-input').value='';">
+        <input type="text" id="scan-input" placeholder="TP-000000" autocomplete="off" style="text-transform:uppercase; letter-spacing:1px; font-family:'Space Mono',monospace; font-weight:700;">
+        <button type="submit" class="btn btn-primary">➕ REGISTRAR</button>
+        <button type="button" class="btn btn-secondary" onclick="abrirEscaneoCamara()">📷 ESCANEAR</button>
+      </form>
+    </div>
+
     <div class="clientes-layout">
       <div class="card-panel">
         <h2 id="form-title">EDITAR</h2>
@@ -356,7 +465,7 @@ tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, trans
             <div class="search-box"><input type="text" id="search" placeholder="Buscar…"></div>
           </div>
           <div class="table-wrap">
-            <table><thead><tr><th></th><th>ID</th><th>Nombre</th><th>Nivel</th><th>Teléfono</th><th>Alta</th><th>Carnet</th><th>Acciones</th></tr></thead>
+            <table><thead><tr><th></th><th>ID</th><th>Nombre</th><th>Nivel</th><th>Visitas</th><th>Teléfono</th><th>Carnet</th><th>Acciones</th></tr></thead>
               <tbody id="tabla-body"></tbody>
             </table>
             <div class="empty-state" id="empty-state"><div class="ico">🌮</div><p>AÚN NO HAY CLIENTES REGISTRADOS</p></div>
@@ -513,6 +622,30 @@ tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, trans
         <button class="btn btn-ghost" onclick="restaurarMensajeDefault()" style="flex:1;">↺ Restaurar default</button>
       </div>
 
+      <hr style="margin:20px 0; border:none; border-top:1px solid var(--border);">
+
+      <h2>🏆 NIVELES POR VISITAS</h2>
+      <div class="sub">Umbrales para subir de tier automáticamente</div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px;">
+        <div>
+          <label>★★ Plata a los</label>
+          <input type="number" id="cfg-tier-plata" min="1" placeholder="5">
+        </div>
+        <div>
+          <label>★★★ Oro a los</label>
+          <input type="number" id="cfg-tier-oro" min="2" placeholder="10">
+        </div>
+        <div>
+          <label>♛ Master a los</label>
+          <input type="number" id="cfg-tier-master" min="3" placeholder="20">
+        </div>
+      </div>
+
+      <div style="background:#FFF4DC; padding:10px 14px; border-radius:8px; border-left:3px solid var(--tp-orange); font-size:11px; line-height:1.5; margin-bottom:14px; font-family:'Space Mono',monospace; letter-spacing:0.3px;">
+        💡 <strong>Plata &lt; Oro &lt; Master</strong>. Los clientes suben de nivel automáticamente al registrar visitas. Cambiar estos valores no afecta a clientes actuales hasta que sumen otra visita.
+      </div>
+
       <div class="form-actions"><button class="btn btn-primary" onclick="guardarConfig()">Guardar ajustes</button></div>
 
       <hr style="margin:20px 0; border:none; border-top:1px solid var(--border);">
@@ -554,6 +687,25 @@ tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, trans
     </div>
 
     <button class="btn btn-ghost modal-close" onclick="closeNotifyModal()">Cerrar</button>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="visit-modal">
+  <div class="modal" style="max-width:520px;">
+    <div id="visit-modal-content"></div>
+  </div>
+</div>
+
+<div class="modal-backdrop scanner-modal" id="scanner-modal">
+  <div class="modal" style="max-width:480px;">
+    <h3>📷 ESCANEAR CARNET</h3>
+    <p>Apunta la cámara al código QR del carnet del cliente</p>
+    <div class="scan-target">
+      <video id="scanner-video" playsinline></video>
+      <div class="scan-overlay"></div>
+    </div>
+    <div id="scanner-status" style="text-align:center; font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:1px; margin:10px 0;">BUSCANDO CÓDIGO…</div>
+    <button class="btn btn-ghost modal-close" onclick="cerrarEscaneoCamara()">Cancelar</button>
   </div>
 </div>
 
