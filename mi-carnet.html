@@ -272,6 +272,12 @@
 let currentUser = null;
 let cliente = null;
 let brandLogoUrl = null;
+let sedeInfo = {
+  nombre: 'Taco Parado',
+  direccion: '',
+  horario: '',
+  mapsUrl: ''
+};
 const PUBLIC_PROFILE_BASE = window.location.origin + window.location.pathname.replace(/\/mi-carnet\.html$/, '') + '/perfil.html?id=';
 
 async function waitForSupabase() {
@@ -282,6 +288,18 @@ async function cargarLogo() {
   try {
     const { data } = await window.supabase.from('config').select('value').eq('key', 'logoUrl').maybeSingle();
     if (data?.value) brandLogoUrl = data.value;
+  } catch (e) { /* silent */ }
+}
+
+async function cargarSede() {
+  try {
+    const { data } = await window.supabase.from('config').select('key, value').in('key', ['sedeNombre', 'sedeDireccion', 'sedeHorario', 'sedeMapsUrl']);
+    (data || []).forEach(r => {
+      if (r.key === 'sedeNombre') sedeInfo.nombre = r.value;
+      if (r.key === 'sedeDireccion') sedeInfo.direccion = r.value;
+      if (r.key === 'sedeHorario') sedeInfo.horario = r.value;
+      if (r.key === 'sedeMapsUrl') sedeInfo.mapsUrl = r.value;
+    });
   } catch (e) { /* silent */ }
 }
 
@@ -370,6 +388,7 @@ window.compartir = async function() {
 async function cargarCarnet() {
   await waitForSupabase();
   await cargarLogo();
+  await cargarSede();
   const { data: { session } } = await window.supabase.auth.getSession();
 
   if (!session) {
@@ -425,12 +444,28 @@ function mostrarCarnet() {
       </div>
     `;
   } else {
+    const mapsBtn = sedeInfo.mapsUrl ? `
+      <a href="${sedeInfo.mapsUrl}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; background:var(--tp-orange); color:#fff; padding:10px 16px; border-radius:10px; font-family:'Archivo',sans-serif; font-weight:700; font-size:13px; text-decoration:none; letter-spacing:0.3px; box-shadow:0 4px 14px rgba(255,144,0,0.4); margin-top:10px;">
+        📍 Cómo llegar
+      </a>
+    ` : '';
+
     statusHTML = `
-      <div class="status-card" style="background: linear-gradient(135deg, rgba(255,144,0,0.25) 0%, rgba(255,144,0,0.15) 100%); border-color: var(--tp-orange); animation: pulse-ready 2s ease-in-out infinite;">
-        <div class="status-icon" style="background: var(--tp-orange); animation: bounce 1.5s ease-in-out infinite;">🎉</div>
-        <div class="status-text">
-          <div class="st-title" style="color: var(--tp-orange); font-size: 15px;">¡Tu carnet está listo!</div>
-          <div class="st-desc" style="color: #fff;">Pasa por cualquier sede Taco Parado y menciona tu ID <strong style="color: var(--tp-orange); font-family: 'Space Mono', monospace;">${c.id}</strong> para recogerlo.</div>
+      <div class="status-card" style="background: linear-gradient(135deg, rgba(255,144,0,0.25) 0%, rgba(255,144,0,0.15) 100%); border-color: var(--tp-orange); animation: pulse-ready 2s ease-in-out infinite; flex-direction: column; align-items: flex-start; padding: 20px;">
+        <div style="display:flex; align-items:center; gap:14px; width:100%;">
+          <div class="status-icon" style="background: var(--tp-orange); animation: bounce 1.5s ease-in-out infinite; flex-shrink:0;">🎉</div>
+          <div class="status-text">
+            <div class="st-title" style="color: var(--tp-orange); font-size: 15px;">¡Tu carnet está listo para recoger!</div>
+            <div class="st-desc" style="color: #fff; margin-top: 2px;">Menciona tu ID <strong style="color: var(--tp-orange); font-family: 'Space Mono', monospace;">${c.id}</strong></div>
+          </div>
+        </div>
+
+        <div style="width:100%; margin-top:14px; padding-top:14px; border-top:1px dashed rgba(255,144,0,0.4);">
+          <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1.5px; color:var(--tp-orange); font-weight:700; margin-bottom:6px;">📍 SEDE DE RECOGIDA</div>
+          <div style="font-family:'Archivo Black',sans-serif; font-size:14px; color:#fff; line-height:1.3;">${escapeHtml(sedeInfo.nombre)}</div>
+          ${sedeInfo.direccion ? `<div style="font-family:'Archivo',sans-serif; font-size:13px; color:rgba(255,255,255,0.9); margin-top:2px;">${escapeHtml(sedeInfo.direccion)}</div>` : ''}
+          ${sedeInfo.horario ? `<div style="font-family:'Space Mono',monospace; font-size:11px; color:rgba(255,255,255,0.7); margin-top:4px; letter-spacing:0.5px;">🕒 ${escapeHtml(sedeInfo.horario)}</div>` : ''}
+          ${mapsBtn}
         </div>
       </div>
       <style>
