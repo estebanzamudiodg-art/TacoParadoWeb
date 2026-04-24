@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "/registro.html",
+      "permanent": false
+    }
+  ]
+}
