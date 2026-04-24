@@ -271,14 +271,29 @@
 <script>
 let currentUser = null;
 let cliente = null;
+let brandLogoUrl = null;
 const PUBLIC_PROFILE_BASE = window.location.origin + window.location.pathname.replace(/\/mi-carnet\.html$/, '') + '/perfil.html?id=';
 
 async function waitForSupabase() {
   while (!window.supabase) await new Promise(r => setTimeout(r, 50));
 }
 
+async function cargarLogo() {
+  try {
+    const { data } = await window.supabase.from('config').select('value').eq('key', 'logoUrl').maybeSingle();
+    if (data?.value) brandLogoUrl = data.value;
+  } catch (e) { /* silent */ }
+}
+
 function escapeHtml(s) {
   return (s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+function mascotaLogo() {
+  if (brandLogoUrl) {
+    return `<img src="${brandLogoUrl}" alt="Logo" style="width:100%; height:100%; object-fit:contain;">`;
+  }
+  return tacoSVG();
 }
 
 function tacoSVG() {
@@ -354,6 +369,7 @@ window.compartir = async function() {
 
 async function cargarCarnet() {
   await waitForSupabase();
+  await cargarLogo();
   const { data: { session } } = await window.supabase.auth.getSession();
 
   if (!session) {
@@ -410,13 +426,23 @@ function mostrarCarnet() {
     `;
   } else {
     statusHTML = `
-      <div class="status-card">
-        <div class="status-icon">📍</div>
+      <div class="status-card" style="background: linear-gradient(135deg, rgba(255,144,0,0.25) 0%, rgba(255,144,0,0.15) 100%); border-color: var(--tp-orange); animation: pulse-ready 2s ease-in-out infinite;">
+        <div class="status-icon" style="background: var(--tp-orange); animation: bounce 1.5s ease-in-out infinite;">🎉</div>
         <div class="status-text">
-          <div class="st-title">Recoge tu carnet físico</div>
-          <div class="st-desc">Pasa por cualquier sede Taco Parado y menciona tu ID ${c.id}. Te entregaremos tu tarjeta.</div>
+          <div class="st-title" style="color: var(--tp-orange); font-size: 15px;">¡Tu carnet está listo!</div>
+          <div class="st-desc" style="color: #fff;">Pasa por cualquier sede Taco Parado y menciona tu ID <strong style="color: var(--tp-orange); font-family: 'Space Mono', monospace;">${c.id}</strong> para recogerlo.</div>
         </div>
       </div>
+      <style>
+        @keyframes pulse-ready {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(255, 144, 0, 0.4); }
+          50% { box-shadow: 0 0 0 8px rgba(255, 144, 0, 0); }
+        }
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
+      </style>
     `;
   }
 
@@ -430,7 +456,7 @@ function mostrarCarnet() {
 
     <div class="carnet">
       <div class="tier-ribbon ${tierClass}">${tierNames[c.tier]}</div>
-      <div class="mascot-big">${tacoSVG()}</div>
+      <div class="mascot-big">${mascotaLogo()}</div>
       <div class="member-name">${escapeHtml(c.nombre)}</div>
       <div class="member-label">CLIENTE FIEL TACO PARADO</div>
       <div class="id-card">

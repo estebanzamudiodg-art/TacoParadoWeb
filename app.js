@@ -48,7 +48,7 @@ let currentUser = null;
 let selectedId = null;
 let editingId = null;
 let currentFilter = 'all';
-let config = { qrBase: '', ig: '@tacoparado.co', prefijo: 'TP-' };
+let config = { qrBase: '', ig: '@tacoparado.co', prefijo: 'TP-', logoUrl: null };
 let plantillas = [];
 let plantillaActiva = null;
 
@@ -95,6 +95,15 @@ function setLoadingProgress(msg) {
 }
 function hideLoading() {
   document.getElementById('loading').classList.remove('show');
+}
+
+function logoDefault() {
+  // Si hay logo configurado en Supabase, usarlo
+  if (config.logoUrl) {
+    return `<img src="${config.logoUrl}" crossorigin="anonymous" style="width:100%; height:100%; object-fit:contain;">`;
+  }
+  // Fallback: taco genérico
+  return tacoSVGSample();
 }
 
 function tacoSVGSample() {
@@ -211,6 +220,7 @@ async function loadData() {
         if (r.key === 'qrBase') config.qrBase = r.value;
         if (r.key === 'ig') config.ig = r.value;
         if (r.key === 'prefijo') config.prefijo = r.value;
+        if (r.key === 'logoUrl') config.logoUrl = r.value;
       });
     }
     if (!config.qrBase) config.qrBase = PUBLIC_BASE;
@@ -221,6 +231,7 @@ async function loadData() {
 
     document.getElementById('cfg-qr-base').value = config.qrBase;
     document.getElementById('cfg-ig').value = config.ig;
+    actualizarLogoUI();
 
     actualizarPlantillaUI();
     renderTabla();
@@ -551,7 +562,7 @@ function renderCarnetDinamico(cliente, face, options = {}) {
         img.crossOrigin = 'anonymous';
         el.appendChild(img);
       } else {
-        el.innerHTML = tacoSVGSample();
+        el.innerHTML = logoDefault();
       }
     }
 
@@ -680,7 +691,7 @@ function renderEditorField(field) {
     const i = document.createElement('div');
     i.className = 'token-image';
     i.style.borderRadius = '50%';
-    i.innerHTML = tacoSVGSample();
+    i.innerHTML = logoDefault();
     el.appendChild(i);
   }
 
@@ -1052,6 +1063,84 @@ function actualizarPlantillaUI() {
     document.getElementById('no-template-warning').style.display = 'block';
   }
 }
+
+// ==============================================================
+// LOGO DE MARCA
+// ==============================================================
+function actualizarLogoUI() {
+  const preview = document.getElementById('logo-preview');
+  const removeBtn = document.getElementById('btn-remove-logo');
+  if (!preview) return;
+
+  if (config.logoUrl) {
+    preview.innerHTML = `<img src="${config.logoUrl}" alt="Logo" style="max-width:100%; max-height:120px; object-fit:contain;">`;
+    preview.style.display = 'flex';
+    if (removeBtn) removeBtn.style.display = 'inline-block';
+  } else {
+    preview.innerHTML = `
+      <div style="display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--muted);">
+        ${tacoSVGSample()}
+        <span style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1px;">DEFAULT · TACO GENÉRICO</span>
+      </div>
+    `;
+    preview.style.display = 'flex';
+    if (removeBtn) removeBtn.style.display = 'none';
+  }
+}
+
+document.getElementById('logo-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    toast('⚠️ Máximo 5 MB', 'error');
+    return;
+  }
+
+  showLoading('Subiendo logo…');
+  try {
+    const ext = file.name.split('.').pop().toLowerCase();
+    const fileName = `logo_${Date.now()}.${ext}`;
+    const { error: upErr } = await window.supabase.storage
+      .from('branding')
+      .upload(fileName, file, { contentType: file.type, upsert: true });
+    if (upErr) throw upErr;
+
+    const { data } = window.supabase.storage.from('branding').getPublicUrl(fileName);
+    const publicUrl = data.publicUrl;
+
+    setLoadingProgress('Guardando…');
+    const { error: cfgErr } = await window.supabase
+      .from('config')
+      .upsert({ key: 'logoUrl', value: publicUrl }, { onConflict: 'key' });
+    if (cfgErr) throw cfgErr;
+
+    config.logoUrl = publicUrl;
+    actualizarLogoUI();
+    toast('✓ Logo actualizado');
+    e.target.value = '';
+  } catch (err) {
+    console.error(err);
+    toast('⚠️ ' + err.message, 'error');
+  } finally {
+    hideLoading();
+  }
+});
+
+window.eliminarLogo = async function() {
+  if (!confirm('¿Quitar el logo? Volverá a mostrarse el taco genérico por defecto.')) return;
+  showSync(true);
+  try {
+    const { error } = await window.supabase.from('config').delete().eq('key', 'logoUrl');
+    if (error) throw error;
+    config.logoUrl = null;
+    actualizarLogoUI();
+    toast('✓ Logo eliminado');
+  } catch (err) {
+    toast('⚠️ ' + err.message, 'error');
+  } finally {
+    showSync(false);
+  }
+};
 
 // ==============================================================
 // CONFIG

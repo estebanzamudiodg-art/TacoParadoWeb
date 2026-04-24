@@ -432,12 +432,33 @@ tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, trans
 
   <div class="panel" id="panel-ajustes">
     <div class="card-panel" style="max-width:600px;">
+      <h2>LOGO DE MARCA</h2>
+      <div class="sub">Aparece en el carnet cuando el cliente no tiene foto individual</div>
+
+      <div id="logo-preview" style="background:#FAFAF7; border:2px dashed var(--border); border-radius:10px; padding:20px; min-height:140px; display:flex; align-items:center; justify-content:center; margin-bottom:12px;"></div>
+
+      <div class="form-actions" style="margin-bottom:20px;">
+        <label for="logo-input" class="btn btn-primary" style="flex:1; text-align:center; display:inline-block; line-height:1.4;">
+          📤 Subir logo
+        </label>
+        <input type="file" id="logo-input" accept="image/*" class="file-hidden">
+        <button class="btn btn-ghost" id="btn-remove-logo" onclick="eliminarLogo()" style="display:none;">🗑 Quitar</button>
+      </div>
+
+      <div style="background:#FFF4DC; padding:10px 14px; border-radius:8px; border-left:3px solid var(--tp-orange); font-size:11px; line-height:1.5; font-family:'Space Mono',monospace; letter-spacing:0.3px; color:var(--ink); margin-bottom:24px;">
+        💡 <strong>Recomendación:</strong> Usa PNG con fondo transparente, mínimo 400×400 px, cuadrado o cercano a cuadrado. Máximo 5 MB.
+      </div>
+
+      <hr style="margin:20px 0; border:none; border-top:1px solid var(--border);">
+
       <h2>AJUSTES GENERALES</h2>
       <div class="sub">Configuración sincronizada</div>
       <div class="form-row"><label>URL base del QR</label><input type="text" id="cfg-qr-base" placeholder="https://tuapp.vercel.app/perfil.html?id="></div>
       <div class="form-row"><label>Handle de Instagram</label><input type="text" id="cfg-ig" placeholder="@tacoparado.co"></div>
       <div class="form-actions"><button class="btn btn-primary" onclick="guardarConfig()">Guardar</button></div>
+
       <hr style="margin:20px 0; border:none; border-top:1px solid var(--border);">
+
       <h2 style="font-size:13px; margin-bottom:10px;">BACKUP</h2>
       <div class="form-actions"><button class="btn btn-secondary" onclick="exportarJSON()">📦 Exportar (JSON)</button></div>
     </div>

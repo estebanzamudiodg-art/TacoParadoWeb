@@ -358,8 +358,19 @@
 // Leer ID de la URL
 const params = new URLSearchParams(window.location.search);
 const memberId = params.get('id');
+let brandLogoUrl = null;
+
+async function cargarLogo() {
+  try {
+    const { data } = await window.supabase.from('config').select('value').eq('key', 'logoUrl').maybeSingle();
+    if (data?.value) brandLogoUrl = data.value;
+  } catch (e) { /* silent */ }
+}
 
 function defaultTacoSVG() {
+  // Si hay logo configurado, usarlo
+  if (brandLogoUrl) return brandLogoUrl;
+
   const svg = `<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'>
     <circle cx='100' cy='100' r='85' fill='%235271FF' stroke='%231A3F91' stroke-width='4'/>
     <ellipse cx='100' cy='115' rx='48' ry='38' fill='%23FFD24D' stroke='%231A3F91' stroke-width='3'/>
@@ -448,6 +459,9 @@ async function cargarPerfil() {
   while (!window.supabase) {
     await new Promise(r => setTimeout(r, 50));
   }
+
+  // Cargar logo de marca primero
+  await cargarLogo();
 
   try {
     const { data, error } = await window.supabase
