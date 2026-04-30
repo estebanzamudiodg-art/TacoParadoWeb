@@ -126,6 +126,18 @@ function showApp() {
 
   // Cargar datos
   loadData();
+  setFaviconFromConfig();
+}
+
+async function setFaviconFromConfig() {
+  try {
+    const { data } = await window.supabase.from('config').select('value').eq('key', 'logoUrl').maybeSingle();
+    if (data?.value) {
+      let link = document.querySelector("link[rel='icon']");
+      if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+      link.href = data.value;
+    }
+  } catch (e) { /* silent */ }
 }
 
 function renderSedeSelector() {
@@ -169,6 +181,7 @@ async function loadData() {
     mermas = merRes.data || [];
 
     renderAll();
+    await loadCierres();
   } catch (err) {
     console.error(err);
     toast('Error al cargar datos: ' + err.message, 'error');
@@ -727,6 +740,238 @@ window.confirmarImportacion = async function() {
   } catch (err) {
     toast('Error: ' + err.message, 'error');
   }
+};
+
+// ==============================================================
+// CIERRE DIARIO DE INVENTARIO
+// ==============================================================
+let cierres = [];
+
+async function loadCierres() {
+  try {
+    let query = window.supabase.from('cierres_inventario').select('*').order('fecha', { ascending: false }).limit(60);
+    // Admin ve todos, jefe solo su sede
+    if (userRole !== 'admin' && selectedSedeId) {
+      query = query.eq('sede_id', selectedSedeId);
+    }
+    const { data } = await query;
+    cierres = data || [];
+    renderCierres();
+  } catch (e) {
+    console.error('Error cargando cierres:', e);
+  }
+}
+
+window.realizarCierre = async function() {
+  if (!selectedSedeId) { toast('Selecciona una sede', 'error'); return; }
+
+  const hoy = new Date().toISOString().slice(0, 10);
+  const sede = sedes.find(s => s.id === selectedSedeId);
+
+  // Verificar si ya existe cierre de hoy
+  const existente = cierres.find(c => c.fecha === hoy && c.sede_id === selectedSedeId);
+  if (existente) {
+    if (!confirm(`⚠️ Ya existe un cierre de hoy (${hoy}) para ${sede?.nombre}.\n\n¿Quieres reemplazarlo con los datos actuales?`)) return;
+    // Eliminar el anterior
+    await window.supabase.from('cierres_inventario').delete().eq('id', existente.id);
+  }
+
+  const notas = prompt(`📝 Notas del cierre de hoy (${sede?.nombre}):\n\n(opcional — ej: "faltó proveedor de carnes", "día lento", etc.)`, '');
+
+  const totalInv = productos.reduce((s, p) => s + (p.cantidad || 0) * (p.precio || 0), 0);
+  const totalMermaKg = mermas.filter(m => m.fecha === hoy).reduce((s, m) => s + (m.cantidad || 0), 0);
+
+  const resumen = {
+    totalProductos: productos.length,
+    totalProveedores: proveedores.length,
+    totalInversion: totalInv,
+    totalMermas: mermas.filter(m => m.fecha === hoy).length,
+    totalMermaKg,
+    fecha: hoy,
+    sede: sede?.nombre || ''
+  };
+
+  try {
+    const { error } = await window.supabase.from('cierres_inventario').insert({
+      sede_id: selectedSedeId,
+      fecha: hoy,
+      cerrado_por: currentUser.id,
+      cerrado_por_email: currentUser.email,
+      productos: productos.map(p => ({
+        nombre: p.nombre,
+        cantidad: p.cantidad,
+        unidad: p.unidad,
+        precio: p.precio,
+        proveedor: proveedores.find(x => x.id === p.proveedor_id)?.nombre || null,
+        subtotal: (p.cantidad || 0) * (p.precio || 0)
+      })),
+      proveedores: proveedores.map(p => ({
+        nombre: p.nombre,
+        categoria: p.categoria,
+        contacto: p.contacto
+      })),
+      mermas: mermas.filter(m => m.fecha === hoy).map(m => ({
+        tipo: m.tipo,
+        peso_antes: m.peso_antes,
+        peso_despues: m.peso_despues,
+        cantidad: m.cantidad,
+        porcentaje: m.porcentaje,
+        costo: m.costo,
+        motivo: m.motivo
+      })),
+      resumen,
+      notas: notas || null
+    });
+
+    if (error) throw error;
+    toast('✓ Cierre del día registrado correctamente');
+    await loadCierres();
+
+    // Ir a la pestaña historial
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelector('[data-panel="historial"]').classList.add('active');
+    document.getElementById('panel-historial').classList.add('active');
+  } catch (err) {
+    console.error(err);
+    toast('Error al guardar cierre: ' + err.message, 'error');
+  }
+};
+
+function renderCierres() {
+  const tb = document.getElementById('tblCierres');
+  if (!tb) return;
+
+  // Status: verificar si hoy ya tiene cierre
+  const hoy = new Date().toISOString().slice(0, 10);
+  const cierreHoy = cierres.find(c => c.fecha === hoy && c.sede_id === selectedSedeId);
+  const statusDiv = document.getElementById('cierre-status');
+
+  if (cierreHoy) {
+    statusDiv.style.display = 'block';
+    statusDiv.innerHTML = `
+      <div style="background:var(--cream); border:3px solid #16a34a; border-radius:14px; padding:16px 20px; display:flex; align-items:center; gap:14px;">
+        <div style="font-size:28px;">✅</div>
+        <div>
+          <div style="font-family:'Bungee',sans-serif; font-size:14px; color:#166534;">CIERRE DE HOY REALIZADO</div>
+          <div style="font-family:'Inter',sans-serif; font-size:12px; color:var(--ink); margin-top:2px;">
+            Por <strong>${escapeHTML(cierreHoy.cerrado_por_email || '')}</strong> · 
+            ${cierreHoy.resumen?.totalProductos || 0} productos · 
+            ${fmtMoney(cierreHoy.resumen?.totalInversion || 0)} inversión
+            ${cierreHoy.notas ? ` · <em>"${escapeHTML(cierreHoy.notas)}"</em>` : ''}
+          </div>
+        </div>
+      </div>
+    `;
+  } else {
+    statusDiv.style.display = 'block';
+    statusDiv.innerHTML = `
+      <div style="background:var(--cream); border:3px solid var(--blood); border-radius:14px; padding:16px 20px; display:flex; align-items:center; gap:14px;">
+        <div style="font-size:28px;">⏳</div>
+        <div>
+          <div style="font-family:'Bungee',sans-serif; font-size:14px; color:var(--blood);">PENDIENTE · CIERRE DE HOY</div>
+          <div style="font-family:'Inter',sans-serif; font-size:12px; color:var(--ink); margin-top:2px;">
+            Recuerda cerrar el día antes de irte. Usa el botón "📸 Cerrar el día de hoy".
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  if (cierres.length === 0) {
+    tb.innerHTML = '<tr><td colspan="8"><div class="empty">Sin cierres registrados. Usa el botón "📸 Cerrar el día de hoy".</div></td></tr>';
+    return;
+  }
+
+  tb.innerHTML = cierres.map(c => {
+    const sede = sedes.find(s => s.id === c.sede_id);
+    const r = c.resumen || {};
+    const esHoy = c.fecha === hoy;
+    return `
+      <tr style="${esHoy ? 'background:rgba(22,163,34,0.06);' : ''}">
+        <td><strong style="${esHoy ? 'color:#16a34a;' : ''}">${c.fecha}</strong>${esHoy ? ' <span style="background:#16a34a; color:#fff; padding:1px 6px; border-radius:4px; font-size:9px; font-weight:800;">HOY</span>' : ''}</td>
+        <td>${escapeHTML(sede?.nombre || '—')}</td>
+        <td style="font-size:12px;">${escapeHTML(c.cerrado_por_email || '—')}</td>
+        <td class="qty">${r.totalProductos || 0}</td>
+        <td class="price">${fmtMoney(r.totalInversion || 0)}</td>
+        <td class="qty">${fmt(r.totalMermaKg || 0)}</td>
+        <td style="font-size:12px; max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHTML(c.notas || '—')}</td>
+        <td>
+          <button class="btn-icon" onclick="verCierre('${c.id}')" title="Ver detalle">👁</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.verCierre = function(id) {
+  const c = cierres.find(x => x.id === id);
+  if (!c) return;
+  const sede = sedes.find(s => s.id === c.sede_id);
+  const r = c.resumen || {};
+  const prods = c.productos || [];
+  const mermasC = c.mermas || [];
+
+  let prodRows = prods.map(p =>
+    `<tr><td>${escapeHTML(p.nombre)}</td><td class="qty">${fmt(p.cantidad)} ${p.unidad||''}</td><td class="price">${fmtMoney(p.precio)}</td><td class="price"><strong>${fmtMoney(p.subtotal||0)}</strong></td><td>${escapeHTML(p.proveedor||'—')}</td></tr>`
+  ).join('');
+
+  let mermaRows = mermasC.map(m =>
+    `<tr><td style="text-transform:capitalize;">${escapeHTML(m.tipo)}</td><td class="qty">${fmt(m.peso_antes||0)}</td><td class="qty">${fmt(m.peso_despues||0)}</td><td class="qty"><strong style="color:var(--blood)">${fmt(m.cantidad||0)}</strong></td><td>${escapeHTML(m.motivo||'—')}</td></tr>`
+  ).join('');
+
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position:fixed; inset:0; background:rgba(13,36,81,0.8); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px;';
+  modal.innerHTML = `
+    <div style="background:var(--cream); border:4px solid var(--ink); border-radius:20px; padding:28px; max-width:900px; width:100%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px;">
+        <div>
+          <div style="font-family:'Bungee',sans-serif; font-size:22px; color:var(--ink);">📋 CIERRE ${c.fecha}</div>
+          <div style="font-family:'Inter',sans-serif; font-size:13px; color:var(--ink); margin-top:4px; opacity:0.7;">
+            ${escapeHTML(sede?.nombre || '')} · Por ${escapeHTML(c.cerrado_por_email || '')}
+          </div>
+        </div>
+        <button onclick="this.closest('div[style]').remove()" style="background:var(--blood); color:#fff; border:3px solid var(--ink); border-radius:10px; padding:8px 16px; font-weight:800; cursor:pointer; font-family:'Inter',sans-serif; font-size:12px;">✕ CERRAR</button>
+      </div>
+
+      ${c.notas ? `<div style="background:var(--paper); border:2px solid var(--ink); border-radius:12px; padding:12px 16px; margin-bottom:20px; font-family:'Inter',sans-serif; font-size:13px;"><strong>📝 Notas:</strong> ${escapeHTML(c.notas)}</div>` : ''}
+
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:20px;">
+        <div style="background:var(--paper); border:2px solid var(--ink); border-radius:12px; padding:12px; border-left:5px solid var(--blood);">
+          <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.08em; opacity:0.65; font-weight:700;">Productos</div>
+          <div style="font-family:'Inter',sans-serif; font-size:24px; font-weight:900; color:var(--blood);">${r.totalProductos||0}</div>
+        </div>
+        <div style="background:var(--paper); border:2px solid var(--ink); border-radius:12px; padding:12px; border-left:5px solid var(--ink);">
+          <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.08em; opacity:0.65; font-weight:700;">Inversión</div>
+          <div style="font-family:'Inter',sans-serif; font-size:24px; font-weight:900; color:var(--ink);">${fmtMoney(r.totalInversion||0)}</div>
+        </div>
+        <div style="background:var(--paper); border:2px solid var(--ink); border-radius:12px; padding:12px; border-left:5px solid var(--mustard);">
+          <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.08em; opacity:0.65; font-weight:700;">Merma (kg)</div>
+          <div style="font-family:'Inter',sans-serif; font-size:24px; font-weight:900; color:var(--blood-dark);">${fmt(r.totalMermaKg||0)}</div>
+        </div>
+      </div>
+
+      <div style="font-family:'Bungee',sans-serif; font-size:16px; color:var(--ink); margin-bottom:10px;">Productos</div>
+      <div class="table-wrap" style="margin-bottom:20px;">
+        <table>
+          <thead><tr><th>Producto</th><th>Cantidad</th><th>Precio</th><th>Subtotal</th><th>Proveedor</th></tr></thead>
+          <tbody>${prodRows || '<tr><td colspan="5" style="text-align:center; opacity:.5;">Sin productos</td></tr>'}</tbody>
+        </table>
+      </div>
+
+      ${mermaRows ? `
+        <div style="font-family:'Bungee',sans-serif; font-size:16px; color:var(--ink); margin-bottom:10px;">Mermas del día</div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Tipo</th><th>Antes (kg)</th><th>Después (kg)</th><th>Merma (kg)</th><th>Motivo</th></tr></thead>
+            <tbody>${mermaRows}</tbody>
+          </table>
+        </div>
+      ` : ''}
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
 };
 
 // ==============================================================

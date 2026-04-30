@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<link rel="icon" type="image/png" href="favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Taco Parado · Inventario</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1079,6 +1080,7 @@
   <button class="tab" data-panel="escanear">Escanear</button>
   <button class="tab" data-panel="proveedores">Proveedores</button>
   <button class="tab" data-panel="mermas">Mermas</button>
+  <button class="tab" data-panel="historial">📋 Historial</button>
   <button class="tab" data-panel="exportar">Exportar</button>
 </nav>
 
@@ -1483,6 +1485,41 @@
       <div style="margin-top: 32px; padding-top: 24px; border-top: 2px dashed rgba(30, 58, 138, 0.25);">
         <div style="font-family: 'Inter', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.65; margin-bottom: 12px; font-weight: 700; color: var(--blood);">⚠ Zona de peligro</div>
         <button class="btn" onclick="clearAllData()" style="background: var(--cream); border-color: var(--blood); color: var(--blood);">⚠ Borrar todos los datos</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- === HISTORIAL DE CIERRES === -->
+  <section class="panel" id="panel-historial">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">Historial de <em>Cierres</em></h2>
+        <div class="panel-sub">Registro diario del inventario · Todos los admins pueden consultarlo</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="realizarCierre()">📸 Cerrar el día de hoy</button>
+      </div>
+    </div>
+
+    <div id="cierre-status" style="display:none; margin-bottom:20px;"></div>
+
+    <div class="table-wrap">
+      <div>
+        <table>
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Sede</th>
+              <th>Cerrado por</th>
+              <th>Productos</th>
+              <th>Inversión</th>
+              <th>Mermas (kg)</th>
+              <th>Notas</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tblCierres"></tbody>
+        </table>
       </div>
     </div>
   </section>

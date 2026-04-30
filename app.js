@@ -204,6 +204,20 @@ async function showApp() {
   setupRealtime();
   procesarQueryVisita();
   mostrarTabInventario();
+  setFaviconFromLogo();
+}
+
+// Favicon dinámico desde el logo configurado
+function setFaviconFromLogo() {
+  if (config.logoUrl) {
+    let link = document.querySelector("link[rel='icon']");
+    if (!link) {
+      link = document.createElement('link');
+      link.rel = 'icon';
+      document.head.appendChild(link);
+    }
+    link.href = config.logoUrl;
+  }
 }
 
 // Mostrar pestaña de inventario solo para admin y jefe de producción
