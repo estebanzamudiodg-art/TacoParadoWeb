@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taco Parado · Inventario</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.0.5/dist/tesseract.min.js"></script>
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+  const SUPABASE_URL = 'https://xyqyhabhujmmjofnfizg.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5cXloYWJodWptbWpvZm5maXpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODE5NzAsImV4cCI6MjA5MjM1Nzk3MH0.9Cj7XZUjLUiBHPWw6Br4FWz2_g8T1hgg20zyrrThhZQ'
+  window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+</script>
+<style>
+<style>
+  :root {
+    --ink: #0d2451;
+    --ink-soft: #1e3a8a;
+    --paper: #fff7ed;
+    --paper-dark: #fed7aa;
+    --blood: #f97316;
+    --blood-dark: #ea580c;
+    --mustard: #fbbf24;
+    --olive: #1e3a8a;
+    --cream: #ffffff;
+    --line: #1e3a8a;
+    --shadow: rgba(30, 58, 138, 0.15);
+    --orange-bg: #fb923c;
+    --blue-deep: #1e40af;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: linear-gradient(135deg, #fb923c 0%, #f97316 50%, #ea580c 100%);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      135deg,
+      transparent 0,
+      transparent 60px,
+      rgba(255, 255, 255, 0.05) 60px,
+      rgba(255, 255, 255, 0.05) 62px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body > * { position: relative; z-index: 1; }
+
+  /* === HEADER === */
+  header {
+    background: var(--cream);
+    border: 4px solid var(--ink);
+    border-radius: 24px;
+    padding: 28px 36px 20px;
+    margin: 16px;
+    position: relative;
+    box-shadow: 0 8px 0 rgba(13, 36, 81, 0.25);
+  }
+
+  .header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  /* Logo circular tipo Taco Parado */
+  .brand-logo {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--blood);
+    border: 3px solid var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+    box-shadow: 0 3px 0 rgba(13, 36, 81, 0.3);
+  }
+
+  .brand-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .brand-mark {
+    font-family: 'Bungee', 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 36px;
+    line-height: 0.9;
+    letter-spacing: 0.01em;
+    color: var(--ink);
+  }
+
+  .brand-mark span {
+    color: var(--blood);
+  }
+
+  .brand-sub {
+    font-family: 'Bungee', monospace;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    color: var(--ink);
+    opacity: 0.7;
+    margin-top: 4px;
+  }
+
+  .meta-strip {
+    display: flex;
+    gap: 18px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .meta-strip div span {
+    display: block;
+    font-size: 9px;
+    opacity: 0.6;
+    margin-bottom: 2px;
+    font-weight: 500;
+  }
+
+  /* === DASHBOARD === */
+  .dashboard {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 2px dashed rgba(30, 58, 138, 0.25);
+  }
+
+  .stat {
+    padding: 14px 16px;
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 14px;
+    border-left: 6px solid var(--blood);
+  }
+
+  .stat:nth-child(2) { border-left-color: var(--ink-soft); }
+  .stat:nth-child(3) { border-left-color: var(--mustard); }
+  .stat:nth-child(4) { border-left-color: var(--blood-dark); }
+  .stat:nth-child(5) { border-left-color: var(--ink); }
+
+  .stat-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    opacity: 0.65;
+    margin-bottom: 6px;
+  }
+
+  .stat-value {
+    font-family: 'Bungee', sans-serif;
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    color: var(--blood);
+    font-family: 'Inter', sans-serif;
+  }
+
+  .stat-value.ink { color: var(--ink); }
+  .stat-value.olive { color: var(--olive); }
+
+  /* === NAV TABS === */
+  nav.tabs {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px;
+    margin: 0 16px 16px;
+    overflow-x: auto;
+    flex-wrap: wrap;
+  }
+
+  .tab {
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    padding: 12px 22px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink);
+    font-weight: 800;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.15s;
+    white-space: nowrap;
+    box-shadow: 0 4px 0 rgba(13, 36, 81, 0.3);
+  }
+
+  .tab:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 rgba(13, 36, 81, 0.3);
+  }
+
+  .tab.active {
+    background: var(--blood);
+    color: white;
+    border-color: var(--ink);
+  }
+
+  .tab.active:hover {
+    transform: translateY(-2px);
+  }
+
+  /* === MAIN === */
+  main {
+    padding: 16px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .panel { display: none; }
+  .panel.active { display: block; animation: fadeIn 0.3s ease; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 24px;
+    border-bottom: 2px solid var(--line);
+    padding-bottom: 16px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .panel-title {
+    font-family: 'Bungee', 'Inter', sans-serif;
+    font-size: 28px;
+    font-weight: 400;
+    letter-spacing: 0;
+    line-height: 1.1;
+    color: var(--cream);
+    text-shadow: 0 3px 0 rgba(13, 36, 81, 0.4);
+  }
+
+  .panel-title em {
+    color: var(--ink);
+    font-style: normal;
+    background: var(--mustard);
+    padding: 2px 12px;
+    border-radius: 8px;
+    border: 2px solid var(--ink);
+    display: inline-block;
+    text-shadow: none;
+  }
+
+  .panel-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--cream);
+    opacity: 0.95;
+    margin-top: 8px;
+    font-weight: 500;
+  }
+
+  /* === BUTTONS === */
+  .btn {
+    background: var(--ink);
+    color: white;
+    border: 2.5px solid var(--ink);
+    border-radius: 12px;
+    padding: 12px 22px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-weight: 800;
+    box-shadow: 0 4px 0 rgba(13, 36, 81, 0.4);
+  }
+
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 rgba(13, 36, 81, 0.4);
+  }
+
+  .btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 rgba(13, 36, 81, 0.4);
+  }
+
+  .btn-primary {
+    background: var(--blood);
+    border-color: var(--ink);
+  }
+
+  .btn-primary:hover {
+    background: var(--blood-dark);
+  }
+
+  .btn-export {
+    background: var(--mustard);
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+
+  .btn-export:hover {
+    background: #f59e0b;
+  }
+
+  .btn-ghost {
+    background: var(--cream);
+    color: var(--ink);
+    border-color: var(--ink);
+  }
+
+  .btn-ghost:hover {
+    background: var(--paper);
+  }
+
+  .btn-sm {
+    padding: 8px 14px;
+    font-size: 10px;
+    letter-spacing: 0.06em;
+    border-radius: 10px;
+  }
+
+  .btn-icon {
+    background: var(--cream);
+    border: 2px solid var(--ink);
+    border-radius: 8px;
+    color: var(--ink);
+    width: 34px;
+    height: 34px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 14px;
+    margin: 0 2px;
+    transition: all 0.15s;
+    font-weight: 700;
+  }
+
+  .btn-icon:hover {
+    background: var(--ink);
+    color: white;
+    transform: translateY(-1px);
+  }
+
+  .btn-icon.danger:hover {
+    background: var(--blood);
+    border-color: var(--blood);
+  }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* === FORM === */
+  .form-card {
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    border-radius: 18px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 6px 0 rgba(13, 36, 81, 0.3);
+    display: none;
+  }
+
+  .form-card.open { display: block; }
+
+  .form-card-title {
+    font-family: 'Bungee', 'Inter', sans-serif;
+    font-size: 18px;
+    font-weight: 400;
+    margin-bottom: 18px;
+    border-bottom: 2px dashed rgba(30, 58, 138, 0.25);
+    padding-bottom: 12px;
+    color: var(--ink);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .field label {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+    color: var(--ink);
+    font-weight: 700;
+  }
+
+  .field input,
+  .field select {
+    width: 100%;
+    padding: 11px 14px;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    background: var(--paper);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    transition: all 0.15s;
+    font-weight: 500;
+  }
+
+  .field input:focus,
+  .field select:focus {
+    outline: none;
+    border-color: var(--blood);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25);
+    background: white;
+  }
+
+  /* === TABLE === */
+  .table-wrap {
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    border-radius: 18px;
+    overflow: hidden;
+    box-shadow: 0 6px 0 rgba(13, 36, 81, 0.3);
+  }
+
+  .table-wrap > div { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+
+  thead {
+    background: var(--ink);
+    color: white;
+  }
+
+  thead th {
+    padding: 14px 16px;
+    text-align: left;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
+  }
+
+  thead th:last-child { border-right: none; text-align: center; }
+
+  tbody tr {
+    border-bottom: 1px solid rgba(30, 58, 138, 0.08);
+    transition: background 0.15s;
+  }
+
+  tbody tr:hover { background: rgba(249, 115, 22, 0.06); }
+  tbody tr:nth-child(even) { background: rgba(30, 58, 138, 0.025); }
+  tbody tr:nth-child(even):hover { background: rgba(249, 115, 22, 0.06); }
+
+  tbody td {
+    padding: 14px 16px;
+    border-right: 1px solid rgba(30, 58, 138, 0.05);
+    vertical-align: middle;
+  }
+
+  tbody td:last-child { border-right: none; text-align: center; white-space: nowrap; }
+
+  .price {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    color: var(--blood-dark);
+  }
+
+  .qty {
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 800;
+    border: 2px solid var(--ink);
+    border-radius: 8px;
+    background: var(--paper);
+    color: var(--ink);
+  }
+
+  .badge.carnes { background: var(--blood); color: white; }
+  .badge.quesera { background: var(--mustard); color: var(--ink); }
+  .badge.fruver { background: #65a30d; color: white; }
+  .badge.otro { background: var(--ink-soft); color: white; }
+
+  .empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--ink);
+    opacity: 0.5;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 16px;
+  }
+
+  /* === MERMAS === */
+  .mermas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+
+  .merma-card {
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    padding: 18px;
+    position: relative;
+    transition: all 0.2s;
+    cursor: pointer;
+    box-shadow: 0 5px 0 rgba(13, 36, 81, 0.3);
+  }
+
+  .merma-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 0 rgba(13, 36, 81, 0.3);
+  }
+  }
+
+  .merma-card-name {
+    font-family: 'Bungee', 'Inter', sans-serif;
+    font-size: 18px;
+    font-weight: 400;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 8px;
+    letter-spacing: 0;
+  }
+
+  .merma-card-total {
+    font-family: 'Inter', sans-serif;
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--blood);
+    line-height: 1;
+  }
+
+  .merma-card-unit {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.7;
+    margin-top: 4px;
+    font-weight: 600;
+  }
+
+  .merma-card-count {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--ink);
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 800;
+  }
+
+  .merma-calc {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0;
+    margin: 18px 0;
+    border: 2.5px solid var(--ink);
+    border-radius: 14px;
+    background: var(--paper);
+    overflow: hidden;
+  }
+  .merma-calc-item {
+    padding: 16px;
+    border-right: 1px solid rgba(30, 58, 138, 0.15);
+    text-align: center;
+  }
+  .merma-calc-item:last-child { border-right: none; }
+  .merma-calc-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    opacity: 0.7;
+    margin-bottom: 6px;
+    font-weight: 700;
+  }
+  .merma-calc-value {
+    font-family: 'Inter', sans-serif;
+    font-size: 24px;
+    font-weight: 900;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+  .merma-calc-item.alert .merma-calc-value { color: var(--blood); }
+  @media (max-width: 720px) {
+    .merma-calc-item {
+      border-right: none;
+      border-bottom: 1px solid rgba(30, 58, 138, 0.15);
+    }
+    .merma-calc-item:last-child { border-bottom: none; }
+  }
+
+  /* === MODAL === */
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(13, 36, 81, 0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal.open { display: flex; animation: fadeIn 0.2s; }
+
+  .modal-content {
+    background: var(--cream);
+    border: 4px solid var(--ink);
+    border-radius: 24px;
+    box-shadow: 0 12px 0 rgba(13, 36, 81, 0.4);
+    max-width: 540px;
+    width: 100%;
+    padding: 28px;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  .modal-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px dashed rgba(30, 58, 138, 0.25);
+    padding-bottom: 14px;
+  }
+
+  .modal-title {
+    font-family: 'Bungee', 'Inter', sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    color: var(--ink);
+  }
+
+  .modal-close {
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 50%;
+    font-size: 16px;
+    cursor: pointer;
+    color: var(--ink);
+    padding: 0;
+    width: 34px;
+    height: 34px;
+    font-weight: 800;
+  }
+
+  .modal-close:hover { background: var(--blood); color: white; }
+
+  /* === TOAST === */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--ink);
+    color: white;
+    padding: 14px 22px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    border-left: 6px solid var(--mustard);
+    box-shadow: 0 6px 0 rgba(13, 36, 81, 0.4);
+    z-index: 200;
+    transform: translateX(120%);
+    transition: transform 0.3s;
+  }
+
+  .toast.show { transform: translateX(0); }
+  .toast.success { border-left-color: #65a30d; }
+  .toast.error { border-left-color: var(--blood); }
+
+  /* === FILTER === */
+  .filter-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .filter-bar input,
+  .filter-bar select {
+    padding: 10px 14px;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    background: var(--cream);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 180px;
+  }
+
+  .filter-bar input:focus,
+  .filter-bar select:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25);
+  }
+
+  /* === DECORATIVE === */
+  .ornament {
+    text-align: center;
+    margin: 40px 0 20px;
+    font-family: 'Bungee', sans-serif;
+    color: white;
+    letter-spacing: 0.5em;
+    opacity: 0.6;
+  }
+
+  /* === RESPONSIVE === */
+  @media (max-width: 720px) {
+    header { padding: 22px 20px 16px; margin: 12px; border-radius: 20px; }
+    main { padding: 12px; }
+    nav.tabs { margin: 0 12px 12px; padding: 0; }
+    .brand-mark { font-size: 26px; }
+    .brand-logo { width: 46px; height: 46px; font-size: 22px; }
+    .panel-title { font-size: 22px; }
+    .tab { padding: 10px 16px; font-size: 11px; }
+    .stat-value { font-size: 22px; }
+    thead th, tbody td { padding: 10px; font-size: 12px; }
+    .form-card, .table-wrap { border-radius: 14px; }
+  }
+
+  /* === SCANNER === */
+  .scan-modes {
+    display: inline-flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 6px;
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+  }
+  .scan-mode {
+    padding: 10px 20px;
+    border: none;
+    background: transparent;
+    border-radius: 9px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    cursor: pointer;
+    color: var(--ink);
+    transition: all 0.15s ease;
+    font-weight: 800;
+  }
+  .scan-mode:hover { background: var(--paper); }
+  .scan-mode.active { background: var(--blood); color: white; }
+
+  .scan-pane { display: none; }
+  .scan-pane.active { display: block; animation: fadeIn 0.3s ease; }
+
+  .scan-config {
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 18px;
+    box-shadow: 0 5px 0 rgba(13, 36, 81, 0.3);
+  }
+
+  .dropzone {
+    border: 3px dashed var(--ink);
+    border-radius: 18px;
+    background: var(--cream);
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    min-height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .dropzone:hover, .dropzone.drag-over {
+    background: var(--paper);
+    border-color: var(--blood);
+    transform: translateY(-2px);
+  }
+  .dropzone-icon {
+    font-size: 64px;
+    margin-bottom: 12px;
+  }
+  .dropzone-title {
+    font-family: 'Bungee', 'Inter', sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    margin-bottom: 8px;
+    color: var(--ink);
+  }
+  .dropzone-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: rgba(13, 36, 81, 0.7);
+    margin-bottom: 18px;
+    font-weight: 500;
+  }
+  .dropzone-actions { display: flex; gap: 10px; justify-content: center; }
+  .dropzone-preview { width: 100%; }
+  .dropzone-preview img {
+    max-width: 100%;
+    max-height: 360px;
+    display: block;
+    margin: 0 auto;
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+  }
+
+  .scan-progress {
+    margin-top: 18px;
+    padding: 16px;
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+  }
+  .progress-bar {
+    height: 12px;
+    background: var(--paper);
+    border: 2px solid var(--ink);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blood), var(--mustard));
+    width: 0%;
+    transition: width 0.3s ease;
+  }
+  .progress-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    text-align: center;
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .scan-actions {
+    margin-top: 16px;
+    display: flex;
+    gap: 10px;
+  }
+
+  .ocr-raw {
+    margin-top: 18px;
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    padding: 18px;
+  }
+  .ocr-raw textarea {
+    width: 100%;
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    padding: 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    background: var(--paper);
+    resize: vertical;
+  }
+
+  .review-section {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 3px dashed rgba(255, 255, 255, 0.4);
+  }
+  .review-head { margin-bottom: 16px; }
+  .review-title {
+    font-family: 'Bungee', 'Inter', sans-serif;
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--cream);
+    text-shadow: 0 3px 0 rgba(13, 36, 81, 0.4);
+  }
+  .review-title em {
+    font-style: normal;
+    background: var(--mustard);
+    color: var(--ink);
+    padding: 2px 12px;
+    border-radius: 8px;
+    border: 2px solid var(--ink);
+    text-shadow: none;
+  }
+  .review-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--cream);
+    margin-top: 6px;
+    font-weight: 500;
+    opacity: 0.95;
+  }
+  .review-table input, .review-table select {
+    width: 100%;
+    padding: 7px 10px;
+    border: 2px solid rgba(30, 58, 138, 0.3);
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    background: white;
+    font-weight: 500;
+  }
+  .review-table input:focus, .review-table select:focus {
+    outline: none;
+    border-color: var(--blood);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.2);
+  }
+  .review-table tr.unchecked td { opacity: 0.4; }
+  .review-table input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    accent-color: var(--blood);
+  }
+  .review-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .btn-row-delete {
+    background: var(--cream);
+    border: 2px solid var(--blood);
+    border-radius: 8px;
+    color: var(--blood);
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+  }
+  .btn-row-delete:hover { background: var(--blood); color: white; }
+</style>
+
+  /* === SEDE SELECTOR === */
+  .sede-bar {
+    display: flex;
+    gap: 8px;
+    padding: 0 16px;
+    margin: 0 16px 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .sede-btn {
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: all 0.15s;
+    box-shadow: 0 3px 0 rgba(13,36,81,0.3);
+    color: var(--ink);
+  }
+  .sede-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 0 rgba(13,36,81,0.3); }
+  .sede-btn.active { background: var(--blood); color: white; border-color: var(--ink); }
+  .sede-fixed {
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    color: var(--ink);
+    box-shadow: 0 3px 0 rgba(13,36,81,0.3);
+  }
+
+  .user-bar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .user-chip {
+    background: rgba(13,36,81,0.08);
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .user-chip .role-badge {
+    background: var(--blood);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 9px;
+    letter-spacing: 0.08em;
+  }
+  .user-chip .logout-btn {
+    background: transparent;
+    border: none;
+    color: var(--blood);
+    cursor: pointer;
+    font-weight: 800;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+  }
+  .user-chip .logout-btn:hover { text-decoration: underline; }
+  .nav-link {
+    background: var(--cream);
+    border: 2px solid var(--ink);
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--ink);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .nav-link:hover { background: var(--paper); }
+
+  .loading-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-family: 'Bungee', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+  }
+  .loading-screen .spinner {
+    width: 44px;
+    height: 44px;
+    border: 4px solid rgba(255,255,255,0.3);
+    border-top-color: var(--mustard);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+
+<div id="loading-screen" class="loading-screen">
+  <div style="text-align:center;">
+    <div class="spinner"></div>
+    <div>CARGANDO INVENTARIO…</div>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+
+<header>
+  <div class="header-top">
+    <div>
+      <div class="brand">
+        <div class="brand-logo">🌮</div>
+        <div class="brand-text">
+          <div class="brand-mark">TACO <span>PARADO</span></div>
+          <div class="brand-sub">Inventario · Compras · Mermas</div>
+        </div>
+      </div>
+    </div>
+    <div class="user-bar">
+      <a href="index.html" class="nav-link">← Panel admin</a>
+      <div class="user-chip">
+        <span id="userEmail">...</span>
+        <span class="role-badge" id="userRole">...</span>
+        <button class="logout-btn" onclick="logout()">SALIR</button>
+      </div>
+    </div>
+  </div>
+  <div class="meta-strip" style="margin-top:12px;">
+    <div><span>Fecha</span><strong id="todayDate">—</strong></div>
+    <div><span>Estado</span><strong style="color: #16a34a;">● ACTIVO</strong></div>
+  </div>
+
+  <div class="dashboard">
+    <div class="stat">
+      <div class="stat-label">Proveedores</div>
+      <div class="stat-value ink" id="statProveedores">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Productos</div>
+      <div class="stat-value" id="statProductos">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Inversión Total</div>
+      <div class="stat-value olive" id="statInversion">$0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Mermas Registradas</div>
+      <div class="stat-value ink" id="statMermas">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Total en Mermas (kg)</div>
+      <div class="stat-value" id="statMermasKg">0</div>
+    </div>
+  </div>
+</header>
+
+<div class="sede-bar" id="sedeSelector" style="display:none;"></div>
+
+<nav class="tabs">
+  <button class="tab active" data-panel="productos">Inventario</button>
+  <button class="tab" data-panel="escanear">Escanear</button>
+  <button class="tab" data-panel="proveedores">Proveedores</button>
+  <button class="tab" data-panel="mermas">Mermas</button>
+  <button class="tab" data-panel="exportar">Exportar</button>
+</nav>
+
+<main>
+
+  <!-- === PRODUCTOS === -->
+  <section class="panel active" id="panel-productos">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">Inventario de <em>Compras</em></h2>
+        <div class="panel-sub">Registro de productos por proveedor</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="toggleForm('formProducto')">+ Agregar Producto</button>
+      </div>
+    </div>
+
+    <div class="form-card" id="formProducto">
+      <div class="form-card-title" id="formProductoTitle">Nuevo producto</div>
+      <input type="hidden" id="prodId">
+      <div class="form-grid">
+        <div class="field">
+          <label>Nombre</label>
+          <input type="text" id="prodNombre" placeholder="Ej: Costilla de res">
+        </div>
+        <div class="field">
+          <label>Cantidad</label>
+          <input type="number" id="prodCantidad" step="0.01" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label>Unidad</label>
+          <select id="prodUnidad">
+            <option value="kg">kg</option>
+            <option value="g">g</option>
+            <option value="lb">lb</option>
+            <option value="pza">pieza</option>
+            <option value="caja">caja</option>
+            <option value="L">litro</option>
+            <option value="bulto">bulto</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Precio Unitario</label>
+          <input type="number" id="prodPrecio" step="0.01" placeholder="0.00">
+        </div>
+        <div class="field">
+          <label>Proveedor</label>
+          <select id="prodProveedor"></select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="saveProducto()">Guardar</button>
+        <button class="btn btn-ghost" onclick="toggleForm('formProducto')">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <input type="text" id="filterProdNombre" placeholder="🔍 Buscar producto..." oninput="renderProductos()">
+      <select id="filterProdProv" onchange="renderProductos()">
+        <option value="">Todos los proveedores</option>
+      </select>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Producto</th>
+            <th>Cantidad</th>
+            <th>Precio Unit.</th>
+            <th>Subtotal</th>
+            <th>Proveedor</th>
+            <th>Categoría</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tblProductos"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- === ESCANEAR === -->
+  <section class="panel" id="panel-escanear">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">Escanear <em>Factura</em></h2>
+        <div class="panel-sub">Foto, cámara o texto pegado · OCR automático con revisión</div>
+      </div>
+    </div>
+
+    <div class="scan-modes">
+      <button class="scan-mode active" data-mode="foto">📷 Foto / Cámara</button>
+      <button class="scan-mode" data-mode="texto">📝 Pegar texto</button>
+    </div>
+
+    <!-- Modo Foto -->
+    <div class="scan-pane active" id="scanFoto">
+      <div class="scan-config">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Proveedor (asignar a todos los items)</label>
+            <select id="scanProveedor">
+              <option value="">-- Selecciona un proveedor --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fecha de compra</label>
+            <input type="date" id="scanFecha">
+          </div>
+        </div>
+      </div>
+
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept="image/*" capture="environment" hidden>
+        <div class="dropzone-content">
+          <div class="dropzone-icon">📸</div>
+          <div class="dropzone-title">Toma una foto o sube una imagen</div>
+          <div class="dropzone-sub">Arrastra aquí · Toca para abrir cámara · O pega con Ctrl+V</div>
+          <div class="dropzone-actions">
+            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">Seleccionar imagen</button>
+          </div>
+        </div>
+        <div class="dropzone-preview" id="dropzonePreview" style="display:none">
+          <img id="previewImg" alt="Vista previa">
+        </div>
+      </div>
+
+      <div class="scan-progress" id="scanProgress" style="display:none">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="progress-text" id="progressText">Procesando...</div>
+      </div>
+
+      <div class="scan-actions" id="scanActions" style="display:none">
+        <button class="btn btn-primary" id="btnProcesarOCR">Procesar imagen</button>
+        <button class="btn btn-ghost" onclick="resetScanFoto()">Cancelar</button>
+      </div>
+
+      <div class="ocr-raw" id="ocrRaw" style="display:none">
+        <label>Texto detectado (puedes editarlo antes de extraer)</label>
+        <textarea id="ocrRawText" rows="8"></textarea>
+        <div style="margin-top:10px">
+          <button class="btn btn-primary" onclick="extraerDeTexto(document.getElementById('ocrRawText').value)">Extraer items →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modo Texto -->
+    <div class="scan-pane" id="scanTexto">
+      <div class="scan-config">
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Proveedor</label>
+            <select id="scanProveedorTxt">
+              <option value="">-- Selecciona un proveedor --</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Fecha de compra</label>
+            <input type="date" id="scanFechaTxt">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Pega aquí el texto de la factura, mensaje del proveedor o lista</label>
+        <textarea id="scanTextoInput" rows="10" placeholder="Ejemplos válidos:&#10;&#10;Costilla 5 kg 22000&#10;Cebolla larga - 3kg - $3500&#10;Tomate chonto 10 x 2800&#10;Queso doble crema 5kg 14.000&#10;&#10;Pega lo que tengas, el sistema intentará reconocer producto, cantidad y precio."></textarea>
+      </div>
+      <button class="btn btn-primary" onclick="extraerDeTexto(document.getElementById('scanTextoInput').value)">Extraer items →</button>
+    </div>
+
+    <!-- Tabla de revisión -->
+    <div class="review-section" id="reviewSection" style="display:none">
+      <div class="review-head">
+        <h3 class="review-title">Revisar y editar antes de guardar</h3>
+        <div class="review-sub">Corrige cualquier error del OCR · Marca los items que NO quieres importar</div>
+      </div>
+
+      <div class="table-wrap">
+        <table class="review-table">
+          <thead>
+            <tr>
+              <th style="width:40px">✓</th>
+              <th>Producto</th>
+              <th style="width:90px">Cantidad</th>
+              <th style="width:80px">Unidad</th>
+              <th style="width:120px">Precio Unit.</th>
+              <th style="width:60px"></th>
+            </tr>
+          </thead>
+          <tbody id="reviewBody"></tbody>
+        </table>
+      </div>
+
+      <div class="review-actions">
+        <button class="btn btn-ghost" onclick="addReviewRow()">+ Añadir fila manual</button>
+        <div style="flex:1"></div>
+        <button class="btn btn-ghost" onclick="cancelReview()">Cancelar todo</button>
+        <button class="btn btn-primary" onclick="confirmarImportacion()">✓ Importar al inventario</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- === PROVEEDORES === -->
+  <section class="panel" id="panel-proveedores">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">Lista de <em>Proveedores</em></h2>
+        <div class="panel-sub">Carnes · Quesera · Fruver · Otros</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="toggleForm('formProveedor')">+ Agregar Proveedor</button>
+      </div>
+    </div>
+
+    <div class="form-card" id="formProveedor">
+      <div class="form-card-title" id="formProveedorTitle">Nuevo proveedor</div>
+      <input type="hidden" id="provId">
+      <div class="form-grid">
+        <div class="field">
+          <label>Nombre / Razón Social</label>
+          <input type="text" id="provNombre" placeholder="Ej: Carnicería Don Julio">
+        </div>
+        <div class="field">
+          <label>Categoría</label>
+          <select id="provCategoria">
+            <option value="carnes">Carnes</option>
+            <option value="quesera">Quesera</option>
+            <option value="fruver">Fruver</option>
+            <option value="otros">Otros</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Teléfono</label>
+          <input type="text" id="provTelefono" placeholder="3xx xxx xxxx">
+        </div>
+        <div class="field">
+          <label>Contacto</label>
+          <input type="text" id="provContacto" placeholder="Nombre del contacto">
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="saveProveedor()">Guardar</button>
+        <button class="btn btn-ghost" onclick="toggleForm('formProveedor')">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Proveedor</th>
+            <th>Categoría</th>
+            <th>Teléfono</th>
+            <th>Contacto</th>
+            <th>Productos</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tblProveedores"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- === MERMAS === -->
+  <section class="panel" id="panel-mermas">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">Cuadro de <em>Mermas</em></h2>
+        <div class="panel-sub">Suadero · Longaniza · Birria · Asada · Pastor · Oreja · Lengua</div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="toggleForm('formMerma')">+ Registrar Merma</button>
+      </div>
+    </div>
+
+    <div class="mermas-grid" id="mermasResumen"></div>
+
+    <div class="form-card" id="formMerma">
+      <div class="form-card-title" id="formMermaTitle">Registrar merma de cocción</div>
+      <input type="hidden" id="mermaId">
+      <div class="form-grid">
+        <div class="field">
+          <label>Tipo de Carne</label>
+          <select id="mermaTipo">
+            <option value="suadero">Suadero</option>
+            <option value="longaniza">Longaniza</option>
+            <option value="birria">Birria</option>
+            <option value="asada">Asada</option>
+            <option value="pastor">Pastor</option>
+            <option value="oreja">Oreja</option>
+            <option value="lengua">Lengua</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Fecha</label>
+          <input type="date" id="mermaFecha">
+        </div>
+        <div class="field">
+          <label>Peso ANTES de cocción (kg)</label>
+          <input type="number" id="mermaPesoAntes" step="0.01" placeholder="0.00" oninput="recalcMerma()">
+        </div>
+        <div class="field">
+          <label>Peso DESPUÉS de cocción (kg)</label>
+          <input type="number" id="mermaPesoDespues" step="0.01" placeholder="0.00" oninput="recalcMerma()">
+        </div>
+        <div class="field">
+          <label>Costo por kg crudo (opcional)</label>
+          <input type="number" id="mermaCosto" step="0.01" placeholder="0.00" oninput="recalcMerma()">
+        </div>
+        <div class="field" style="grid-column: 1 / -1;">
+          <label>Motivo / Observación</label>
+          <input type="text" id="mermaMotivo" placeholder="Ej: Cocción normal, exceso de grasa, fuego alto...">
+        </div>
+      </div>
+
+      <!-- Resumen calculado en vivo -->
+      <div class="merma-calc" id="mermaCalc">
+        <div class="merma-calc-item">
+          <div class="merma-calc-label">Merma absoluta</div>
+          <div class="merma-calc-value" id="calcAbsoluta">0,00 kg</div>
+        </div>
+        <div class="merma-calc-item">
+          <div class="merma-calc-label">% de pérdida</div>
+          <div class="merma-calc-value" id="calcPorcentaje">0%</div>
+        </div>
+        <div class="merma-calc-item">
+          <div class="merma-calc-label">Rendimiento</div>
+          <div class="merma-calc-value" id="calcRendimiento">100%</div>
+        </div>
+        <div class="merma-calc-item">
+          <div class="merma-calc-label">Valor perdido</div>
+          <div class="merma-calc-value" id="calcValor">$0</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-primary" onclick="saveMerma()">Guardar</button>
+        <button class="btn btn-ghost" onclick="toggleForm('formMerma')">Cancelar</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Tipo de Carne</th>
+            <th>Antes (kg)</th>
+            <th>Después (kg)</th>
+            <th>Merma (kg)</th>
+            <th>%</th>
+            <th>Valor</th>
+            <th>Motivo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tblMermas"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- === EXPORTAR === -->
+  <section class="panel" id="panel-exportar">
+    <div class="panel-head">
+      <div>
+        <h2 class="panel-title">Exportar <em>Informe</em></h2>
+        <div class="panel-sub">Genera un archivo Excel con todos los datos</div>
+      </div>
+    </div>
+
+    <div style="background: var(--cream); border: 3px solid var(--ink); border-radius: 18px; padding: 28px; box-shadow: 0 6px 0 rgba(13, 36, 81, 0.3);">
+      <p style="font-family: 'Inter', sans-serif; font-size: 16px; line-height: 1.6; margin-bottom: 24px; font-weight: 500; color: var(--ink);">
+        El archivo Excel incluirá <strong>4 hojas</strong>: <em>Resumen General</em>, <em>Proveedores</em>, <em>Inventario de Productos</em> y <em>Mermas</em>.
+      </p>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 28px;">
+        <div style="padding: 14px 16px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); border-left: 6px solid var(--blood);">
+          <div style="font-family: 'Inter', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.65; font-weight: 700;">Hoja 1</div>
+          <div style="font-family: 'Bungee', sans-serif; font-weight: 400; font-size: 14px; margin-top: 4px;">Resumen</div>
+        </div>
+        <div style="padding: 14px 16px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); border-left: 6px solid var(--ink-soft);">
+          <div style="font-family: 'Inter', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.65; font-weight: 700;">Hoja 2</div>
+          <div style="font-family: 'Bungee', sans-serif; font-weight: 400; font-size: 14px; margin-top: 4px;">Proveedores</div>
+        </div>
+        <div style="padding: 14px 16px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); border-left: 6px solid var(--mustard);">
+          <div style="font-family: 'Inter', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.65; font-weight: 700;">Hoja 3</div>
+          <div style="font-family: 'Bungee', sans-serif; font-weight: 400; font-size: 14px; margin-top: 4px;">Inventario</div>
+        </div>
+        <div style="padding: 14px 16px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); border-left: 6px solid var(--blood-dark);">
+          <div style="font-family: 'Inter', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.65; font-weight: 700;">Hoja 4</div>
+          <div style="font-family: 'Bungee', sans-serif; font-weight: 400; font-size: 14px; margin-top: 4px;">Mermas</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn btn-export" onclick="exportToExcel()">↓ Descargar Excel</button>
+        <button class="btn" onclick="exportBackup()">↓ Backup JSON</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">↑ Restaurar Backup</button>
+        <input type="file" id="importFile" accept=".json" style="display:none" onchange="importBackup(event)">
+      </div>
+
+      <div style="margin-top: 32px; padding-top: 24px; border-top: 2px dashed rgba(30, 58, 138, 0.25);">
+        <div style="font-family: 'Inter', sans-serif; font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.65; margin-bottom: 12px; font-weight: 700; color: var(--blood);">⚠ Zona de peligro</div>
+        <button class="btn" onclick="clearAllData()" style="background: var(--cream); border-color: var(--blood); color: var(--blood);">⚠ Borrar todos los datos</button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+</div><!-- /app -->
+
+<div class="toast" id="toast"></div>
+
+<script src="inventario.js"></script>
+</body>
+</html>
