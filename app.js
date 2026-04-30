@@ -203,6 +203,27 @@ async function showApp() {
   await loadData();
   setupRealtime();
   procesarQueryVisita();
+  mostrarTabInventario();
+}
+
+// Mostrar pestaña de inventario solo para admin y jefe de producción
+async function mostrarTabInventario() {
+  try {
+    const { data: roles } = await window.supabase
+      .from('usuarios_roles')
+      .select('rol')
+      .eq('user_id', currentUser.id);
+
+    if (roles && roles.length > 0) {
+      const rol = roles[0].rol;
+      if (rol === 'admin' || rol === 'jefe_produccion') {
+        const tabInv = document.getElementById('tab-inventario');
+        if (tabInv) tabInv.style.display = 'inline-block';
+      }
+    }
+  } catch (e) {
+    console.error('Error cargando rol:', e);
+  }
 }
 
 window.logout = async function() {
