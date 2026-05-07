@@ -17,9 +17,14 @@ let selectedSedeId = null; // sede activa seleccionada en el UI
 let proveedores = [];
 let productos = [];
 let mermas = [];
+let catalogo = [];      // catálogo de precios por proveedor
+let auditoria = [];     // log de auditoría
 
 let reviewItems = [];
 let scanFile = null;
+
+// Carnes que se rastrean para vista crudo/cocinado
+const CARNES = ['pastor', 'suadero', 'longaniza', 'birria', 'asada', 'oreja', 'lengua'];
 
 // ==============================================================
 // HELPERS
@@ -42,6 +47,34 @@ function toast(msg, type = 'success') {
 
 async function waitForSupabase() {
   while (!window.supabase) await new Promise(r => setTimeout(r, 50));
+}
+
+// Helper: día de la semana en español
+function diaSemana(fechaStr) {
+  if (!fechaStr) return '—';
+  const dias = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const d = new Date(fechaStr + 'T12:00:00');
+  return dias[d.getDay()];
+}
+
+function fechaCorta(fechaStr) {
+  if (!fechaStr) return '—';
+  const d = new Date(fechaStr + 'T12:00:00');
+  return d.toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
+}
+
+// AUDITORÍA: registrar acción
+async function logAudit(accion, entidad, entidad_id, descripcion, datos_antes = null, datos_despues = null) {
+  try {
+    await window.supabase.from('auditoria_inventario').insert({
+      sede_id: selectedSedeId,
+      user_id: currentUser?.id,
+      user_email: currentUser?.email,
+      accion, entidad, entidad_id: String(entidad_id || ''),
+      descripcion,
+      datos_antes, datos_despues
+    });
+  } catch (e) { console.warn('Audit fail:', e); }
 }
 
 // ==============================================================
@@ -170,22 +203,35 @@ async function loadData() {
   if (!selectedSedeId) return;
 
   try {
-    const [provRes, prodRes, merRes] = await Promise.all([
+    const [provRes, prodRes, merRes, catRes] = await Promise.all([
       window.supabase.from('proveedores').select('*').eq('sede_id', selectedSedeId).order('nombre'),
       window.supabase.from('productos').select('*').eq('sede_id', selectedSedeId).order('created_at', { ascending: false }),
-      window.supabase.from('mermas').select('*').eq('sede_id', selectedSedeId).order('fecha', { ascending: false })
+      window.supabase.from('mermas').select('*').eq('sede_id', selectedSedeId).order('fecha', { ascending: false }),
+      window.supabase.from('productos_catalogo').select('*').eq('sede_id', selectedSedeId).eq('activo', true).order('nombre')
     ]);
 
     proveedores = provRes.data || [];
     productos = prodRes.data || [];
     mermas = merRes.data || [];
+    catalogo = catRes.data || [];
 
     renderAll();
     await loadCierres();
+    await loadAuditoria();
   } catch (err) {
     console.error(err);
     toast('Error al cargar datos: ' + err.message, 'error');
   }
+}
+
+async function loadAuditoria() {
+  try {
+    let q = window.supabase.from('auditoria_inventario').select('*').order('created_at', { ascending: false }).limit(200);
+    if (userRole !== 'admin' && selectedSedeId) q = q.eq('sede_id', selectedSedeId);
+    const { data } = await q;
+    auditoria = data || [];
+    renderAuditoria();
+  } catch (e) { console.error('Error auditoria:', e); }
 }
 
 // ==============================================================
@@ -193,9 +239,12 @@ async function loadData() {
 // ==============================================================
 function renderAll() {
   refreshProveedorSelects();
+  refreshCatalogoSelects();
+  renderStockActual();
   renderProveedores();
   renderProductos();
   renderMermas();
+  renderCatalogo();
   renderStats();
 
   const today = new Date().toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' });
@@ -225,14 +274,19 @@ window.saveProveedor = async function() {
 
   try {
     if (id) {
-      const { error } = await window.supabase.from('proveedores').update({ nombre, categoria, contacto: telefono ? `${contacto} · ${telefono}` : contacto }).eq('id', id);
+      const antes = proveedores.find(x => x.id === id);
+      const update = { nombre, categoria, contacto: telefono ? `${contacto} · ${telefono}` : contacto };
+      const { error } = await window.supabase.from('proveedores').update(update).eq('id', id);
       if (error) throw error;
+      await logAudit('editar', 'proveedor', id, `Editó proveedor "${nombre}"`, antes, update);
       toast('Proveedor actualizado');
     } else {
-      const { error } = await window.supabase.from('proveedores').insert({
+      const insert = {
         sede_id: selectedSedeId, nombre, categoria, contacto: telefono ? `${contacto} · ${telefono}` : contacto
-      });
+      };
+      const { data, error } = await window.supabase.from('proveedores').insert(insert).select().single();
       if (error) throw error;
+      await logAudit('crear', 'proveedor', data.id, `Agregó proveedor "${nombre}"`, null, insert);
       toast('Proveedor agregado');
     }
     await loadData();
@@ -258,12 +312,15 @@ window.editProveedor = function(id) {
 };
 
 window.deleteProveedor = async function(id) {
-  const usados = productos.filter(p => p.proveedor_id === id).length;
+  const p = proveedores.find(x => x.id === id);
+  if (!p) return;
+  const usados = productos.filter(pr => pr.proveedor_id === id).length;
   const msg = usados > 0 ? `Tiene ${usados} producto(s). ¿Eliminar?` : '¿Eliminar proveedor?';
   if (!confirm(msg)) return;
   try {
     const { error } = await window.supabase.from('proveedores').delete().eq('id', id);
     if (error) throw error;
+    await logAudit('eliminar', 'proveedor', id, `Eliminó proveedor "${p.nombre}"`, p, null);
     await loadData();
     toast('Eliminado');
   } catch (err) { toast('Error: ' + err.message, 'error'); }
@@ -302,10 +359,12 @@ function refreshProveedorSelects() {
   const filter = document.getElementById('filterProdProv');
   const scanProv = document.getElementById('scanProveedor');
   const scanProvTxt = document.getElementById('scanProveedorTxt');
+  const catProv = document.getElementById('catProveedor');
   if (sel) sel.innerHTML = opts || empty;
   if (filter) filter.innerHTML = all + opts;
   if (scanProv) scanProv.innerHTML = '<option value="">-- Seleccionar --</option>' + opts;
   if (scanProvTxt) scanProvTxt.innerHTML = '<option value="">-- Seleccionar --</option>' + opts;
+  if (catProv) catProv.innerHTML = '<option value="">— Cualquier proveedor —</option>' + opts;
 }
 
 // ==============================================================
@@ -318,20 +377,38 @@ window.saveProducto = async function() {
   const unidad = document.getElementById('prodUnidad').value;
   const precio = parseFloat(document.getElementById('prodPrecio').value) || 0;
   const proveedor_id = document.getElementById('prodProveedor').value;
+  const numero_factura = document.getElementById('prodFactura')?.value.trim() || null;
+  const fecha = document.getElementById('prodFecha')?.value || new Date().toISOString().slice(0,10);
+  const estado = document.getElementById('prodEstado')?.value || 'crudo';
+  const catalogo_id = document.getElementById('prodCatalogo')?.value || null;
   if (!nombre) { toast('Falta el nombre', 'error'); return; }
 
   try {
     if (id) {
-      const { error } = await window.supabase.from('productos').update({
-        nombre, cantidad, unidad, precio, proveedor_id: proveedor_id || null, updated_at: new Date().toISOString()
-      }).eq('id', id);
+      const antes = productos.find(p => p.id === id);
+      const update = {
+        nombre, cantidad, unidad, precio,
+        proveedor_id: proveedor_id || null,
+        numero_factura, fecha, estado,
+        catalogo_id: catalogo_id || null,
+        updated_at: new Date().toISOString()
+      };
+      const { error } = await window.supabase.from('productos').update(update).eq('id', id);
       if (error) throw error;
+      await logAudit('editar', 'producto', id, `Editó "${nombre}"`, antes, update);
       toast('Producto actualizado');
     } else {
-      const { error } = await window.supabase.from('productos').insert({
-        sede_id: selectedSedeId, nombre, cantidad, unidad, precio, proveedor_id: proveedor_id || null
-      });
+      const insert = {
+        sede_id: selectedSedeId, nombre, cantidad, unidad, precio,
+        proveedor_id: proveedor_id || null,
+        catalogo_id: catalogo_id || null,
+        numero_factura, fecha, estado,
+        responsable_id: currentUser.id,
+        responsable_email: currentUser.email
+      };
+      const { data, error } = await window.supabase.from('productos').insert(insert).select().single();
       if (error) throw error;
+      await logAudit('crear', 'producto', data.id, `Agregó "${nombre}" (${cantidad} ${unidad}) por ${fmtMoney(precio)}`, null, insert);
       toast('Producto agregado');
     }
     await loadData();
@@ -350,6 +427,10 @@ window.editProducto = function(id) {
   document.getElementById('prodUnidad').value = p.unidad || 'kg';
   document.getElementById('prodPrecio').value = p.precio;
   document.getElementById('prodProveedor').value = p.proveedor_id || '';
+  const fact = document.getElementById('prodFactura'); if (fact) fact.value = p.numero_factura || '';
+  const fec = document.getElementById('prodFecha'); if (fec) fec.value = p.fecha || new Date().toISOString().slice(0,10);
+  const est = document.getElementById('prodEstado'); if (est) est.value = p.estado || 'crudo';
+  const cat = document.getElementById('prodCatalogo'); if (cat) cat.value = p.catalogo_id || '';
   document.getElementById('formProductoTitle').textContent = 'Editar producto';
   const f = document.getElementById('formProducto');
   if (!f.classList.contains('open')) f.classList.add('open');
@@ -357,13 +438,28 @@ window.editProducto = function(id) {
 };
 
 window.deleteProducto = async function(id) {
-  if (!confirm('¿Eliminar producto?')) return;
+  const p = productos.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(`¿Eliminar "${p.nombre}"?`)) return;
   try {
     const { error } = await window.supabase.from('productos').delete().eq('id', id);
     if (error) throw error;
+    await logAudit('eliminar', 'producto', id, `Eliminó "${p.nombre}"`, p, null);
     await loadData();
     toast('Eliminado');
   } catch (err) { toast('Error: ' + err.message, 'error'); }
+};
+
+// Auto-completar precio cuando se selecciona del catálogo
+window.aplicarCatalogo = function() {
+  const catId = document.getElementById('prodCatalogo').value;
+  if (!catId) return;
+  const cat = catalogo.find(c => c.id === catId);
+  if (!cat) return;
+  document.getElementById('prodNombre').value = cat.nombre;
+  document.getElementById('prodPrecio').value = cat.precio_kg;
+  document.getElementById('prodUnidad').value = cat.unidad || 'kg';
+  if (cat.proveedor_id) document.getElementById('prodProveedor').value = cat.proveedor_id;
 };
 
 function renderProductos() {
@@ -378,20 +474,31 @@ function renderProductos() {
   });
 
   if (lista.length === 0) {
-    tb.innerHTML = '<tr><td colspan="7"><div class="empty">Sin productos en el inventario.</div></td></tr>';
+    tb.innerHTML = '<tr><td colspan="10"><div class="empty">Sin productos en el inventario.</div></td></tr>';
     return;
   }
 
   tb.innerHTML = lista.map(p => {
     const prov = proveedores.find(x => x.id === p.proveedor_id);
     const subtotal = (p.cantidad || 0) * (p.precio || 0);
+    const estadoBadge = p.estado === 'cocinado'
+      ? '<span class="badge" style="background:#fed7aa; color:#7c2d12;">🔥 Cocinado</span>'
+      : '<span class="badge" style="background:#fef3c7; color:#854d0e;">🥩 Crudo</span>';
     return `<tr>
-      <td><strong>${escapeHTML(p.nombre)}</strong></td>
+      <td>
+        <strong>${escapeHTML(p.nombre)}</strong>
+        ${p.numero_factura ? `<div style="font-size:10px; opacity:.6; margin-top:2px;">Factura: ${escapeHTML(p.numero_factura)}</div>` : ''}
+      </td>
+      <td>${estadoBadge}</td>
       <td class="qty">${fmt(p.cantidad)} ${p.unidad || ''}</td>
       <td class="price">${fmtMoney(p.precio)}</td>
       <td class="price"><strong>${fmtMoney(subtotal)}</strong></td>
       <td>${prov ? escapeHTML(prov.nombre) : '<em style="opacity:.5">sin prov.</em>'}</td>
-      <td>${prov ? `<span class="badge ${prov.categoria||'general'}">${prov.categoria||'general'}</span>` : '—'}</td>
+      <td>
+        <div style="font-size:11px;">${fechaCorta(p.fecha)}</div>
+        <div style="font-size:9px; opacity:.6;">${diaSemana(p.fecha)}</div>
+      </td>
+      <td style="font-size:10px; opacity:.7;">${escapeHTML((p.responsable_email || '').split('@')[0] || '—')}</td>
       <td>
         <button class="btn-icon" onclick="editProducto('${p.id}')">✎</button>
         <button class="btn-icon danger" onclick="deleteProducto('${p.id}')">✕</button>
@@ -443,16 +550,19 @@ window.saveMerma = async function() {
 
   try {
     if (id) {
-      const { error } = await window.supabase.from('mermas').update({
-        tipo, peso_antes, peso_despues, cantidad, porcentaje, costo, fecha, motivo
-      }).eq('id', id);
+      const antes = mermas.find(x => x.id === id);
+      const update = { tipo, peso_antes, peso_despues, cantidad, porcentaje, costo, fecha, motivo };
+      const { error } = await window.supabase.from('mermas').update(update).eq('id', id);
       if (error) throw error;
+      await logAudit('editar', 'merma', id, `Editó merma de ${tipo}`, antes, update);
       toast('Merma actualizada');
     } else {
-      const { error } = await window.supabase.from('mermas').insert({
+      const insert = {
         sede_id: selectedSedeId, tipo, peso_antes, peso_despues, cantidad, porcentaje, costo, fecha, motivo, registrado_por: currentUser.id
-      });
+      };
+      const { data, error } = await window.supabase.from('mermas').insert(insert).select().single();
       if (error) throw error;
+      await logAudit('crear', 'merma', data.id, `Registró merma de ${tipo}: ${fmt(cantidad)} kg (${porcentaje.toFixed(1)}%)`, null, insert);
       toast('Merma registrada');
     }
     await loadData();
@@ -482,10 +592,13 @@ window.editMerma = function(id) {
 };
 
 window.deleteMerma = async function(id) {
+  const m = mermas.find(x => x.id === id);
+  if (!m) return;
   if (!confirm('¿Eliminar merma?')) return;
   try {
     const { error } = await window.supabase.from('mermas').delete().eq('id', id);
     if (error) throw error;
+    await logAudit('eliminar', 'merma', id, `Eliminó merma de ${m.tipo} (${fmt(m.cantidad)} kg)`, m, null);
     await loadData();
     toast('Eliminada');
   } catch (err) { toast('Error: ' + err.message, 'error'); }
@@ -743,6 +856,208 @@ window.confirmarImportacion = async function() {
 };
 
 // ==============================================================
+// STOCK ACTUAL (Vista crudo/cocinado por carne)
+// ==============================================================
+function renderStockActual() {
+  const container = document.getElementById('stockActual');
+  if (!container) return;
+
+  // Calcular crudo y cocinado por carne (de productos en inventario)
+  const stock = {};
+  CARNES.forEach(carne => {
+    stock[carne] = { crudo: 0, cocinado: 0, total_kg: 0 };
+  });
+
+  // Productos en inventario (entrada)
+  productos.forEach(p => {
+    const nombreLower = (p.nombre || '').toLowerCase();
+    const carne = CARNES.find(c => nombreLower.includes(c));
+    if (!carne) return;
+    if (p.unidad !== 'kg') return; // solo contamos kg
+
+    if (p.estado === 'cocinado') {
+      stock[carne].cocinado += (p.cantidad || 0);
+    } else {
+      stock[carne].crudo += (p.cantidad || 0);
+    }
+  });
+
+  // Restar mermas (las mermas son lo que se perdió, no entran al stock final)
+  // Ya está implícito: peso_despues = lo que queda cocinado real
+  // Pero como el inventario se registra después de cocinar, no tocamos
+
+  container.innerHTML = `
+    <div class="stock-grid">
+      ${CARNES.map(carne => {
+        const s = stock[carne];
+        const total = s.crudo + s.cocinado;
+        const pctCocinado = total > 0 ? (s.cocinado / total) * 100 : 0;
+        return `
+          <div class="stock-card" onclick="filtrarPorCarne('${carne}')">
+            <div class="stock-name">${carne}</div>
+            <div class="stock-bars">
+              <div class="stock-bar-row">
+                <span class="stock-label">🥩 Crudo</span>
+                <span class="stock-val">${fmt(s.crudo)} kg</span>
+              </div>
+              <div class="stock-bar-row">
+                <span class="stock-label">🔥 Cocinado</span>
+                <span class="stock-val">${fmt(s.cocinado)} kg</span>
+              </div>
+            </div>
+            <div class="stock-total">Total: <strong>${fmt(total)} kg</strong></div>
+            ${total > 0 ? `<div class="stock-progress"><div style="width:${pctCocinado}%"></div></div>` : ''}
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+window.filtrarPorCarne = function(carne) {
+  const input = document.getElementById('filterProdNombre');
+  if (input) {
+    input.value = carne;
+    renderProductos();
+    document.querySelector('.tabla-wrap-prod')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+};
+
+// ==============================================================
+// CATÁLOGO DE PRECIOS POR PROVEEDOR
+// ==============================================================
+window.saveCatalogo = async function() {
+  const id = document.getElementById('catId').value;
+  const nombre = document.getElementById('catNombre').value.trim();
+  const categoria = document.getElementById('catCategoria').value;
+  const unidad = document.getElementById('catUnidad').value;
+  const precio_kg = parseFloat(document.getElementById('catPrecio').value) || 0;
+  const proveedor_id = document.getElementById('catProveedor').value;
+  if (!nombre) { toast('Falta el nombre', 'error'); return; }
+
+  try {
+    if (id) {
+      const antes = catalogo.find(c => c.id === id);
+      const update = { nombre, categoria, unidad, precio_kg, proveedor_id: proveedor_id || null, updated_at: new Date().toISOString() };
+      const { error } = await window.supabase.from('productos_catalogo').update(update).eq('id', id);
+      if (error) throw error;
+      const cambioPrecio = antes && antes.precio_kg !== precio_kg
+        ? ` (precio: ${fmtMoney(antes.precio_kg)} → ${fmtMoney(precio_kg)})` : '';
+      await logAudit('editar', 'catalogo', id, `Editó catálogo "${nombre}"${cambioPrecio}`, antes, update);
+      toast('Catálogo actualizado');
+    } else {
+      const insert = { sede_id: selectedSedeId, nombre, categoria, unidad, precio_kg, proveedor_id: proveedor_id || null };
+      const { data, error } = await window.supabase.from('productos_catalogo').insert(insert).select().single();
+      if (error) throw error;
+      await logAudit('crear', 'catalogo', data.id, `Agregó "${nombre}" al catálogo (${fmtMoney(precio_kg)}/${unidad})`, null, insert);
+      toast('Producto agregado al catálogo');
+    }
+    await loadData();
+    toggleForm('formCatalogo');
+  } catch (err) {
+    toast('Error: ' + err.message, 'error');
+  }
+};
+
+window.editCatalogo = function(id) {
+  const c = catalogo.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('catId').value = c.id;
+  document.getElementById('catNombre').value = c.nombre;
+  document.getElementById('catCategoria').value = c.categoria || 'general';
+  document.getElementById('catUnidad').value = c.unidad || 'kg';
+  document.getElementById('catPrecio').value = c.precio_kg;
+  document.getElementById('catProveedor').value = c.proveedor_id || '';
+  document.getElementById('formCatalogoTitle').textContent = 'Editar producto del catálogo';
+  const f = document.getElementById('formCatalogo');
+  if (!f.classList.contains('open')) f.classList.add('open');
+  f.scrollIntoView({ behavior:'smooth', block:'nearest' });
+};
+
+window.deleteCatalogo = async function(id) {
+  const c = catalogo.find(x => x.id === id);
+  if (!c) return;
+  if (!confirm(`¿Eliminar "${c.nombre}" del catálogo?`)) return;
+  try {
+    const { error } = await window.supabase.from('productos_catalogo').delete().eq('id', id);
+    if (error) throw error;
+    await logAudit('eliminar', 'catalogo', id, `Eliminó "${c.nombre}" del catálogo`, c, null);
+    await loadData();
+    toast('Eliminado');
+  } catch (err) { toast('Error: ' + err.message, 'error'); }
+};
+
+function renderCatalogo() {
+  const tb = document.getElementById('tblCatalogo');
+  if (!tb) return;
+  if (catalogo.length === 0) {
+    tb.innerHTML = '<tr><td colspan="6"><div class="empty">Sin productos en el catálogo. Agrega los precios base de tus proveedores.</div></td></tr>';
+    return;
+  }
+  tb.innerHTML = catalogo.map(c => {
+    const prov = proveedores.find(p => p.id === c.proveedor_id);
+    return `<tr>
+      <td><strong>${escapeHTML(c.nombre)}</strong></td>
+      <td><span class="badge ${c.categoria||'general'}">${c.categoria||'general'}</span></td>
+      <td class="price"><strong>${fmtMoney(c.precio_kg)}</strong> /${c.unidad||'kg'}</td>
+      <td>${prov ? escapeHTML(prov.nombre) : '<em style="opacity:.5">cualquiera</em>'}</td>
+      <td style="font-size:10px; opacity:.6;">${c.updated_at ? new Date(c.updated_at).toLocaleDateString('es-CO') : '—'}</td>
+      <td>
+        <button class="btn-icon" onclick="editCatalogo('${c.id}')">✎</button>
+        <button class="btn-icon danger" onclick="deleteCatalogo('${c.id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function refreshCatalogoSelects() {
+  const sel = document.getElementById('prodCatalogo');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Sin catálogo (escribir manual) —</option>' +
+    catalogo.map(c => {
+      const prov = proveedores.find(p => p.id === c.proveedor_id);
+      return `<option value="${c.id}">${escapeHTML(c.nombre)} · ${fmtMoney(c.precio_kg)}${prov ? ' · ' + escapeHTML(prov.nombre) : ''}</option>`;
+    }).join('');
+}
+
+// ==============================================================
+// AUDITORÍA
+// ==============================================================
+function renderAuditoria() {
+  const tb = document.getElementById('tblAuditoria');
+  if (!tb) return;
+  if (auditoria.length === 0) {
+    tb.innerHTML = '<tr><td colspan="5"><div class="empty">Sin actividad registrada.</div></td></tr>';
+    return;
+  }
+
+  const accionIco = { crear: '➕', editar: '✏️', eliminar: '🗑️' };
+  const accionColor = { crear: '#16a34a', editar: '#0891b2', eliminar: '#dc2626' };
+
+  tb.innerHTML = auditoria.map(a => {
+    const fecha = new Date(a.created_at);
+    const fechaFmt = fecha.toLocaleDateString('es-CO', { day:'2-digit', month:'short' });
+    const horaFmt = fecha.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
+    const sede = sedes.find(s => s.id === a.sede_id);
+    return `<tr>
+      <td>
+        <div style="font-weight:700;">${fechaFmt}</div>
+        <div style="font-size:10px; opacity:.6;">${horaFmt}</div>
+      </td>
+      <td style="font-size:11px;">${escapeHTML((a.user_email || '').split('@')[0] || '—')}</td>
+      <td>
+        <span style="display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:700; color:${accionColor[a.accion]||'#666'};">
+          ${accionIco[a.accion] || '•'} ${a.accion.toUpperCase()}
+        </span>
+        <div style="font-size:10px; opacity:.6; margin-top:2px;">${escapeHTML(a.entidad)}</div>
+      </td>
+      <td style="font-size:12px;">${escapeHTML(a.descripcion || '—')}</td>
+      <td style="font-size:10px; opacity:.7;">${escapeHTML(sede?.nombre || '—')}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ==============================================================
 // CIERRE DIARIO DE INVENTARIO
 // ==============================================================
 let cierres = [];
@@ -824,6 +1139,7 @@ window.realizarCierre = async function() {
     });
 
     if (error) throw error;
+    await logAudit('crear', 'cierre', hoy, `Cerró el día ${hoy} (${resumen.totalProductos} productos, ${fmtMoney(resumen.totalInversion)})`, null, resumen);
     toast('✓ Cierre del día registrado correctamente');
     await loadCierres();
 
@@ -1061,6 +1377,11 @@ window.toggleForm = function(id) {
     ['mermaPesoAntes','mermaPesoDespues','mermaCosto','mermaMotivo'].forEach(i => document.getElementById(i).value = '');
     recalcMerma();
   }
+  if (id === 'formCatalogo' && !f.classList.contains('open')) {
+    document.getElementById('catId').value = '';
+    document.getElementById('formCatalogoTitle').textContent = 'Nuevo producto del catálogo';
+    ['catNombre','catPrecio'].forEach(i => document.getElementById(i).value = '');
+  }
 };
 
 document.querySelectorAll('.tab').forEach(tab => {
@@ -1071,6 +1392,11 @@ document.querySelectorAll('.tab').forEach(tab => {
     document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
   });
 });
+
+window.changeSub = function(name) {
+  document.querySelectorAll('.sub-tab').forEach(s => s.classList.toggle('active', s.dataset.sub === name));
+  document.querySelectorAll('.sub-panel').forEach(p => p.classList.toggle('active', p.id === 'sub-' + name));
+};
 
 // Scan modes
 document.querySelectorAll('.scan-mode').forEach(btn => {
@@ -1095,9 +1421,11 @@ function initDates() {
   const mf = document.getElementById('mermaFecha');
   const sf = document.getElementById('scanFecha');
   const sft = document.getElementById('scanFechaTxt');
+  const pf = document.getElementById('prodFecha');
   if (mf) mf.value = iso;
   if (sf) sf.value = iso;
   if (sft) sft.value = iso;
+  if (pf) pf.value = iso;
 }
 
 initDates();

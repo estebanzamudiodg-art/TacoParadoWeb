@@ -1011,6 +1011,30 @@
   .loading-screen { min-height:100vh; display:flex; align-items:center; justify-content:center; color:#fff; font-family:'Bungee',sans-serif; font-size:18px; letter-spacing:2px; }
   .loading-screen .spinner { width:44px; height:44px; border:4px solid rgba(255,255,255,0.3); border-top-color:var(--mustard); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 16px; }
   @keyframes spin { to { transform:rotate(360deg); } }
+
+  /* === STOCK ACTUAL CARDS === */
+  .stock-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px; padding:0 16px; margin:8px 16px 20px; }
+  .stock-card { background:var(--cream); border:3px solid var(--ink); border-radius:14px; padding:14px; cursor:pointer; transition:all 0.15s; box-shadow:0 3px 0 rgba(13,36,81,0.3); }
+  .stock-card:hover { transform:translateY(-2px); box-shadow:0 5px 0 rgba(13,36,81,0.3); }
+  .stock-name { font-family:'Bungee',sans-serif; font-size:14px; color:var(--ink); text-transform:capitalize; letter-spacing:0.05em; margin-bottom:10px; }
+  .stock-bars { display:flex; flex-direction:column; gap:4px; margin-bottom:8px; }
+  .stock-bar-row { display:flex; justify-content:space-between; align-items:center; font-family:'Inter',sans-serif; font-size:11px; }
+  .stock-label { color:var(--ink); opacity:0.75; font-weight:600; }
+  .stock-val { font-weight:800; color:var(--blood); }
+  .stock-total { font-family:'Inter',sans-serif; font-size:12px; color:var(--ink); padding-top:8px; border-top:1px dashed rgba(13,36,81,0.25); }
+  .stock-progress { height:4px; background:#fef3c7; border-radius:2px; margin-top:6px; overflow:hidden; }
+  .stock-progress > div { height:100%; background:linear-gradient(90deg, var(--blood) 0%, var(--blood-dark) 100%); }
+
+  /* === SUB-TABS DENTRO DE INVENTARIO === */
+  .sub-tabs { display:flex; gap:6px; padding:8px 16px; margin:0 16px 12px; background:rgba(255,255,255,0.5); border-radius:12px; border:2px solid var(--ink); flex-wrap:wrap; }
+  .sub-tab { background:transparent; border:none; padding:6px 12px; border-radius:8px; font-family:'Inter',sans-serif; font-size:11px; font-weight:800; letter-spacing:0.05em; cursor:pointer; color:var(--ink); opacity:0.6; }
+  .sub-tab:hover { opacity:1; background:rgba(255,255,255,0.7); }
+  .sub-tab.active { background:var(--blood); color:#fff; opacity:1; }
+  .sub-panel { display:none; }
+  .sub-panel.active { display:block; }
+
+  /* === BADGES DE ESTADO === */
+  .badge { padding:3px 8px; border-radius:6px; font-size:10px; font-weight:700; display:inline-block; }
 </style>
 </head>
 <body>
@@ -1080,7 +1104,7 @@
   <button class="tab" data-panel="escanear">Escanear</button>
   <button class="tab" data-panel="proveedores">Proveedores</button>
   <button class="tab" data-panel="mermas">Mermas</button>
-  <button class="tab" data-panel="historial">📋 Historial</button>
+  <button class="tab" data-panel="auditoria">🔍 Auditoría</button>
   <button class="tab" data-panel="exportar">Exportar</button>
 </nav>
 
@@ -1088,23 +1112,56 @@
 
   <!-- === PRODUCTOS === -->
   <section class="panel active" id="panel-productos">
-    <div class="panel-head">
-      <div>
-        <h2 class="panel-title">Inventario de <em>Compras</em></h2>
-        <div class="panel-sub">Registro de productos por proveedor</div>
-      </div>
-      <div class="actions">
-        <button class="btn btn-primary" onclick="toggleForm('formProducto')">+ Agregar Producto</button>
-      </div>
+
+    <!-- Sub-navegación: Inventario actual / Catálogo precios / Historial cierres -->
+    <div class="sub-tabs">
+      <button class="sub-tab active" data-sub="inventario" onclick="changeSub('inventario')">📦 Inventario actual</button>
+      <button class="sub-tab" data-sub="catalogo" onclick="changeSub('catalogo')">💰 Catálogo de precios</button>
+      <button class="sub-tab" data-sub="cierres" onclick="changeSub('cierres')">📋 Historial de cierres</button>
     </div>
+
+    <!-- ===== SUB-PANEL: INVENTARIO ACTUAL ===== -->
+    <div class="sub-panel active" id="sub-inventario">
+
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Stock <em>Actual</em></h2>
+          <div class="panel-sub">Lo que tienes disponible · Clic para filtrar productos por carne</div>
+        </div>
+      </div>
+
+      <div id="stockActual"></div>
+
+      <div class="panel-head" style="margin-top: 20px;">
+        <div>
+          <h2 class="panel-title">Inventario de <em>Compras</em></h2>
+          <div class="panel-sub">Registro de productos por proveedor</div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="toggleForm('formProducto')">+ Agregar Producto</button>
+        </div>
+      </div>
 
     <div class="form-card" id="formProducto">
       <div class="form-card-title" id="formProductoTitle">Nuevo producto</div>
       <input type="hidden" id="prodId">
       <div class="form-grid">
+        <div class="field" style="grid-column: 1 / -1;">
+          <label>📚 Tomar del catálogo (opcional — autocompleta nombre y precio)</label>
+          <select id="prodCatalogo" onchange="aplicarCatalogo()">
+            <option value="">— Sin catálogo (escribir manual) —</option>
+          </select>
+        </div>
         <div class="field">
           <label>Nombre</label>
           <input type="text" id="prodNombre" placeholder="Ej: Costilla de res">
+        </div>
+        <div class="field">
+          <label>Estado</label>
+          <select id="prodEstado">
+            <option value="crudo">🥩 Crudo</option>
+            <option value="cocinado">🔥 Cocinado</option>
+          </select>
         </div>
         <div class="field">
           <label>Cantidad</label>
@@ -1130,6 +1187,14 @@
           <label>Proveedor</label>
           <select id="prodProveedor"></select>
         </div>
+        <div class="field">
+          <label>📅 Fecha</label>
+          <input type="date" id="prodFecha">
+        </div>
+        <div class="field">
+          <label>🧾 Número de factura</label>
+          <input type="text" id="prodFactura" placeholder="Ej: 0012345">
+        </div>
       </div>
       <div class="actions">
         <button class="btn btn-primary" onclick="saveProducto()">Guardar</button>
@@ -1144,22 +1209,141 @@
       </select>
     </div>
 
-    <div class="table-wrap">
+    <div class="table-wrap tabla-wrap-prod">
       <table>
         <thead>
           <tr>
             <th>Producto</th>
+            <th>Estado</th>
             <th>Cantidad</th>
             <th>Precio Unit.</th>
             <th>Subtotal</th>
             <th>Proveedor</th>
-            <th>Categoría</th>
+            <th>📅 Fecha</th>
+            <th>👤 Responsable</th>
             <th>Acciones</th>
           </tr>
         </thead>
         <tbody id="tblProductos"></tbody>
       </table>
     </div>
+
+    </div><!-- /sub-inventario -->
+
+    <!-- ===== SUB-PANEL: CATÁLOGO DE PRECIOS ===== -->
+    <div class="sub-panel" id="sub-catalogo">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Catálogo de <em>Precios</em></h2>
+          <div class="panel-sub">Precios base por proveedor · Se reutilizan al agregar productos</div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="toggleForm('formCatalogo')">+ Agregar al Catálogo</button>
+        </div>
+      </div>
+
+      <div class="form-card" id="formCatalogo">
+        <div class="form-card-title" id="formCatalogoTitle">Nuevo producto del catálogo</div>
+        <input type="hidden" id="catId">
+        <div class="form-grid">
+          <div class="field">
+            <label>Nombre</label>
+            <input type="text" id="catNombre" placeholder="Ej: Pastor">
+          </div>
+          <div class="field">
+            <label>Categoría</label>
+            <select id="catCategoria">
+              <option value="carne">Carne</option>
+              <option value="verdura">Verdura/Vegetales</option>
+              <option value="tortilla">Tortilla/Masa</option>
+              <option value="lacteo">Lácteo</option>
+              <option value="bebida">Bebida</option>
+              <option value="salsa">Salsa/Condimento</option>
+              <option value="general" selected>General</option>
+              <option value="empaque">Empaque</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Unidad</label>
+            <select id="catUnidad">
+              <option value="kg">kg</option>
+              <option value="g">g</option>
+              <option value="lb">lb</option>
+              <option value="pza">pieza</option>
+              <option value="caja">caja</option>
+              <option value="L">litro</option>
+              <option value="bulto">bulto</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Precio por unidad</label>
+            <input type="number" id="catPrecio" step="0.01" placeholder="0.00">
+          </div>
+          <div class="field" style="grid-column: 1 / -1;">
+            <label>Proveedor (opcional)</label>
+            <select id="catProveedor">
+              <option value="">— Cualquier proveedor —</option>
+            </select>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="saveCatalogo()">Guardar</button>
+          <button class="btn btn-ghost" onclick="toggleForm('formCatalogo')">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Categoría</th>
+              <th>Precio</th>
+              <th>Proveedor</th>
+              <th>Actualizado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tblCatalogo"></tbody>
+        </table>
+      </div>
+    </div><!-- /sub-catalogo -->
+
+    <!-- ===== SUB-PANEL: HISTORIAL DE CIERRES (movido de tab principal) ===== -->
+    <div class="sub-panel" id="sub-cierres">
+      <div class="panel-head">
+        <div>
+          <h2 class="panel-title">Historial de <em>Cierres</em></h2>
+          <div class="panel-sub">Registro diario del inventario · Todos los admins pueden consultarlo</div>
+        </div>
+        <div class="actions">
+          <button class="btn btn-primary" onclick="realizarCierre()">📸 Cerrar el día de hoy</button>
+        </div>
+      </div>
+
+      <div id="cierre-status" style="display:none; margin-bottom:20px;"></div>
+
+      <div class="table-wrap">
+        <div>
+          <table>
+            <thead>
+              <tr>
+                <th>Fecha</th>
+                <th>Sede</th>
+                <th>Cerrado por</th>
+                <th>Productos</th>
+                <th>Inversión</th>
+                <th>Mermas (kg)</th>
+                <th>Notas</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tblCierres"></tbody>
+          </table>
+        </div>
+      </div>
+    </div><!-- /sub-cierres -->
+
   </section>
 
   <!-- === ESCANEAR === -->
@@ -1489,38 +1673,28 @@
     </div>
   </section>
 
-  <!-- === HISTORIAL DE CIERRES === -->
-  <section class="panel" id="panel-historial">
+  <!-- === AUDITORÍA === -->
+  <section class="panel" id="panel-auditoria">
     <div class="panel-head">
       <div>
-        <h2 class="panel-title">Historial de <em>Cierres</em></h2>
-        <div class="panel-sub">Registro diario del inventario · Todos los admins pueden consultarlo</div>
-      </div>
-      <div class="actions">
-        <button class="btn btn-primary" onclick="realizarCierre()">📸 Cerrar el día de hoy</button>
+        <h2 class="panel-title">Registro de <em>Actividad</em></h2>
+        <div class="panel-sub">Auditoría de todas las acciones · Quién hizo qué y cuándo (últimas 200)</div>
       </div>
     </div>
 
-    <div id="cierre-status" style="display:none; margin-bottom:20px;"></div>
-
     <div class="table-wrap">
-      <div>
-        <table>
-          <thead>
-            <tr>
-              <th>Fecha</th>
-              <th>Sede</th>
-              <th>Cerrado por</th>
-              <th>Productos</th>
-              <th>Inversión</th>
-              <th>Mermas (kg)</th>
-              <th>Notas</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody id="tblCierres"></tbody>
-        </table>
-      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha/Hora</th>
+            <th>Usuario</th>
+            <th>Acción</th>
+            <th>Descripción</th>
+            <th>Sede</th>
+          </tr>
+        </thead>
+        <tbody id="tblAuditoria"></tbody>
+      </table>
     </div>
   </section>
 
