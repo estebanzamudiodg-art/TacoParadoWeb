@@ -416,6 +416,7 @@ tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, trans
   <div class="tabs">
     <button class="tab active" data-tab="clientes">👥 Clientes</button>
     <button class="tab" data-tab="plantillas">🎨 Diseño de carnet</button>
+    <button class="tab" data-tab="menu">🌮 Menú</button>
     <button class="tab" data-tab="ajustes">⚙️ Ajustes</button>
     <a href="inventario.html" class="tab tab-link" id="tab-inventario" style="display:none; text-decoration:none;">📦 Inventario</a>
   </div>
@@ -564,6 +565,90 @@ tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, trans
           <div class="no-selection"><div class="icon">👆</div><p>SELECCIONA UN CAMPO<br>PARA AJUSTARLO</p></div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <div class="panel" id="panel-menu">
+    <div class="card-panel" style="max-width: 100%;">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom: 14px;">
+        <div>
+          <h2 style="margin:0;">🌮 GESTIÓN DEL MENÚ</h2>
+          <div class="sub" style="margin-top:4px;">Productos visibles en la landing pública (tacoparado.com)</div>
+        </div>
+        <button class="btn btn-primary" onclick="abrirFormMenu()">+ Agregar producto</button>
+      </div>
+
+      <div id="menu-form-container" style="display:none; background:#FAFAF7; border:2px solid var(--border); border-radius:10px; padding:16px; margin-bottom:18px;">
+        <h3 id="menuFormTitle" style="margin:0 0 12px; font-family:'Bungee',sans-serif; font-size:16px; color:var(--tp-deep-blue);">Nuevo producto</h3>
+        <input type="hidden" id="menuId">
+        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:12px; margin-bottom:14px;">
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--tp-deep-blue); display:block; margin-bottom:4px;">Nombre *</label>
+            <input type="text" id="menuNombre" placeholder="Ej: Taco al Pastor" style="width:100%; padding:8px 12px; border:2px solid var(--border); border-radius:8px; font-family:'Inter',sans-serif;">
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--tp-deep-blue); display:block; margin-bottom:4px;">Categoría *</label>
+            <input type="text" id="menuCategoria" list="categorias-list" placeholder="Tacos" style="width:100%; padding:8px 12px; border:2px solid var(--border); border-radius:8px; font-family:'Inter',sans-serif;">
+            <datalist id="categorias-list">
+              <option value="Tacos">
+              <option value="Gringas">
+              <option value="Mulas">
+              <option value="Bebidas">
+              <option value="Adicionales">
+              <option value="Combos">
+              <option value="Postres">
+            </datalist>
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--tp-deep-blue); display:block; margin-bottom:4px;">Precio (COP)</label>
+            <input type="number" id="menuPrecio" step="100" min="0" placeholder="5000" style="width:100%; padding:8px 12px; border:2px solid var(--border); border-radius:8px; font-family:'Inter',sans-serif;">
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--tp-deep-blue); display:block; margin-bottom:4px;">Emoji (si no tiene foto)</label>
+            <input type="text" id="menuEmoji" placeholder="🌮" maxlength="4" style="width:100%; padding:8px 12px; border:2px solid var(--border); border-radius:8px; font-family:'Inter',sans-serif;">
+          </div>
+          <div>
+            <label style="font-size:11px; font-weight:700; color:var(--tp-deep-blue); display:block; margin-bottom:4px;">Orden</label>
+            <input type="number" id="menuOrden" placeholder="0" min="0" style="width:100%; padding:8px 12px; border:2px solid var(--border); border-radius:8px; font-family:'Inter',sans-serif;">
+          </div>
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px; font-weight:700; color:var(--tp-deep-blue); display:block; margin-bottom:4px;">Descripción corta</label>
+          <input type="text" id="menuDescripcion" placeholder="Ej: Cerdo marinado al trompo con piña" style="width:100%; padding:8px 12px; border:2px solid var(--border); border-radius:8px; font-family:'Inter',sans-serif;">
+        </div>
+
+        <div style="margin-bottom:14px;">
+          <label style="font-size:11px; font-weight:700; color:var(--tp-deep-blue); display:block; margin-bottom:6px;">Foto del producto</label>
+          <div id="menu-foto-preview" style="background:#fff; border:2px dashed var(--border); border-radius:10px; padding:14px; min-height:80px; display:flex; align-items:center; justify-content:center; margin-bottom:8px; flex-direction:column; gap:6px;">
+            <span style="opacity:0.5; font-size:12px;">Sin foto</span>
+          </div>
+          <input type="hidden" id="menuImagenUrl">
+          <label for="menu-foto-input" class="btn" style="width:100%; padding:8px; text-align:center; cursor:pointer; background:#fff; border:2px solid var(--border); border-radius:8px; font-weight:700; font-size:12px; display:block;">
+            📷 Subir foto
+            <input type="file" id="menu-foto-input" accept="image/*" style="display:none;" onchange="subirFotoMenu(event)">
+          </label>
+        </div>
+
+        <div style="display:flex; gap:14px; flex-wrap:wrap; margin-bottom:14px;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; font-weight:700;">
+            <input type="checkbox" id="menuDestacado"> ⭐ Destacado
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; font-weight:700;">
+            <input type="checkbox" id="menuAgotado"> 🚫 Agotado
+          </label>
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:12px; font-weight:700;">
+            <input type="checkbox" id="menuActivo" checked> ✅ Activo (visible en landing)
+          </label>
+        </div>
+
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-primary" onclick="guardarMenuItem()">Guardar</button>
+          <button class="btn" onclick="cerrarFormMenu()" style="background:#fff; border:2px solid var(--border);">Cancelar</button>
+        </div>
+      </div>
+
+      <div id="menu-list-container" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap:14px;"></div>
     </div>
   </div>
 

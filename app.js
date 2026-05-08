@@ -353,6 +353,7 @@ window.switchTab = function(name) {
   document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x.dataset.tab === name));
   document.querySelectorAll('.panel').forEach(x => x.classList.toggle('active', x.id === 'panel-' + name));
   if (name === 'plantillas') setTimeout(() => editorRenderCanvas(), 50);
+  if (name === 'menu') cargarMenuItems();
 };
 
 // ==============================================================
@@ -2076,6 +2077,162 @@ window.exportarJSON = function() {
   a.click();
   URL.revokeObjectURL(url);
   toast('✓ Backup exportado');
+};
+
+// ==============================================================
+// GESTIÓN DEL MENÚ DE LA LANDING
+// ==============================================================
+let menuItems = [];
+
+async function cargarMenuItems() {
+  try {
+    const { data } = await window.supabase.from('productos_menu').select('*').order('categoria').order('orden');
+    menuItems = data || [];
+    renderMenuList();
+  } catch (e) { console.error('Error cargando menú:', e); }
+}
+
+function renderMenuList() {
+  const cont = document.getElementById('menu-list-container');
+  if (!cont) return;
+  if (menuItems.length === 0) {
+    cont.innerHTML = `<div style="grid-column: 1 / -1; text-align:center; padding:40px 20px; color:var(--text-soft);">
+      <div style="font-size:48px; margin-bottom:12px;">🌮</div>
+      <div style="font-family:'Bungee',sans-serif; font-size:16px;">SIN PRODUCTOS</div>
+      <div style="font-size:13px; margin-top:6px;">Agrega tu primer producto al menú con el botón de arriba.</div>
+    </div>`;
+    return;
+  }
+
+  cont.innerHTML = menuItems.map(p => `
+    <div style="background:#fff; border:2px solid var(--border); border-radius:12px; overflow:hidden; ${p.agotado ? 'opacity:0.5;' : ''} ${!p.activo ? 'opacity:0.4; border-style:dashed;' : ''}">
+      <div style="aspect-ratio: 4/3; background: linear-gradient(135deg, var(--tp-orange), var(--tp-mustard, #FFD24D)); display:flex; align-items:center; justify-content:center; font-size:42px; position:relative; border-bottom:2px solid var(--border);">
+        ${p.imagen_url ? `<img src="${escapeHtml(p.imagen_url)}" style="width:100%; height:100%; object-fit:cover;">` : `<span>${p.emoji || '🌮'}</span>`}
+        ${p.destacado ? `<span style="position:absolute; top:8px; right:8px; background:#FF6B6B; color:#fff; padding:2px 8px; border-radius:10px; font-size:9px; font-weight:800; letter-spacing:1px;">⭐ DESTACADO</span>` : ''}
+        ${p.agotado ? `<span style="position:absolute; top:8px; left:8px; background:#999; color:#fff; padding:2px 8px; border-radius:10px; font-size:9px; font-weight:800; letter-spacing:1px;">AGOTADO</span>` : ''}
+      </div>
+      <div style="padding:12px 14px;">
+        <div style="font-size:10px; opacity:0.6; letter-spacing:1px; text-transform:uppercase; font-weight:700;">${escapeHtml(p.categoria || 'Otros')}</div>
+        <div style="font-family:'Bungee',sans-serif; font-size:15px; color:var(--tp-deep-blue, #1A3F91); margin:2px 0 4px;">${escapeHtml(p.nombre)}</div>
+        ${p.descripcion ? `<div style="font-size:12px; color:var(--text-soft); line-height:1.3; margin-bottom:6px;">${escapeHtml(p.descripcion)}</div>` : ''}
+        ${p.precio > 0 ? `<div style="font-family:'Bungee',sans-serif; font-size:14px; color:var(--tp-orange, #FF9000);">$${new Intl.NumberFormat('es-CO').format(p.precio)}</div>` : ''}
+        <div style="display:flex; gap:6px; margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);">
+          <button onclick="editarMenuItem('${p.id}')" style="flex:1; padding:6px; background:#fff; border:1.5px solid var(--border); border-radius:6px; cursor:pointer; font-weight:700; font-size:11px;">✎ Editar</button>
+          <button onclick="eliminarMenuItem('${p.id}')" style="padding:6px 10px; background:#fff; border:1.5px solid #B5351A; color:#B5351A; border-radius:6px; cursor:pointer; font-weight:700; font-size:11px;">🗑</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.abrirFormMenu = function() {
+  document.getElementById('menuId').value = '';
+  document.getElementById('menuFormTitle').textContent = 'Nuevo producto';
+  ['menuNombre','menuDescripcion','menuPrecio','menuEmoji','menuOrden','menuImagenUrl'].forEach(i => document.getElementById(i).value = '');
+  document.getElementById('menuCategoria').value = 'Tacos';
+  document.getElementById('menuDestacado').checked = false;
+  document.getElementById('menuAgotado').checked = false;
+  document.getElementById('menuActivo').checked = true;
+  document.getElementById('menu-foto-preview').innerHTML = '<span style="opacity:0.5; font-size:12px;">Sin foto</span>';
+  document.getElementById('menu-form-container').style.display = 'block';
+  document.getElementById('menu-form-container').scrollIntoView({ behavior:'smooth', block:'nearest' });
+};
+
+window.cerrarFormMenu = function() {
+  document.getElementById('menu-form-container').style.display = 'none';
+};
+
+window.editarMenuItem = function(id) {
+  const p = menuItems.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('menuId').value = p.id;
+  document.getElementById('menuFormTitle').textContent = 'Editar producto';
+  document.getElementById('menuNombre').value = p.nombre || '';
+  document.getElementById('menuCategoria').value = p.categoria || 'Tacos';
+  document.getElementById('menuDescripcion').value = p.descripcion || '';
+  document.getElementById('menuPrecio').value = p.precio || '';
+  document.getElementById('menuEmoji').value = p.emoji || '';
+  document.getElementById('menuOrden').value = p.orden || 0;
+  document.getElementById('menuImagenUrl').value = p.imagen_url || '';
+  document.getElementById('menuDestacado').checked = !!p.destacado;
+  document.getElementById('menuAgotado').checked = !!p.agotado;
+  document.getElementById('menuActivo').checked = p.activo !== false;
+  const preview = document.getElementById('menu-foto-preview');
+  preview.innerHTML = p.imagen_url
+    ? `<img src="${escapeHtml(p.imagen_url)}" style="max-height:140px; max-width:100%; border-radius:8px;">`
+    : '<span style="opacity:0.5; font-size:12px;">Sin foto</span>';
+  document.getElementById('menu-form-container').style.display = 'block';
+  document.getElementById('menu-form-container').scrollIntoView({ behavior:'smooth', block:'nearest' });
+};
+
+window.subirFotoMenu = async function(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 3 * 1024 * 1024) { toast('⚠️ Foto muy grande (máx 3 MB)', 'error'); return; }
+
+  showSync(true);
+  try {
+    const ext = file.name.split('.').pop();
+    const fileName = `producto_${Date.now()}.${ext}`;
+    const { error: upErr } = await window.supabase.storage.from('menu').upload(fileName, file, { upsert: true });
+    if (upErr) throw upErr;
+    const { data: { publicUrl } } = window.supabase.storage.from('menu').getPublicUrl(fileName);
+    document.getElementById('menuImagenUrl').value = publicUrl;
+    document.getElementById('menu-foto-preview').innerHTML = `<img src="${publicUrl}" style="max-height:140px; max-width:100%; border-radius:8px;">`;
+    toast('✓ Foto subida');
+  } catch (err) {
+    toast('Error: ' + err.message, 'error');
+  } finally { showSync(false); }
+};
+
+window.guardarMenuItem = async function() {
+  const id = document.getElementById('menuId').value;
+  const nombre = document.getElementById('menuNombre').value.trim();
+  const categoria = document.getElementById('menuCategoria').value.trim() || 'Otros';
+  const descripcion = document.getElementById('menuDescripcion').value.trim();
+  const precio = parseFloat(document.getElementById('menuPrecio').value) || 0;
+  const emoji = document.getElementById('menuEmoji').value.trim() || '🌮';
+  const orden = parseInt(document.getElementById('menuOrden').value) || 0;
+  const imagen_url = document.getElementById('menuImagenUrl').value.trim() || null;
+  const destacado = document.getElementById('menuDestacado').checked;
+  const agotado = document.getElementById('menuAgotado').checked;
+  const activo = document.getElementById('menuActivo').checked;
+
+  if (!nombre) { toast('Falta el nombre', 'error'); return; }
+
+  showSync(true);
+  try {
+    const data = { nombre, categoria, descripcion, precio, emoji, orden, imagen_url, destacado, agotado, activo, updated_at: new Date().toISOString() };
+    if (id) {
+      const { error } = await window.supabase.from('productos_menu').update(data).eq('id', id);
+      if (error) throw error;
+      toast('✓ Producto actualizado');
+    } else {
+      const { error } = await window.supabase.from('productos_menu').insert(data);
+      if (error) throw error;
+      toast('✓ Producto agregado al menú');
+    }
+    cerrarFormMenu();
+    await cargarMenuItems();
+  } catch (err) {
+    toast('Error: ' + err.message, 'error');
+  } finally { showSync(false); }
+};
+
+window.eliminarMenuItem = async function(id) {
+  const p = menuItems.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(`¿Eliminar "${p.nombre}" del menú?`)) return;
+
+  showSync(true);
+  try {
+    const { error } = await window.supabase.from('productos_menu').delete().eq('id', id);
+    if (error) throw error;
+    toast('✓ Eliminado');
+    await cargarMenuItems();
+  } catch (err) {
+    toast('Error: ' + err.message, 'error');
+  } finally { showSync(false); }
 };
 
 // ==============================================================

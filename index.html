@@ -444,6 +444,139 @@
     line-height: 1.4;
   }
 
+  /* Precio en producto */
+  .producto-precio {
+    font-family: 'Bungee', sans-serif;
+    font-size: 16px;
+    color: var(--tp-orange);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 2px dashed rgba(13,36,81,0.15);
+    letter-spacing: 0.5px;
+  }
+  .producto-precio .moneda {
+    font-size: 11px;
+    opacity: 0.7;
+    margin-right: 1px;
+  }
+
+  /* Producto agotado */
+  .producto-card.agotado {
+    opacity: 0.5;
+    position: relative;
+  }
+  .producto-card.agotado::after {
+    content: "AGOTADO";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    background: var(--tp-coral);
+    color: #fff;
+    padding: 8px 22px;
+    font-family: 'Bungee', sans-serif;
+    font-size: 18px;
+    border: 3px solid var(--tp-ink);
+    border-radius: 8px;
+    box-shadow: 0 4px 0 var(--tp-ink);
+    z-index: 5;
+    letter-spacing: 2px;
+  }
+
+  /* Filtros de categoría */
+  .menu-categorias {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .cat-btn {
+    background: #fff;
+    border: 3px solid var(--tp-ink);
+    color: var(--tp-ink);
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    box-shadow: 0 3px 0 var(--tp-ink);
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .cat-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 var(--tp-ink);
+  }
+  .cat-btn.active {
+    background: var(--tp-orange);
+    color: #fff;
+  }
+
+  /* Categoría título dentro del listado */
+  .menu-cat-section {
+    margin-bottom: 40px;
+  }
+  .menu-cat-section:last-child { margin-bottom: 0; }
+  .menu-cat-titulo {
+    font-family: 'Bungee', sans-serif;
+    font-size: 24px;
+    color: var(--tp-ink);
+    margin-bottom: 18px;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .menu-cat-titulo::before {
+    content: "";
+    flex: 1;
+    height: 3px;
+    background: var(--tp-orange);
+    border-radius: 2px;
+  }
+  .menu-cat-titulo::after {
+    content: "";
+    flex: 1;
+    height: 3px;
+    background: var(--tp-orange);
+    border-radius: 2px;
+  }
+
+  .menu-loading {
+    text-align: center;
+    padding: 60px 20px;
+    font-family: 'Bungee', sans-serif;
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: var(--tp-ink);
+    opacity: 0.6;
+  }
+  .spinner-menu {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 16px;
+    border: 4px solid rgba(13,36,81,0.15);
+    border-top-color: var(--tp-orange);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .menu-empty {
+    text-align: center;
+    padding: 60px 20px;
+    font-family: 'Archivo', sans-serif;
+    color: var(--tp-ink);
+    opacity: 0.6;
+  }
+  .menu-empty .emoji-big {
+    font-size: 60px;
+    margin-bottom: 16px;
+  }
+
   /* ============= CARNET / BENEFICIOS ============= */
   .carnet-section {
     background: linear-gradient(135deg, var(--tp-deep-blue) 0%, var(--tp-blue) 100%);
@@ -861,76 +994,22 @@
 <section class="productos" id="productos">
   <div class="container">
     <div class="section-tag">🥩 Nuestro Menú</div>
-    <h2 class="section-title">Los <span class="accent">Tacos</span></h2>
-    <p class="section-sub">Cada taco es preparado al momento, con ingredientes frescos y la receta tradicional mexicana.</p>
+    <h2 class="section-title">El <span class="accent">Menú</span></h2>
+    <p class="section-sub">Cada producto es preparado al momento, con ingredientes frescos y la receta tradicional mexicana.</p>
 
-    <div class="grid-productos">
-      <div class="producto-card">
-        <div class="producto-img" data-img="pastor"><span>🌶️</span></div>
-        <div class="producto-info">
-          <div class="producto-nombre">Pastor</div>
-          <div class="producto-desc">Cerdo marinado al trompo con piña</div>
-        </div>
-      </div>
+    <!-- Filtros de categoría (se generan dinámicos) -->
+    <div class="menu-categorias" id="menuCategorias"></div>
 
-      <div class="producto-card">
-        <div class="producto-img" data-img="suadero"><span>🥩</span></div>
-        <div class="producto-info">
-          <div class="producto-nombre">Suadero</div>
-          <div class="producto-desc">Res confitada en su jugo</div>
-        </div>
-      </div>
-
-      <div class="producto-card">
-        <div class="producto-img" data-img="longaniza"><span>🌭</span></div>
-        <div class="producto-info">
-          <div class="producto-nombre">Longaniza</div>
-          <div class="producto-desc">Embutido tradicional mexicano</div>
-        </div>
-      </div>
-
-      <div class="producto-card">
-        <div class="producto-img" data-img="birria"><span>🍲</span></div>
-        <div class="producto-info">
-          <div class="producto-nombre">Birria</div>
-          <div class="producto-desc">Res en su consomé picante</div>
-        </div>
-      </div>
-
-      <div class="producto-card">
-        <div class="producto-img" data-img="asada"><span>🔥</span></div>
-        <div class="producto-info">
-          <div class="producto-nombre">Asada</div>
-          <div class="producto-desc">Carne de res a la parrilla</div>
-        </div>
-      </div>
-
-      <div class="producto-card">
-        <div class="producto-img" data-img="oreja"><span>🐷</span></div>
-        <div class="producto-info">
-          <div class="producto-nombre">Oreja</div>
-          <div class="producto-desc">Crujiente especialidad chilanga</div>
-        </div>
-      </div>
-
-      <div class="producto-card">
-        <div class="producto-img" data-img="lengua"><span>👅</span></div>
-        <div class="producto-info">
-          <div class="producto-nombre">Lengua</div>
-          <div class="producto-desc">Res cocinada lentamente</div>
-        </div>
-      </div>
-
-      <div class="producto-card">
-        <div class="producto-img" style="background: linear-gradient(135deg, #5BAE4C, var(--tp-deep-blue));"><span style="color:#fff">🌮</span></div>
-        <div class="producto-info">
-          <div class="producto-nombre">Mixto</div>
-          <div class="producto-desc">Combina tus favoritos</div>
-        </div>
+    <!-- Productos (se cargan dinámicos desde Supabase) -->
+    <div id="menuContainer">
+      <div class="menu-loading">
+        <div class="spinner-menu"></div>
+        <div>CARGANDO MENÚ…</div>
       </div>
     </div>
   </div>
 </section>
+
 
 <!-- ============= CARNET / BENEFICIOS ============= -->
 <section class="carnet-section" id="carnet">
@@ -1028,7 +1107,6 @@
       <div class="sede-card">
         <div class="sede-header">
           <div class="sede-name">6ta Etapa La Esperanza</div>
-          <div class="sede-tag">SEDE PRINCIPAL</div>
         </div>
         <div class="sede-body">
           <div class="sede-info">
@@ -1043,7 +1121,7 @@
           </div>
           <div class="sede-actions">
             <a href="https://www.google.com/maps/search/Cra.+33c+%237-15+Villavicencio" target="_blank" class="sede-btn maps">📍 Cómo llegar</a>
-            <a href="https://wa.me/573000000000" target="_blank" class="sede-btn wp">💬 WhatsApp</a>
+            <a href="https://wa.me/573114822019" target="_blank" class="sede-btn wp">💬 WhatsApp</a>
           </div>
         </div>
       </div>
@@ -1051,13 +1129,12 @@
       <div class="sede-card">
         <div class="sede-header">
           <div class="sede-name">7 de Agosto</div>
-          <div class="sede-tag">SEGUNDA SEDE</div>
         </div>
         <div class="sede-body">
           <div class="sede-info">
             <div class="sede-info-row">
               <span class="ico">📍</span>
-              <span>Barrio 7 de Agosto, Villavicencio</span>
+              <span>Cra. 39 #26c-90 — Al lado de la URI</span>
             </div>
             <div class="sede-info-row">
               <span class="ico">🕒</span>
@@ -1065,8 +1142,8 @@
             </div>
           </div>
           <div class="sede-actions">
-            <a href="https://www.google.com/maps/search/7+de+Agosto+Villavicencio" target="_blank" class="sede-btn maps">📍 Cómo llegar</a>
-            <a href="https://wa.me/573000000000" target="_blank" class="sede-btn wp">💬 WhatsApp</a>
+            <a href="https://www.google.com/maps/search/Cra.+39+%2326c-90+Villavicencio" target="_blank" class="sede-btn maps">📍 Cómo llegar</a>
+            <a href="https://wa.me/573114822019" target="_blank" class="sede-btn wp">💬 WhatsApp</a>
           </div>
         </div>
       </div>
@@ -1099,7 +1176,7 @@
   </div>
   <div class="footer-social">
     <a href="https://instagram.com/tacoparado.co" target="_blank" title="Instagram">📷</a>
-    <a href="https://wa.me/573000000000" target="_blank" title="WhatsApp">💬</a>
+    <a href="https://wa.me/573114822019" target="_blank" title="WhatsApp">💬</a>
   </div>
   <div class="footer-bottom">
     © 2026 TACO PARADO · VILLAVICENCIO, COLOMBIA
@@ -1146,11 +1223,10 @@
       const { data: sedes } = await window.supabase.from('sedes').select('*').eq('activa', true).order('nombre');
       if (sedes && sedes.length > 0) {
         const container = document.getElementById('sedesContainer');
-        container.innerHTML = sedes.map((s, i) => `
+        container.innerHTML = sedes.map(s => `
           <div class="sede-card">
             <div class="sede-header">
               <div class="sede-name">${escapeHtml(s.nombre)}</div>
-              <div class="sede-tag">${i === 0 ? 'SEDE PRINCIPAL' : 'SEGUNDA SEDE'}</div>
             </div>
             <div class="sede-body">
               <div class="sede-info">
@@ -1159,7 +1235,7 @@
               </div>
               <div class="sede-actions">
                 <a href="${s.maps_url || `https://www.google.com/maps/search/${encodeURIComponent(s.direccion || s.nombre + ' Villavicencio')}`}" target="_blank" class="sede-btn maps">📍 Cómo llegar</a>
-                <a href="https://instagram.com/tacoparado.co" target="_blank" class="sede-btn wp" style="background: var(--tp-coral);">📷 Instagram</a>
+                <a href="https://wa.me/573114822019" target="_blank" class="sede-btn wp">💬 WhatsApp</a>
               </div>
             </div>
           </div>
@@ -1174,7 +1250,108 @@
     return (s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
   }
 
+  function fmtMoney(n) {
+    return '<span class="moneda">$</span>' + new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0);
+  }
+
+  // ============= CARGAR MENÚ DINÁMICO =============
+  let menuProductos = [];
+  let categoriaActiva = 'todas';
+
+  async function cargarMenu() {
+    while (!window.supabase) await new Promise(r => setTimeout(r, 50));
+    try {
+      const { data } = await window.supabase
+        .from('productos_menu')
+        .select('*')
+        .eq('activo', true)
+        .order('categoria')
+        .order('orden');
+
+      menuProductos = data || [];
+
+      if (menuProductos.length === 0) {
+        document.getElementById('menuContainer').innerHTML = `
+          <div class="menu-empty">
+            <div class="emoji-big">🌮</div>
+            <div style="font-family:'Bungee',sans-serif; font-size:18px; margin-bottom:8px;">MENÚ EN PREPARACIÓN</div>
+            <div style="font-size:14px;">Pronto verás todos nuestros tacos aquí.</div>
+          </div>
+        `;
+        document.getElementById('menuCategorias').style.display = 'none';
+        return;
+      }
+
+      renderCategorias();
+      renderMenu();
+    } catch (e) {
+      console.warn('Error cargando menú:', e);
+      document.getElementById('menuContainer').innerHTML = `
+        <div class="menu-empty">
+          <div>No se pudo cargar el menú. Intenta refrescar.</div>
+        </div>
+      `;
+    }
+  }
+
+  function renderCategorias() {
+    const cats = [...new Set(menuProductos.map(p => p.categoria || 'Otros'))];
+    const container = document.getElementById('menuCategorias');
+    container.innerHTML = `
+      <button class="cat-btn ${categoriaActiva === 'todas' ? 'active' : ''}" onclick="filtrarCategoria('todas')">Todo</button>
+      ${cats.map(c => `<button class="cat-btn ${categoriaActiva === c ? 'active' : ''}" onclick="filtrarCategoria('${c.replace(/'/g, "\\'")}')">${escapeHtml(c)}</button>`).join('')}
+    `;
+  }
+
+  window.filtrarCategoria = function(cat) {
+    categoriaActiva = cat;
+    renderCategorias();
+    renderMenu();
+  };
+
+  function renderMenu() {
+    const container = document.getElementById('menuContainer');
+    let lista = menuProductos;
+    if (categoriaActiva !== 'todas') {
+      lista = lista.filter(p => (p.categoria || 'Otros') === categoriaActiva);
+    }
+
+    if (lista.length === 0) {
+      container.innerHTML = '<div class="menu-empty">Sin productos en esta categoría.</div>';
+      return;
+    }
+
+    const grupos = {};
+    lista.forEach(p => {
+      const cat = p.categoria || 'Otros';
+      if (!grupos[cat]) grupos[cat] = [];
+      grupos[cat].push(p);
+    });
+
+    container.innerHTML = Object.entries(grupos).map(([cat, items]) => `
+      ${categoriaActiva === 'todas' ? `<div class="menu-cat-titulo">${escapeHtml(cat)}</div>` : ''}
+      <div class="grid-productos menu-cat-section">
+        ${items.map(p => `
+          <div class="producto-card ${p.agotado ? 'agotado' : ''}">
+            <div class="producto-img">
+              ${p.imagen_url
+                ? `<img src="${escapeHtml(p.imagen_url)}" alt="${escapeHtml(p.nombre)}">`
+                : `<span>${p.emoji || '🌮'}</span>`}
+              ${p.destacado ? '<div class="badge">⭐ DESTACADO</div>' : ''}
+            </div>
+            <div class="producto-info">
+              <div class="producto-nombre">${escapeHtml(p.nombre)}</div>
+              ${p.descripcion ? `<div class="producto-desc">${escapeHtml(p.descripcion)}</div>` : ''}
+              ${p.precio > 0 ? `<div class="producto-precio">${fmtMoney(p.precio)}</div>` : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  }
+
   cargarConfig();
+  cargarMenu();
 
   // Smooth navbar effect on scroll
   let lastScroll = 0;
