@@ -234,6 +234,10 @@ async function mostrarTabInventario() {
         const tabInv = document.getElementById('tab-inventario');
         if (tabInv) tabInv.style.display = 'inline-block';
       }
+      if (rol === 'admin' || rol === 'admin_contador') {
+        const tabCC = document.getElementById('tab-cierre-caja');
+        if (tabCC) tabCC.style.display = 'inline-block';
+      }
     }
   } catch (e) {
     console.error('Error cargando rol:', e);
