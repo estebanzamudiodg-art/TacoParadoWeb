@@ -4,724 +4,1191 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/png" href="favicon.png">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Taco Parado · Panel de Administración</title>
+<title>Taco Parado · Tacos auténticos en Villavicencio</title>
+<meta name="description" content="Los mejores tacos al pastor, suadero, longaniza y más en Villavicencio. Únete al club y obtén beneficios exclusivos con tu carnet de fidelidad.">
+<meta property="og:title" content="Taco Parado · Tacos auténticos en Villavicencio">
+<meta property="og:description" content="Únete al club y obtén beneficios exclusivos con tu carnet de fidelidad.">
+<meta property="og:image" content="favicon.png">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Archivo+Black&family=Space+Mono:wght@400;700&family=Archivo:wght@400;500;600;700;900&family=Permanent+Marker&family=Rubik+Mono+One&family=Bebas+Neue&family=Anton&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Archivo+Black&family=Space+Mono:wght@400;700&family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
 <script type="module">
   import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
   const SUPABASE_URL = 'https://xyqyhabhujmmjofnfizg.supabase.co'
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5cXloYWJodWptbWpvZm5maXpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODE5NzAsImV4cCI6MjA5MjM1Nzk3MH0.9Cj7XZUjLUiBHPWw6Br4FWz2_g8T1hgg20zyrrThhZQ'
   window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 </script>
+
 <style>
-:root { --tp-orange:#FF9000; --tp-blue:#5271FF; --tp-deep-blue:#1A3F91; --tp-dark-orange:#EC7020; --bg:#F5F2EB; --surface:#ffffff; --border:#E5DFD2; --ink:#0B1530; --muted:#7A7366; }
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); background-image: radial-gradient(circle at 10% 0%, rgba(255,144,0,0.06), transparent 40%), radial-gradient(circle at 90% 100%, rgba(82,113,255,0.06), transparent 40%); min-height: 100vh; font-family: 'Archivo', sans-serif; color: var(--ink); }
+  :root {
+    --tp-orange: #FF9000;
+    --tp-orange-dark: #EC7020;
+    --tp-blue: #5271FF;
+    --tp-deep-blue: #1A3F91;
+    --tp-cream: #FFF8E7;
+    --tp-paper: #FFF7ED;
+    --tp-ink: #0d2451;
+    --tp-mustard: #FFD24D;
+    --tp-green: #5BAE4C;
+    --tp-coral: #FF6B6B;
+  }
 
-.login-screen { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
-.login-box { background: var(--surface); border-radius: 20px; padding: 40px; max-width: 420px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.15); border: 1px solid var(--border); position: relative; overflow: hidden; }
-.login-box::before { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 6px; background: linear-gradient(90deg, var(--tp-orange) 0%, var(--tp-blue) 100%); }
-.login-logo { text-align: center; margin-bottom: 32px; }
-.login-logo .mark { font-family: 'Bungee', sans-serif; font-size: 28px; color: var(--tp-deep-blue); letter-spacing: 1.5px; }
-.login-logo .mark .accent { color: var(--tp-orange); }
-.login-logo .sub { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 2px; margin-top: 6px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-.app { max-width: 1500px; margin: 0 auto; padding: 24px 20px 80px; }
-.app-header { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; background: var(--tp-deep-blue); border-radius: 14px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(26, 63, 145, 0.25); flex-wrap: wrap; gap: 12px; position: relative; overflow: hidden; }
-.app-header::before { content: ""; position: absolute; inset: 0; background-image: repeating-linear-gradient(-45deg, transparent 0 8px, rgba(255,255,255,0.03) 8px 9px); }
-.app-header h1 { font-family: 'Bungee', sans-serif; color: var(--tp-orange); font-size: 22px; letter-spacing: 1.5px; position: relative; }
-.app-header h1 .sub { color: #fff; font-size: 11px; letter-spacing: 2px; display: block; margin-top: 2px; }
-.header-right { display: flex; gap: 10px; align-items: center; position: relative; flex-wrap: wrap; }
-.stats { display: flex; gap: 8px; }
-.stat { background: rgba(255,255,255,0.12); padding: 8px 12px; border-radius: 8px; text-align: center; min-width: 68px; border: 1px solid rgba(255,144,0,0.3); }
-.stat .num { font-family: 'Archivo Black', sans-serif; color: var(--tp-orange); font-size: 18px; line-height: 1; }
-.stat .lbl { font-family: 'Space Mono', monospace; color: #fff; font-size: 8px; letter-spacing: 1.5px; margin-top: 4px; }
-.stat.pending { border-color: rgba(255, 87, 34, 0.6); }
-.stat.pending .num { color: #FF7043; }
-.user-chip { background: rgba(255,144,0,0.15); padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,144,0,0.3); display: flex; align-items: center; gap: 10px; }
-.user-chip .user-email { color: #fff; font-size: 11px; font-family: 'Space Mono', monospace; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.user-chip button { background: transparent; border: none; color: var(--tp-orange); font-size: 10px; cursor: pointer; font-family: 'Space Mono', monospace; font-weight: 700; letter-spacing: 1px; }
-.user-chip button:hover { text-decoration: underline; }
+  html { scroll-behavior: smooth; }
 
-.tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--surface); padding: 5px; border-radius: 12px; border: 1px solid var(--border); width: fit-content; flex-wrap: wrap; }
-.tab { padding: 9px 18px; border: none; background: transparent; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 12px; color: var(--muted); border-radius: 8px; cursor: pointer; letter-spacing: 0.5px; transition: all 0.2s; }
-.tab.active { background: var(--tp-orange); color: #fff; box-shadow: 0 2px 8px rgba(255,144,0,0.4); }
-.tab:hover:not(.active) { background: var(--bg); color: var(--ink); }
-.tab-link { background: var(--tp-deep-blue) !important; color: #fff !important; border: 1px solid var(--tp-deep-blue); }
-.tab-link:hover { background: #0E2560 !important; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(26,63,145,0.3); }
-.panel { display: none; }
-.panel.active { display: block; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--tp-cream);
+    color: var(--tp-ink);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
 
-.clientes-layout { display: grid; grid-template-columns: 340px 1fr; gap: 20px; }
-@media (max-width: 900px) { .clientes-layout { grid-template-columns: 1fr; } }
-.card-panel { background: var(--surface); border-radius: 14px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 4px 14px rgba(0,0,0,0.04); }
-.card-panel h2 { font-family: 'Bungee', sans-serif; font-size: 14px; color: var(--tp-deep-blue); margin-bottom: 4px; letter-spacing: 1px; }
-.card-panel .sub { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 1px; margin-bottom: 16px; }
+  /* Patrón decorativo de fondo */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 30px,
+      rgba(26,63,145,0.02) 30px,
+      rgba(26,63,145,0.02) 31px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
 
-label { display: block; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 1.5px; color: var(--tp-deep-blue); margin-bottom: 5px; text-transform: uppercase; }
-input[type="text"], input[type="email"], input[type="password"], input[type="tel"], input[type="date"], input[type="number"], select { width: 100%; padding: 9px 12px; border: 2px solid var(--border); border-radius: 8px; font-family: 'Archivo', sans-serif; font-size: 13px; background: #FAFAF7; color: var(--ink); }
-input:focus, select:focus { outline: none; border-color: var(--tp-orange); background: #fff; }
-.form-row { margin-bottom: 12px; }
-.form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  /* ============= NAVBAR ============= */
+  .navbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(255,248,231,0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 3px solid var(--tp-ink);
+    z-index: 100;
+    padding: 12px 20px;
+    transition: all 0.3s ease;
+  }
+  .nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+  }
+  .nav-logo {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--tp-blue);
+    border: 3px solid var(--tp-ink);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 0 var(--tp-ink);
+    flex-shrink: 0;
+  }
+  .nav-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .nav-logo span { font-size: 24px; }
+  .nav-name {
+    font-family: 'Bungee', sans-serif;
+    font-size: 18px;
+    color: var(--tp-ink);
+    letter-spacing: 0.5px;
+    line-height: 1;
+  }
+  .nav-name .accent { color: var(--tp-orange); }
+  .nav-links {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .nav-link {
+    color: var(--tp-ink);
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+  }
+  .nav-link:hover { background: var(--tp-orange); color: #fff; }
+  .nav-cta {
+    background: var(--tp-orange);
+    color: #fff;
+    border: 2.5px solid var(--tp-ink);
+    padding: 8px 18px;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    box-shadow: 0 3px 0 var(--tp-ink);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .nav-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 var(--tp-ink);
+    background: var(--tp-orange-dark);
+  }
+  .nav-cta:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 0 var(--tp-ink);
+  }
 
-.btn { padding: 10px 16px; border: none; border-radius: 8px; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.5px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; }
-.btn-primary { background: var(--tp-orange); color: #fff; box-shadow: 0 2px 8px rgba(255,144,0,0.35); }
-.btn-primary:hover { background: var(--tp-dark-orange); }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-secondary { background: var(--tp-deep-blue); color: #fff; }
-.btn-ghost { background: transparent; color: var(--ink); border: 2px solid var(--border); }
-.btn-ghost:hover { background: var(--bg); }
-.btn-success { background: #22c55e; color: #fff; box-shadow: 0 2px 8px rgba(34,197,94,0.35); }
+  /* ============= HERO ============= */
+  .hero {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--tp-orange) 0%, var(--tp-orange-dark) 50%, var(--tp-deep-blue) 100%);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 100px 20px 60px;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 40px,
+      rgba(255,255,255,0.05) 40px,
+      rgba(255,255,255,0.05) 42px
+    );
+  }
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    max-width: 900px;
+    color: #fff;
+  }
+  .hero-tag {
+    display: inline-block;
+    background: var(--tp-mustard);
+    color: var(--tp-ink);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    border: 2.5px solid var(--tp-ink);
+    box-shadow: 0 3px 0 var(--tp-ink);
+    text-transform: uppercase;
+    animation: bounce-tag 2.5s ease-in-out infinite;
+  }
+  @keyframes bounce-tag {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+  .hero h1 {
+    font-family: 'Bungee', sans-serif;
+    font-size: clamp(40px, 9vw, 88px);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    margin-bottom: 18px;
+    text-shadow: 4px 4px 0 var(--tp-ink), 8px 8px 0 rgba(13,36,81,0.3);
+  }
+  .hero h1 .crown { color: var(--tp-mustard); }
+  .hero p.lead {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(15px, 2.2vw, 19px);
+    line-height: 1.5;
+    margin-bottom: 32px;
+    font-weight: 500;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    opacity: 0.95;
+  }
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+  .hero-stat {
+    text-align: center;
+  }
+  .hero-stat .num {
+    font-family: 'Bungee', sans-serif;
+    font-size: clamp(28px, 5vw, 42px);
+    color: var(--tp-mustard);
+    line-height: 1;
+    text-shadow: 2px 2px 0 var(--tp-ink);
+  }
+  .hero-stat .lbl {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: 4px;
+    opacity: 0.85;
+  }
+  .cta-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--tp-mustard);
+    color: var(--tp-ink);
+    padding: 18px 40px;
+    border-radius: 14px;
+    font-family: 'Bungee', sans-serif;
+    font-size: clamp(16px, 2.5vw, 20px);
+    letter-spacing: 1.5px;
+    text-decoration: none;
+    border: 4px solid var(--tp-ink);
+    box-shadow: 0 6px 0 var(--tp-ink), 0 10px 30px rgba(0,0,0,0.3);
+    transition: all 0.15s;
+    cursor: pointer;
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-primary::after {
+    content: "";
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.6s;
+  }
+  .cta-primary:hover::after { left: 100%; }
+  .cta-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 9px 0 var(--tp-ink), 0 14px 40px rgba(0,0,0,0.4);
+  }
+  .cta-primary:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 var(--tp-ink), 0 4px 12px rgba(0,0,0,0.3);
+  }
 
-.form-actions { display: flex; gap: 10px; margin-top: 12px; }
-.form-actions .btn { flex: 1; }
-.login-error { background: #FCEBE5; color: #B5351A; padding: 10px 14px; border-radius: 8px; font-family: 'Space Mono', monospace; font-size: 12px; margin-top: 14px; display: none; }
-.login-error.show { display: block; }
+  .hero-mascot {
+    width: clamp(120px, 18vw, 180px);
+    height: clamp(120px, 18vw, 180px);
+    margin: 0 auto 24px;
+    background: var(--tp-mustard);
+    border-radius: 50%;
+    border: 5px solid var(--tp-ink);
+    box-shadow: 0 8px 0 var(--tp-ink), 0 16px 40px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    animation: wobble 3s ease-in-out infinite;
+  }
+  .hero-mascot img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .hero-mascot .emoji {
+    font-size: clamp(60px, 10vw, 100px);
+  }
+  @keyframes wobble {
+    0%, 100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg); }
+  }
 
-.table-panel { background: var(--surface); border-radius: 14px; border: 1px solid var(--border); box-shadow: 0 4px 14px rgba(0,0,0,0.04); overflow: hidden; }
-.table-header { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
-.table-header h2 { font-family: 'Bungee', sans-serif; font-size: 14px; color: var(--tp-deep-blue); letter-spacing: 1px; }
+  .hero-scroll {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    opacity: 0.7;
+    animation: scroll-hint 2s ease-in-out infinite;
+  }
+  @keyframes scroll-hint {
+    0%, 100% { transform: translate(-50%, 0); opacity: 0.7; }
+    50% { transform: translate(-50%, 6px); opacity: 1; }
+  }
 
-.filter-tabs { display: flex; gap: 4px; background: var(--bg); padding: 3px; border-radius: 8px; }
-.filter-tab { padding: 6px 12px; border: none; background: transparent; font-size: 11px; font-weight: 700; color: var(--muted); border-radius: 6px; cursor: pointer; font-family: 'Archivo', sans-serif; letter-spacing: 0.3px; }
-.filter-tab.active { background: var(--tp-orange); color: #fff; }
-.filter-tab .count { background: rgba(255,255,255,0.25); padding: 1px 6px; border-radius: 10px; margin-left: 4px; font-size: 10px; }
-.filter-tab:not(.active) .count { background: var(--border); }
+  /* ============= SECTION GENERAL ============= */
+  section {
+    padding: 80px 20px;
+    position: relative;
+    z-index: 1;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .section-tag {
+    display: inline-block;
+    background: var(--tp-blue);
+    color: #fff;
+    padding: 5px 14px;
+    border-radius: 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+    border: 2.5px solid var(--tp-ink);
+    box-shadow: 0 3px 0 var(--tp-ink);
+    text-transform: uppercase;
+  }
+  .section-title {
+    font-family: 'Bungee', sans-serif;
+    font-size: clamp(32px, 6vw, 56px);
+    line-height: 1;
+    color: var(--tp-ink);
+    margin-bottom: 14px;
+    letter-spacing: -0.01em;
+  }
+  .section-title .accent { color: var(--tp-orange); }
+  .section-sub {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(14px, 1.8vw, 17px);
+    color: var(--tp-ink);
+    opacity: 0.7;
+    margin-bottom: 50px;
+    max-width: 600px;
+    line-height: 1.5;
+  }
 
-.search-box { position: relative; min-width: 200px; flex: 1; max-width: 260px; }
-.search-box input { padding-left: 34px; font-size: 13px; }
-.search-box::before { content: "🔍"; position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 11px; }
+  /* ============= PRODUCTOS ============= */
+  .productos {
+    background: var(--tp-paper);
+    border-top: 5px solid var(--tp-ink);
+    border-bottom: 5px solid var(--tp-ink);
+  }
+  .grid-productos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 22px;
+  }
+  .producto-card {
+    background: #fff;
+    border: 3px solid var(--tp-ink);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.2s;
+    box-shadow: 0 5px 0 var(--tp-ink);
+    position: relative;
+  }
+  .producto-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 9px 0 var(--tp-ink);
+  }
+  .producto-img {
+    aspect-ratio: 4/3;
+    background: linear-gradient(135deg, var(--tp-mustard), var(--tp-orange));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+    border-bottom: 3px solid var(--tp-ink);
+    position: relative;
+    overflow: hidden;
+  }
+  .producto-img img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .producto-card .badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: var(--tp-coral);
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    border: 2px solid var(--tp-ink);
+    text-transform: uppercase;
+  }
+  .producto-info {
+    padding: 16px 18px;
+  }
+  .producto-nombre {
+    font-family: 'Bungee', sans-serif;
+    font-size: 17px;
+    color: var(--tp-ink);
+    margin-bottom: 4px;
+    text-transform: capitalize;
+    letter-spacing: 0.5px;
+  }
+  .producto-desc {
+    font-family: 'Archivo', sans-serif;
+    font-size: 12px;
+    color: var(--tp-ink);
+    opacity: 0.7;
+    line-height: 1.4;
+  }
 
-.table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-thead { background: #FAFAF7; border-bottom: 2px solid var(--border); }
-th { padding: 10px 14px; text-align: left; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1.5px; color: var(--tp-deep-blue); text-transform: uppercase; font-weight: 700; }
-td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-tbody tr:hover { background: #FFF9EE; }
-tbody tr.selected { background: #FFF4DC; }
-tbody tr.new-registration { background: linear-gradient(90deg, #E8F5E9 0%, transparent 100%); }
+  /* ============= CARNET / BENEFICIOS ============= */
+  .carnet-section {
+    background: linear-gradient(135deg, var(--tp-deep-blue) 0%, var(--tp-blue) 100%);
+    color: #fff;
+    border-bottom: 5px solid var(--tp-ink);
+    overflow: hidden;
+  }
+  .carnet-section .section-title { color: #fff; }
+  .carnet-section .section-title .accent { color: var(--tp-mustard); }
+  .carnet-section .section-tag { background: var(--tp-orange); color: #fff; }
+  .carnet-section .section-sub { color: rgba(255,255,255,0.85); }
 
-.mini-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--tp-orange); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid var(--tp-deep-blue); }
-.mini-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.mini-avatar .initial { color: #fff; font-family: 'Archivo Black', sans-serif; font-size: 15px; }
+  .grid-tiers {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 50px;
+  }
+  .tier-card {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    border: 3px solid rgba(255,255,255,0.3);
+    border-radius: 16px;
+    padding: 22px 14px;
+    text-align: center;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .tier-card:hover {
+    transform: translateY(-6px);
+    background: rgba(255,255,255,0.18);
+  }
+  .tier-icon {
+    font-size: 42px;
+    margin-bottom: 10px;
+    line-height: 1;
+  }
+  .tier-name {
+    font-family: 'Bungee', sans-serif;
+    font-size: 16px;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+  }
+  .tier-visits {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    opacity: 0.8;
+    text-transform: uppercase;
+  }
+  .tier-card.bronce { border-color: #CD7F32; }
+  .tier-card.bronce .tier-name { color: #FFB347; }
+  .tier-card.plata { border-color: #C0C0C0; }
+  .tier-card.plata .tier-name { color: #E5E5E5; }
+  .tier-card.oro { border-color: var(--tp-mustard); }
+  .tier-card.oro .tier-name { color: var(--tp-mustard); }
+  .tier-card.master { border-color: var(--tp-coral); }
+  .tier-card.master .tier-name { color: var(--tp-coral); }
 
-.id-tag { font-family: 'Space Mono', monospace; font-weight: 700; color: var(--tp-deep-blue); background: #FFF4DC; padding: 3px 7px; border-radius: 4px; font-size: 10px; letter-spacing: 1px; }
-.tier-badge { font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; letter-spacing: 1px; padding: 3px 7px; border-radius: 4px; }
-.tier-bronce { background: #D6B18B; color: #5A3A1E; }
-.tier-plata { background: #D8DADE; color: #2F3640; }
-.tier-oro { background: #FFD77A; color: #6B4A00; }
-.tier-master { background: var(--tp-deep-blue); color: var(--tp-orange); }
+  .beneficios-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+    margin-bottom: 40px;
+  }
+  .beneficio {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .beneficio-icon {
+    width: 44px; height: 44px;
+    background: var(--tp-mustard);
+    border: 3px solid var(--tp-ink);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    box-shadow: 0 3px 0 var(--tp-ink);
+  }
+  .beneficio-text {
+    font-family: 'Archivo', sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    padding-top: 4px;
+  }
+  .beneficio-text strong {
+    font-family: 'Bungee', sans-serif;
+    font-size: 13px;
+    color: var(--tp-mustard);
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 3px;
+  }
 
-.entrega-status { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-family: 'Space Mono', monospace; font-weight: 700; letter-spacing: 0.5px; padding: 3px 8px; border-radius: 10px; }
-.entrega-pending { background: #FFEDD5; color: #C2410C; }
-.entrega-done { background: #DCFCE7; color: #166534; }
-.entrega-habilitado { background: #FFEDD5; color: #C2410C; animation: pulse-orange 2s ease-in-out infinite; }
-.entrega-acumulando { background: #DBEAFE; color: #1E40AF; }
-.entrega-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-@keyframes pulse-orange { 0%, 100% { box-shadow: 0 0 0 0 rgba(194, 65, 12, 0.3); } 50% { box-shadow: 0 0 0 4px rgba(194, 65, 12, 0); } }
+  .cta-card-section { text-align: center; margin-top: 30px; }
 
-.row-actions { display: flex; gap: 5px; flex-wrap: wrap; }
-.row-actions button { padding: 4px 8px; font-size: 10px; border-radius: 5px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-family: 'Space Mono', monospace; font-weight: 700; letter-spacing: 0.5px; color: var(--tp-deep-blue); }
-.row-actions button:hover { background: var(--tp-orange); color: #fff; border-color: var(--tp-orange); }
-.row-actions button.deliver-btn { background: #22c55e; color: #fff; border-color: #22c55e; }
-.row-actions button.deliver-btn:hover { background: #16a34a; }
-.row-actions button.undeliver-btn { background: #fff; color: #7A7366; }
-.row-actions button.notify-btn { background: #25D366; color: #fff; border-color: #25D366; }
-.row-actions button.notify-btn:hover { background: #128C7E; border-color: #128C7E; }
-.row-actions button.habilitar-btn { background: linear-gradient(135deg, #FFB347 0%, #FF9000 100%); color: #fff; border-color: #FF9000; font-weight: 800; }
-.row-actions button.habilitar-btn:hover { background: #EC7020; border-color: #EC7020; }
+  /* ============= UBICACIÓN / SEDES ============= */
+  .ubicacion {
+    background: var(--tp-cream);
+    padding-bottom: 100px;
+  }
+  .grid-sedes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+  }
+  .sede-card {
+    background: #fff;
+    border: 4px solid var(--tp-ink);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 6px 0 var(--tp-ink);
+    transition: all 0.2s;
+  }
+  .sede-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 9px 0 var(--tp-ink);
+  }
+  .sede-header {
+    background: var(--tp-orange);
+    color: #fff;
+    padding: 22px;
+    border-bottom: 4px solid var(--tp-ink);
+    position: relative;
+  }
+  .sede-header::before {
+    content: "📍";
+    font-size: 32px;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    opacity: 0.4;
+  }
+  .sede-name {
+    font-family: 'Bungee', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.5px;
+  }
+  .sede-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    margin-top: 4px;
+    opacity: 0.9;
+    text-transform: uppercase;
+  }
+  .sede-body {
+    padding: 22px;
+  }
+  .sede-info {
+    margin-bottom: 16px;
+  }
+  .sede-info-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-family: 'Archivo', sans-serif;
+    font-size: 14px;
+    align-items: flex-start;
+  }
+  .sede-info-row .ico {
+    font-size: 16px;
+    width: 24px;
+    flex-shrink: 0;
+  }
+  .sede-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .sede-btn {
+    flex: 1;
+    padding: 11px;
+    text-align: center;
+    border: 2.5px solid var(--tp-ink);
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+    box-shadow: 0 3px 0 var(--tp-ink);
+  }
+  .sede-btn.maps {
+    background: var(--tp-blue);
+    color: #fff;
+  }
+  .sede-btn.maps:hover {
+    background: var(--tp-deep-blue);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 var(--tp-ink);
+  }
+  .sede-btn.wp {
+    background: #25D366;
+    color: #fff;
+  }
+  .sede-btn.wp:hover {
+    background: #128C7E;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 var(--tp-ink);
+  }
 
-.empty-state { padding: 50px 20px; text-align: center; color: var(--muted); }
-.empty-state .ico { font-size: 44px; margin-bottom: 10px; }
-.empty-state p { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 1px; }
+  /* ============= CTA FINAL ============= */
+  .cta-final {
+    background: linear-gradient(135deg, var(--tp-orange) 0%, var(--tp-coral) 50%, var(--tp-orange-dark) 100%);
+    color: #fff;
+    text-align: center;
+    border-top: 5px solid var(--tp-ink);
+    border-bottom: 5px solid var(--tp-ink);
+    padding: 90px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-final::before {
+    content: "🌮";
+    position: absolute;
+    font-size: 200px;
+    opacity: 0.08;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .cta-final h2 {
+    font-family: 'Bungee', sans-serif;
+    font-size: clamp(36px, 7vw, 64px);
+    line-height: 1;
+    margin-bottom: 16px;
+    text-shadow: 3px 3px 0 var(--tp-ink), 6px 6px 0 rgba(0,0,0,0.2);
+    position: relative;
+  }
+  .cta-final p {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(15px, 2vw, 18px);
+    margin-bottom: 36px;
+    opacity: 0.95;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
+    line-height: 1.5;
+  }
+  .cta-final .cta-primary {
+    background: var(--tp-mustard);
+    position: relative;
+  }
 
-.preview-panel { background: var(--surface); border-radius: 14px; padding: 20px; border: 1px solid var(--border); box-shadow: 0 4px 14px rgba(0,0,0,0.04); margin-top: 20px; }
-.preview-panel h2 { font-family: 'Bungee', sans-serif; font-size: 14px; color: var(--tp-deep-blue); margin-bottom: 4px; letter-spacing: 1px; }
-.cards-preview { display: flex; flex-direction: column; gap: 18px; align-items: center; margin: 16px 0; }
-.export-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.export-buttons .btn { font-size: 11px; padding: 9px 10px; }
-.card-label { text-align: center; font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 2px; margin-top: 6px; }
+  /* ============= FOOTER ============= */
+  footer {
+    background: var(--tp-ink);
+    color: #fff;
+    padding: 50px 20px 30px;
+    text-align: center;
+  }
+  .footer-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .footer-name {
+    font-family: 'Bungee', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+  }
+  .footer-name .accent { color: var(--tp-orange); }
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 26px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .footer-links a {
+    color: #fff;
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    opacity: 0.85;
+    transition: opacity 0.2s;
+  }
+  .footer-links a:hover { opacity: 1; color: var(--tp-mustard); }
+  .footer-social {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .footer-social a {
+    width: 40px; height: 40px;
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    text-decoration: none;
+    color: #fff;
+    transition: all 0.2s;
+  }
+  .footer-social a:hover {
+    background: var(--tp-orange);
+    border-color: var(--tp-orange);
+    transform: translateY(-3px);
+  }
+  .footer-bottom {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    opacity: 0.5;
+    letter-spacing: 1px;
+  }
 
-.card-dynamic { width: 400px; height: 252px; border-radius: 10px; position: relative; overflow: hidden; box-shadow: 0 8px 20px rgba(0,0,0,0.2); background: #E8E4D8; flex-shrink: 0; max-width: 100%; }
-.card-dynamic .bg-template { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.card-dynamic .dyn-field { position: absolute; display: flex; align-items: center; padding: 2px 4px; white-space: nowrap; overflow: hidden; }
-.card-dynamic .dyn-image { position: absolute; display: flex; align-items: center; justify-content: center; }
-.card-dynamic .dyn-image img, .card-dynamic .dyn-image svg { max-width: 100%; max-height: 100%; }
-.card-dynamic .dyn-qr { position: absolute; background: #fff; padding: 4px; border-radius: 4px; }
-.card-dynamic .dyn-qr > div { width: 100%; height: 100%; }
-.card-dynamic .dyn-qr canvas, .card-dynamic .dyn-qr img { width: 100% !important; height: 100% !important; display: block; }
+  /* ============= CTA FLOTANTE MÓVIL ============= */
+  .cta-floating {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    display: none;
+  }
+  .cta-floating .cta-primary {
+    padding: 14px 28px;
+    font-size: 14px;
+    box-shadow: 0 4px 0 var(--tp-ink), 0 8px 24px rgba(0,0,0,0.3);
+  }
 
-.no-template-warn { background: #FEF3C7; border-left: 3px solid #D97706; padding: 14px 16px; border-radius: 8px; font-size: 13px; color: #92400E; line-height: 1.5; }
-.no-template-warn strong { color: #78350F; }
-.no-template-warn a { color: #B45309; font-weight: 700; text-decoration: underline; cursor: pointer; }
+  /* ============= RESPONSIVE ============= */
+  @media (max-width: 768px) {
+    .nav-links .nav-link:not(.nav-cta) { display: none; }
+    .nav-name { font-size: 16px; }
+    section { padding: 60px 18px; }
+    .grid-tiers { grid-template-columns: repeat(2, 1fr); }
+    .hero-stats { gap: 18px; }
+    .cta-floating { display: block; }
+    .hero { padding-bottom: 100px; }
+  }
 
-.editor-layout { display: grid; grid-template-columns: 300px 1fr 280px; gap: 16px; }
-@media (max-width: 1200px) { .editor-layout { grid-template-columns: 280px 1fr; } .editor-right { grid-column: 1 / -1; } }
-@media (max-width: 900px) { .editor-layout { grid-template-columns: 1fr; } }
-
-.face-toggle { display: flex; gap: 4px; background: var(--bg); padding: 4px; border-radius: 8px; margin-bottom: 16px; }
-.face-toggle button { flex: 1; border: none; background: transparent; padding: 8px 10px; border-radius: 6px; font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 12px; cursor: pointer; color: var(--muted); }
-.face-toggle button.active { background: var(--tp-orange); color: #fff; box-shadow: 0 2px 6px rgba(255,144,0,0.35); }
-
-.upload-box { border: 2px dashed var(--border); border-radius: 10px; padding: 20px 14px; text-align: center; background: #FAFAF7; cursor: pointer; transition: all 0.2s; display: block; }
-.upload-box:hover { border-color: var(--tp-orange); background: #FFF9EE; }
-.upload-box.has-image { padding: 6px; border-style: solid; border-color: var(--tp-orange); }
-.upload-box img { max-width: 100%; border-radius: 6px; display: block; }
-.upload-box .up-icon { font-size: 26px; margin-bottom: 6px; }
-.upload-box .up-txt { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.5px; line-height: 1.4; }
-.file-hidden { display: none; }
-
-.tokens-list { display: grid; gap: 6px; }
-.token-btn { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #FFF9EE; border: 2px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.2s; font-family: 'Archivo', sans-serif; font-size: 12px; text-align: left; color: var(--ink); width: 100%; }
-.token-btn:hover { border-color: var(--tp-orange); background: #FFF4DC; transform: translateX(2px); }
-.token-btn.placed { opacity: 0.4; cursor: not-allowed; }
-.token-icon { width: 26px; height: 26px; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: var(--tp-orange); color: #fff; font-size: 13px; flex-shrink: 0; }
-.token-info { flex: 1; min-width: 0; }
-.token-name { font-weight: 700; font-size: 11px; }
-.token-desc { font-size: 9px; color: var(--muted); font-family: 'Space Mono', monospace; margin-top: 1px; }
-
-.canvas-wrap { display: flex; flex-direction: column; align-items: center; }
-.canvas-title { font-family: 'Bungee', sans-serif; color: var(--tp-deep-blue); font-size: 13px; letter-spacing: 1px; margin-bottom: 2px; }
-.canvas-sub { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 1.5px; margin-bottom: 14px; }
-
-.card-canvas { width: 560px; height: 353px; border-radius: 12px; background: #E8E4D8; background-image: linear-gradient(45deg, #D8D4C8 25%, transparent 25%), linear-gradient(-45deg, #D8D4C8 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #D8D4C8 75%), linear-gradient(-45deg, transparent 75%, #D8D4C8 75%); background-size: 18px 18px; background-position: 0 0, 0 9px, 9px -9px, -9px 0; position: relative; box-shadow: 0 12px 30px rgba(0,0,0,0.12); overflow: hidden; border: 1px solid #ccc; max-width: 100%; }
-.card-canvas.has-template { background-image: none !important; background-size: auto !important; }
-.card-canvas .template-bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
-.card-canvas .safe-zone { position: absolute; inset: 26px; border: 1px dashed rgba(255,100,0,0.4); border-radius: 4px; pointer-events: none; z-index: 5; display: none; }
-.card-canvas.show-guides .safe-zone { display: block; }
-.card-canvas .safe-zone::before { content: "ZONA SEGURA"; position: absolute; top: -7px; left: 5px; background: #FFF9EE; color: rgba(255,100,0,0.8); padding: 0 4px; font-family: 'Space Mono', monospace; font-size: 7px; letter-spacing: 1.5px; }
-.empty-canvas-msg { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; color: var(--muted); text-align: center; padding: 40px; z-index: 2; }
-.empty-canvas-msg .emoji { font-size: 36px; margin-bottom: 8px; }
-.empty-canvas-msg p { font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 1.5px; line-height: 1.6; }
-.card-canvas.has-template .empty-canvas-msg { display: none; }
-
-.placed-token { position: absolute; cursor: move; z-index: 10; display: flex; align-items: center; justify-content: center; overflow: hidden; outline: 1.5px dashed rgba(82,113,255,0); user-select: none; transition: outline 0.15s; }
-.placed-token:hover { outline-color: rgba(82,113,255,0.8); }
-.placed-token.selected { outline: 2px solid var(--tp-blue); outline-offset: 2px; z-index: 20; }
-.placed-token.preview-mode { outline-color: transparent !important; }
-.placed-token.preview-mode .handle, .placed-token.preview-mode .delete-btn { display: none; }
-.handle { position: absolute; width: 10px; height: 10px; background: var(--tp-blue); border: 2px solid #fff; border-radius: 2px; z-index: 21; }
-.handle-br { bottom: -5px; right: -5px; cursor: nwse-resize; }
-.delete-btn { position: absolute; top: -10px; right: -10px; width: 22px; height: 22px; background: #B5351A; color: #fff; border: 2px solid #fff; border-radius: 50%; cursor: pointer; font-size: 12px; font-weight: 700; z-index: 22; display: flex; align-items: center; justify-content: center; padding: 0; line-height: 1; }
-.token-text { width: 100%; height: 100%; display: flex; align-items: center; padding: 2px 4px; white-space: nowrap; overflow: hidden; }
-.token-image { width: 100%; height: 100%; background: rgba(255,255,255,0.9); border-radius: 4px; display: flex; align-items: center; justify-content: center; }
-.token-image img, .token-image svg { max-width: 100%; max-height: 100%; }
-
-.toolbar { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
-.toggle-switch { display: flex; align-items: center; gap: 6px; font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.5px; cursor: pointer; }
-.toggle-switch input { display: none; }
-.toggle-switch .tgl { width: 34px; height: 18px; background: var(--border); border-radius: 9px; position: relative; transition: background 0.2s; }
-.toggle-switch .tgl::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #fff; border-radius: 50%; transition: left 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
-.toggle-switch input:checked + .tgl { background: var(--tp-orange); }
-.toggle-switch input:checked + .tgl::after { left: 18px; }
-
-.prop-group { margin-bottom: 12px; }
-.prop-group label { font-size: 9px; letter-spacing: 1.5px; margin-bottom: 4px; font-weight: 700; text-transform: uppercase; color: var(--tp-deep-blue); }
-.prop-group input, .prop-group select { width: 100%; padding: 7px 9px; border: 2px solid var(--border); border-radius: 6px; font-size: 11px; background: #FAFAF7; }
-.prop-group input[type="color"] { height: 32px; padding: 2px; cursor: pointer; }
-.prop-group input[type="range"] { padding: 0; height: 6px; background: var(--border); border: none; -webkit-appearance: none; border-radius: 3px; }
-.prop-group input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 15px; height: 15px; background: var(--tp-orange); border-radius: 50%; cursor: pointer; }
-.prop-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-.prop-value { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--tp-deep-blue); font-weight: 700; text-align: right; }
-.no-selection { text-align: center; padding: 24px 16px; color: var(--muted); }
-.no-selection .icon { font-size: 32px; margin-bottom: 8px; }
-.no-selection p { font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1px; line-height: 1.5; }
-
-.plantillas-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; padding: 12px; background: #FFF4DC; border-radius: 8px; border-left: 3px solid var(--tp-orange); flex-wrap: wrap; }
-.plantillas-bar .info { flex: 1; min-width: 150px; font-size: 12px; color: var(--ink); line-height: 1.4; }
-.plantillas-bar .info strong { color: var(--tp-dark-orange); }
-.editor-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
-
-.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--tp-deep-blue); color: #fff; padding: 12px 22px; border-radius: 10px; font-weight: 700; font-size: 13px; box-shadow: 0 8px 24px rgba(0,0,0,0.3); z-index: 1000; transition: transform 0.3s; border-left: 4px solid var(--tp-orange); }
-.toast.show { transform: translateX(-50%) translateY(0); }
-.toast.error { border-left-color: #B5351A; }
-
-.loading-overlay { position: fixed; inset: 0; background: rgba(11,21,48,0.85); display: none; align-items: center; justify-content: center; z-index: 1000; color: #fff; font-family: 'Bungee', sans-serif; font-size: 20px; letter-spacing: 2px; flex-direction: column; gap: 14px; }
-.loading-overlay.show { display: flex; }
-.loading-overlay .progress { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--tp-orange); }
-.spinner { width: 44px; height: 44px; border: 4px solid rgba(255,255,255,0.2); border-top-color: var(--tp-orange); border-radius: 50%; animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-
-.sync-indicator { position: fixed; top: 14px; right: 14px; background: rgba(82,113,255,0.15); color: var(--tp-blue); padding: 5px 11px; border-radius: 18px; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1px; z-index: 800; display: none; align-items: center; gap: 5px; backdrop-filter: blur(10px); }
-.sync-indicator.show { display: flex; }
-.sync-dot { width: 5px; height: 5px; background: var(--tp-blue); border-radius: 50%; animation: pulse 1s infinite; }
-@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-.modal-backdrop { position: fixed; inset: 0; background: rgba(11,21,48,0.7); display: none; align-items: center; justify-content: center; z-index: 500; padding: 20px; }
-.modal-backdrop.show { display: flex; }
-.modal { background: #fff; border-radius: 14px; padding: 24px; max-width: 480px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
-.modal h3 { font-family: 'Bungee', sans-serif; color: var(--tp-deep-blue); font-size: 18px; margin-bottom: 6px; letter-spacing: 1px; }
-.modal p { font-family: 'Space Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 18px; letter-spacing: 0.5px; }
-.modal .export-grid { display: grid; gap: 8px; }
-.modal-close { margin-top: 14px; width: 100%; }
-
-#render-stage { position: fixed; left: -9999px; top: 0; background: #fff; }
-
-.share-url-box { background: #FFF4DC; padding: 9px 11px; border-radius: 6px; font-family: 'Space Mono', monospace; font-size: 10px; word-break: break-all; margin: 8px 0; border-left: 3px solid var(--tp-orange); }
-
-.plantilla-select { background: #fff; padding: 12px; border-radius: 10px; border: 2px solid var(--border); margin-top: 14px; }
-.plantilla-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 6px; margin-bottom: 4px; border: 1px solid transparent; flex-wrap: wrap; }
-.plantilla-item:hover { background: #FFF9EE; }
-.plantilla-item.active { background: #FFF4DC; border-color: var(--tp-orange); }
-.plantilla-item .p-name { font-weight: 700; font-size: 12px; flex: 1; min-width: 100px; }
-.plantilla-item .p-active-badge { background: #22c55e; color: #fff; padding: 2px 6px; border-radius: 10px; font-size: 9px; letter-spacing: 0.5px; font-family: 'Space Mono', monospace; font-weight: 700; }
-
-.var-chip {
-  display: inline-block;
-  padding: 4px 9px;
-  background: #fff;
-  border: 1px solid var(--tp-orange);
-  color: var(--tp-dark-orange);
-  border-radius: 12px;
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.15s;
-  letter-spacing: 0.3px;
-}
-.var-chip:hover { background: var(--tp-orange); color: #fff; transform: translateY(-1px); }
-
-/* ============ SCAN BAR ============ */
-.scan-bar {
-  background: linear-gradient(135deg, var(--tp-deep-blue) 0%, #0E2560 100%);
-  border-radius: 14px;
-  padding: 14px 18px;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-  box-shadow: 0 4px 14px rgba(26,63,145,0.2);
-  position: relative;
-  overflow: hidden;
-}
-.scan-bar::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: repeating-linear-gradient(45deg, transparent 0 10px, rgba(255,144,0,0.04) 10px 11px);
-  pointer-events: none;
-}
-.scan-bar-label { display: flex; align-items: center; gap: 10px; position: relative; }
-.scan-bar-icon {
-  width: 40px; height: 40px;
-  background: var(--tp-orange);
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px;
-  box-shadow: 0 2px 8px rgba(255,144,0,0.4);
-}
-.scan-bar-title {
-  font-family: 'Bungee', sans-serif;
-  font-size: 13px;
-  color: var(--tp-orange);
-  letter-spacing: 1px;
-  line-height: 1;
-}
-.scan-bar-sub {
-  font-family: 'Space Mono', monospace;
-  font-size: 10px;
-  color: #fff;
-  letter-spacing: 1px;
-  margin-top: 3px;
-  opacity: 0.7;
-}
-.scan-bar-form {
-  flex: 1;
-  display: flex;
-  gap: 8px;
-  min-width: 280px;
-  position: relative;
-}
-.scan-bar-form input {
-  flex: 1;
-  padding: 10px 14px;
-  border: 2px solid transparent;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.95);
-  font-size: 14px;
-  color: var(--ink);
-}
-.scan-bar-form input:focus { outline: none; border-color: var(--tp-orange); }
-.scan-bar-form .btn { padding: 10px 14px; font-size: 11px; white-space: nowrap; }
-
-.row-actions button.visit-btn { background: var(--tp-deep-blue); color: #fff; border-color: var(--tp-deep-blue); }
-.row-actions button.visit-btn:hover { background: #0E2560; }
-
-/* Scanner de cámara */
-.scanner-modal video {
-  width: 100%;
-  max-width: 400px;
-  border-radius: 12px;
-  background: #000;
-}
-.scanner-modal .scan-target {
-  position: relative;
-  display: flex;
-  justify-content: center;
-  margin: 10px 0;
-}
-.scanner-modal .scan-overlay {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  border: 2px dashed var(--tp-orange);
-  border-radius: 12px;
-  pointer-events: none;
-  animation: scan-pulse 2s ease-in-out infinite;
-}
-@keyframes scan-pulse {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 1; }
-}
+  @media (max-width: 480px) {
+    .nav-cta { padding: 7px 12px; font-size: 11px; }
+    .nav-logo { width: 38px; height: 38px; }
+    .grid-productos { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .producto-info { padding: 12px; }
+    .producto-nombre { font-size: 14px; }
+    .producto-desc { font-size: 11px; }
+    .producto-img { font-size: 44px; }
+  }
 </style>
 </head>
 <body>
 
-<div class="login-screen" id="login-screen">
-  <div class="login-box">
-    <div class="login-logo">
-      <div class="mark">TACO <span class="accent">PARADO</span></div>
-      <div class="sub">PANEL ADMIN · FIDELIZACIÓN</div>
-    </div>
-    <form id="login-form">
-      <div class="form-row"><label>Email</label><input type="email" id="login-email" required autocomplete="email"></div>
-      <div class="form-row"><label>Contraseña</label><input type="password" id="login-password" required autocomplete="current-password"></div>
-      <div class="login-error" id="login-error"></div>
-      <button type="submit" class="btn btn-primary" style="width:100%; margin-top:8px;" id="btn-login">Iniciar sesión</button>
-    </form>
-  </div>
-</div>
-
-<div class="app" id="app" style="display:none;">
-
-  <div class="sync-indicator" id="sync-indicator"><span class="sync-dot"></span><span>SINCRONIZANDO…</span></div>
-
-  <header class="app-header">
-    <h1>TACO PARADO<span class="sub">SISTEMA DE CARNETS · EN LA NUBE</span></h1>
-    <div class="header-right">
-      <div class="stats">
-        <div class="stat"><div class="num" id="stat-total">0</div><div class="lbl">MIEMBROS</div></div>
-        <div class="stat pending"><div class="num" id="stat-pending">0</div><div class="lbl">POR RECOGER</div></div>
+<!-- ============= NAVBAR ============= -->
+<nav class="navbar">
+  <div class="nav-container">
+    <a href="#" class="nav-brand">
+      <div class="nav-logo" id="navLogo">
+        <span>🌮</span>
       </div>
-      <div class="user-chip"><span class="user-email" id="user-email">...</span><button onclick="logout()">SALIR</button></div>
+      <div class="nav-name">TACO <span class="accent">PARADO</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="#productos" class="nav-link">Menú</a>
+      <a href="#carnet" class="nav-link">Carnet</a>
+      <a href="#sedes" class="nav-link">Sedes</a>
+      <a href="registro.html" class="nav-cta">✨ Mi Carnet</a>
     </div>
-  </header>
-
-  <div class="tabs">
-    <button class="tab active" data-tab="clientes">👥 Clientes</button>
-    <button class="tab" data-tab="plantillas">🎨 Diseño de carnet</button>
-    <button class="tab" data-tab="ajustes">⚙️ Ajustes</button>
-    <a href="inventario.html" class="tab tab-link" id="tab-inventario" style="display:none; text-decoration:none;">📦 Inventario</a>
   </div>
+</nav>
 
-  <div class="panel active" id="panel-clientes">
-    <div id="no-template-warning" style="display:none; margin-bottom: 16px;">
-      <div class="no-template-warn">⚠️ <strong>Aún no hay un diseño de carnet activo.</strong> Ve a <a onclick="switchTab('plantillas')">🎨 Diseño de carnet</a> para crear una plantilla.</div>
+<!-- ============= HERO ============= -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-mascot" id="heroMascot">
+      <span class="emoji">🌮</span>
+    </div>
+    <div class="hero-tag">🔥 LOS TACOS DE VILLAVO 🔥</div>
+    <h1>TACOS QUE TE <span class="crown">ENAMORAN</span></h1>
+    <p class="lead">
+      Auténticos sabores mexicanos en el corazón de Villavicencio.
+      Pastor, suadero, longaniza, birria y más, hechos al momento.
+    </p>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="num" id="statClientes">+280</div>
+        <div class="lbl">Clientes Felices</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">2</div>
+        <div class="lbl">Sedes en Villavo</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">7</div>
+        <div class="lbl">Tipos de Taco</div>
+      </div>
     </div>
 
-    <div class="scan-bar">
-      <div class="scan-bar-label">
-        <div class="scan-bar-icon">📸</div>
-        <div>
-          <div class="scan-bar-title">REGISTRAR VISITA</div>
-          <div class="scan-bar-sub">Escanea o escribe el ID del cliente</div>
+    <a href="registro.html" class="cta-primary">
+      <span>✨</span>
+      <span>Obtener Mi Carnet</span>
+    </a>
+  </div>
+  <div class="hero-scroll">↓ DESCUBRE MÁS</div>
+</section>
+
+<!-- ============= PRODUCTOS ============= -->
+<section class="productos" id="productos">
+  <div class="container">
+    <div class="section-tag">🥩 Nuestro Menú</div>
+    <h2 class="section-title">Los <span class="accent">Tacos</span></h2>
+    <p class="section-sub">Cada taco es preparado al momento, con ingredientes frescos y la receta tradicional mexicana.</p>
+
+    <div class="grid-productos">
+      <div class="producto-card">
+        <div class="producto-img" data-img="pastor"><span>🌶️</span></div>
+        <div class="producto-info">
+          <div class="producto-nombre">Pastor</div>
+          <div class="producto-desc">Cerdo marinado al trompo con piña</div>
         </div>
       </div>
-      <form class="scan-bar-form" onsubmit="event.preventDefault(); abrirConfirmacionVisita(document.getElementById('scan-input').value); document.getElementById('scan-input').value='';">
-        <input type="text" id="scan-input" placeholder="TP-000000" autocomplete="off" style="text-transform:uppercase; letter-spacing:1px; font-family:'Space Mono',monospace; font-weight:700;">
-        <button type="submit" class="btn btn-primary">➕ REGISTRAR</button>
-        <button type="button" class="btn btn-secondary" onclick="abrirEscaneoCamara()">📷 ESCANEAR</button>
-      </form>
-    </div>
 
-    <div class="clientes-layout">
-      <div class="card-panel">
-        <h2 id="form-title">EDITAR</h2>
-        <div class="sub" id="form-sub">Selecciona un cliente de la lista</div>
-        <form id="cliente-form">
-          <div class="form-row"><label>Nombre *</label><input type="text" id="cli-nombre" required maxlength="28"></div>
-          <div class="form-grid-2">
-            <div class="form-row"><label>Teléfono</label><input type="tel" id="cli-tel"></div>
-            <div class="form-row"><label>Nivel</label><select id="cli-tier">
-              <option value="bronce">★ Bronce</option><option value="plata">★★ Plata</option>
-              <option value="oro">★★★ Oro</option><option value="master">♛ Master</option>
-            </select></div>
-          </div>
-          <div class="form-row"><label>Email</label><input type="email" id="cli-email"></div>
-          <div class="form-row"><label>Instagram</label><input type="text" id="cli-instagram" placeholder="@usuario"></div>
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary" id="btn-save" disabled>Actualizar</button>
-            <button type="button" class="btn btn-ghost" id="btn-cancel">Limpiar</button>
-          </div>
-        </form>
+      <div class="producto-card">
+        <div class="producto-img" data-img="suadero"><span>🥩</span></div>
+        <div class="producto-info">
+          <div class="producto-nombre">Suadero</div>
+          <div class="producto-desc">Res confitada en su jugo</div>
+        </div>
       </div>
 
-      <div>
-        <div class="table-panel">
-          <div class="table-header">
-            <h2>CLIENTES AUTOREGISTRADOS</h2>
-            <div class="filter-tabs">
-              <button class="filter-tab active" data-filter="all" onclick="setFilter('all')">TODOS <span class="count" id="count-all">0</span></button>
-              <button class="filter-tab" data-filter="acumulando" onclick="setFilter('acumulando')">📈 ACUMULANDO <span class="count" id="count-acumulando">0</span></button>
-              <button class="filter-tab" data-filter="pending" onclick="setFilter('pending')">🏆 LISTO RECOGER <span class="count" id="count-pending">0</span></button>
-              <button class="filter-tab" data-filter="delivered" onclick="setFilter('delivered')">✓ ENTREGADOS <span class="count" id="count-delivered">0</span></button>
+      <div class="producto-card">
+        <div class="producto-img" data-img="longaniza"><span>🌭</span></div>
+        <div class="producto-info">
+          <div class="producto-nombre">Longaniza</div>
+          <div class="producto-desc">Embutido tradicional mexicano</div>
+        </div>
+      </div>
+
+      <div class="producto-card">
+        <div class="producto-img" data-img="birria"><span>🍲</span></div>
+        <div class="producto-info">
+          <div class="producto-nombre">Birria</div>
+          <div class="producto-desc">Res en su consomé picante</div>
+        </div>
+      </div>
+
+      <div class="producto-card">
+        <div class="producto-img" data-img="asada"><span>🔥</span></div>
+        <div class="producto-info">
+          <div class="producto-nombre">Asada</div>
+          <div class="producto-desc">Carne de res a la parrilla</div>
+        </div>
+      </div>
+
+      <div class="producto-card">
+        <div class="producto-img" data-img="oreja"><span>🐷</span></div>
+        <div class="producto-info">
+          <div class="producto-nombre">Oreja</div>
+          <div class="producto-desc">Crujiente especialidad chilanga</div>
+        </div>
+      </div>
+
+      <div class="producto-card">
+        <div class="producto-img" data-img="lengua"><span>👅</span></div>
+        <div class="producto-info">
+          <div class="producto-nombre">Lengua</div>
+          <div class="producto-desc">Res cocinada lentamente</div>
+        </div>
+      </div>
+
+      <div class="producto-card">
+        <div class="producto-img" style="background: linear-gradient(135deg, #5BAE4C, var(--tp-deep-blue));"><span style="color:#fff">🌮</span></div>
+        <div class="producto-info">
+          <div class="producto-nombre">Mixto</div>
+          <div class="producto-desc">Combina tus favoritos</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============= CARNET / BENEFICIOS ============= -->
+<section class="carnet-section" id="carnet">
+  <div class="container">
+    <div class="section-tag">💳 Club Taco Parado</div>
+    <h2 class="section-title">Tu <span class="accent">Carnet</span> de Fidelidad</h2>
+    <p class="section-sub">Cada visita suma. Sube de nivel y desbloquea beneficios exclusivos solo para nuestros clientes leales.</p>
+
+    <div class="grid-tiers">
+      <div class="tier-card bronce">
+        <div class="tier-icon">🥉</div>
+        <div class="tier-name">Bronce</div>
+        <div class="tier-visits">0-4 Visitas</div>
+      </div>
+      <div class="tier-card plata">
+        <div class="tier-icon">🥈</div>
+        <div class="tier-name">Plata</div>
+        <div class="tier-visits">5-9 Visitas</div>
+      </div>
+      <div class="tier-card oro">
+        <div class="tier-icon">🥇</div>
+        <div class="tier-name">Oro</div>
+        <div class="tier-visits">10-19 Visitas</div>
+      </div>
+      <div class="tier-card master">
+        <div class="tier-icon">👑</div>
+        <div class="tier-name">Master</div>
+        <div class="tier-visits">20+ Visitas</div>
+      </div>
+    </div>
+
+    <div class="beneficios-list">
+      <div class="beneficio">
+        <div class="beneficio-icon">🎂</div>
+        <div class="beneficio-text">
+          <strong>Beneficio de Cumpleaños</strong>
+          Sorpresa especial el día de tu cumple
+        </div>
+      </div>
+      <div class="beneficio">
+        <div class="beneficio-icon">⚡</div>
+        <div class="beneficio-text">
+          <strong>Acumula Visitas</strong>
+          Cada ida cuenta para subir de nivel
+        </div>
+      </div>
+      <div class="beneficio">
+        <div class="beneficio-icon">🎁</div>
+        <div class="beneficio-text">
+          <strong>Promos Exclusivas</strong>
+          Solo para miembros del club
+        </div>
+      </div>
+      <div class="beneficio">
+        <div class="beneficio-icon">📱</div>
+        <div class="beneficio-text">
+          <strong>Carnet Digital</strong>
+          Siempre en tu celular, no se pierde
+        </div>
+      </div>
+      <div class="beneficio">
+        <div class="beneficio-icon">🏆</div>
+        <div class="beneficio-text">
+          <strong>Reconocimiento</strong>
+          Te tratamos como mereces — eres familia
+        </div>
+      </div>
+      <div class="beneficio">
+        <div class="beneficio-icon">💸</div>
+        <div class="beneficio-text">
+          <strong>100% Gratis</strong>
+          Sin costos, sin letra chica
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-card-section">
+      <a href="registro.html" class="cta-primary">
+        <span>✨</span>
+        <span>Activar Mi Carnet Gratis</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============= UBICACIÓN ============= -->
+<section class="ubicacion" id="sedes">
+  <div class="container">
+    <div class="section-tag">📍 Encuéntranos</div>
+    <h2 class="section-title">Nuestras <span class="accent">Sedes</span></h2>
+    <p class="section-sub">2 puntos en Villavicencio para que siempre tengas un Taco Parado cerca.</p>
+
+    <div class="grid-sedes" id="sedesContainer">
+      <!-- Sedes cargadas desde Supabase -->
+      <div class="sede-card">
+        <div class="sede-header">
+          <div class="sede-name">6ta Etapa La Esperanza</div>
+          <div class="sede-tag">SEDE PRINCIPAL</div>
+        </div>
+        <div class="sede-body">
+          <div class="sede-info">
+            <div class="sede-info-row">
+              <span class="ico">📍</span>
+              <span>Cra. 33c #7-15, Villavicencio</span>
             </div>
-            <div class="search-box"><input type="text" id="search" placeholder="Buscar…"></div>
+            <div class="sede-info-row">
+              <span class="ico">🕒</span>
+              <span>Lun-Dom · 5:00pm - 11:00pm</span>
+            </div>
           </div>
-          <div class="table-wrap">
-            <table><thead><tr><th></th><th>ID</th><th>Nombre</th><th>Nivel</th><th>Visitas</th><th>Teléfono</th><th>Carnet</th><th>Acciones</th></tr></thead>
-              <tbody id="tabla-body"></tbody>
-            </table>
-            <div class="empty-state" id="empty-state"><div class="ico">🌮</div><p>AÚN NO HAY CLIENTES REGISTRADOS</p></div>
-          </div>
-        </div>
-
-        <div class="preview-panel" id="preview-panel" style="display:none;">
-          <h2>VISTA PREVIA DEL CARNET</h2>
-          <div class="sub">Usando la plantilla activa</div>
-          <div id="share-url-wrap" style="display:none;">
-            <div style="font-family:'Space Mono',monospace; font-size:9px; letter-spacing:1.5px; color:var(--tp-deep-blue); font-weight:700;">🔗 URL DEL PERFIL PÚBLICO:</div>
-            <div class="share-url-box" id="share-url"></div>
-            <button class="btn btn-ghost" style="width:100%; font-size:10px; margin-bottom:14px;" onclick="copiarURL()">📋 COPIAR URL</button>
-          </div>
-          <div class="cards-preview" id="cards-preview"></div>
-          <div class="export-buttons">
-            <button class="btn btn-primary" onclick="openExportModal()" id="btn-export">⬇ EXPORTAR</button>
-            <button class="btn btn-ghost" onclick="unselectCliente()">Cerrar</button>
+          <div class="sede-actions">
+            <a href="https://www.google.com/maps/search/Cra.+33c+%237-15+Villavicencio" target="_blank" class="sede-btn maps">📍 Cómo llegar</a>
+            <a href="https://wa.me/573000000000" target="_blank" class="sede-btn wp">💬 WhatsApp</a>
           </div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <div class="panel" id="panel-plantillas">
-    <div class="plantillas-bar">
-      <div class="info">
-        <strong id="plantilla-actual-nombre">Sin plantilla activa</strong>
-        <div style="font-size:11px; color:var(--muted); margin-top:2px; font-family:'Space Mono',monospace; letter-spacing:0.5px;" id="plantilla-actual-info">Crea tu primera plantilla</div>
-      </div>
-      <input type="text" id="plantilla-nombre-input" placeholder="Nombre de la plantilla" style="max-width:240px;">
-      <button class="btn btn-primary" onclick="guardarPlantilla()">💾 Guardar</button>
-      <button class="btn btn-ghost" onclick="toggleListaPlantillas()">📂 Mis plantillas</button>
-    </div>
-
-    <div id="plantillas-lista" style="display:none; margin-bottom: 16px;">
-      <div class="plantilla-select" id="plantillas-list-content"></div>
-    </div>
-
-    <div class="editor-layout">
-      <div class="card-panel">
-        <h2>PLANTILLA</h2>
-        <div class="sub">SUBE TU DISEÑO DE CANVA</div>
-        <div class="face-toggle">
-          <button class="active" data-face="front" onclick="setFace('front')">FRENTE</button>
-          <button data-face="back" onclick="setFace('back')">REVERSO</button>
+      <div class="sede-card">
+        <div class="sede-header">
+          <div class="sede-name">7 de Agosto</div>
+          <div class="sede-tag">SEGUNDA SEDE</div>
         </div>
-        <label for="template-input" class="upload-box" id="upload-box">
-          <div id="upload-content">
-            <div class="up-icon">📐</div>
-            <div class="up-txt">Clic para subir PNG<br><strong style="color:var(--tp-orange);">1012 × 638 px</strong><br>(tamaño tarjeta)</div>
+        <div class="sede-body">
+          <div class="sede-info">
+            <div class="sede-info-row">
+              <span class="ico">📍</span>
+              <span>Barrio 7 de Agosto, Villavicencio</span>
+            </div>
+            <div class="sede-info-row">
+              <span class="ico">🕒</span>
+              <span>Lun-Dom · 5:00pm - 11:00pm</span>
+            </div>
           </div>
-        </label>
-        <input type="file" id="template-input" accept="image/*" class="file-hidden">
-
-        <h2 style="margin-top:20px;">CAMPOS</h2>
-        <div class="sub">CLIC PARA AGREGAR</div>
-        <div class="tokens-list" id="tokens-list"></div>
-      </div>
-
-      <div class="card-panel canvas-wrap">
-        <div class="canvas-title" id="canvas-title">FRENTE DEL CARNET</div>
-        <div class="canvas-sub">85.6 × 54 MM</div>
-        <div class="toolbar">
-          <label class="toggle-switch"><input type="checkbox" id="toggle-guides" checked><span class="tgl"></span><span>Guías</span></label>
-          <label class="toggle-switch"><input type="checkbox" id="toggle-preview"><span class="tgl"></span><span>Vista previa</span></label>
-        </div>
-        <div class="card-canvas" id="canvas-front">
-          <div class="safe-zone"></div>
-          <div class="empty-canvas-msg"><div class="emoji">📐</div><p>SUBE TU DISEÑO DE CANVA<br>PARA EMPEZAR</p></div>
-        </div>
-        <div class="card-canvas" id="canvas-back" style="display:none;">
-          <div class="safe-zone"></div>
-          <div class="empty-canvas-msg"><div class="emoji">📐</div><p>SUBE EL REVERSO<br>PARA EMPEZAR</p></div>
-        </div>
-        <div class="editor-actions">
-          <button class="btn btn-ghost" onclick="limpiarCara()">🗑️ Limpiar esta cara</button>
-          <button class="btn btn-ghost" onclick="nuevaPlantilla()">✨ Nueva plantilla</button>
-        </div>
-      </div>
-
-      <div class="card-panel editor-right">
-        <h2>PROPIEDADES</h2>
-        <div class="sub" id="props-sub">SELECCIONA UN CAMPO</div>
-        <div id="props-content">
-          <div class="no-selection"><div class="icon">👆</div><p>SELECCIONA UN CAMPO<br>PARA AJUSTARLO</p></div>
+          <div class="sede-actions">
+            <a href="https://www.google.com/maps/search/7+de+Agosto+Villavicencio" target="_blank" class="sede-btn maps">📍 Cómo llegar</a>
+            <a href="https://wa.me/573000000000" target="_blank" class="sede-btn wp">💬 WhatsApp</a>
+          </div>
         </div>
       </div>
     </div>
   </div>
+</section>
 
-  <div class="panel" id="panel-ajustes">
-    <div class="card-panel" style="max-width:600px;">
-      <h2>LOGO DE MARCA</h2>
-      <div class="sub">Aparece en el carnet cuando el cliente no tiene foto individual</div>
-
-      <div id="logo-preview" style="background:#FAFAF7; border:2px dashed var(--border); border-radius:10px; padding:20px; min-height:140px; display:flex; align-items:center; justify-content:center; margin-bottom:12px;"></div>
-
-      <div class="form-actions" style="margin-bottom:20px;">
-        <label for="logo-input" class="btn btn-primary" style="flex:1; text-align:center; display:inline-block; line-height:1.4;">
-          📤 Subir logo
-        </label>
-        <input type="file" id="logo-input" accept="image/*" class="file-hidden">
-        <button class="btn btn-ghost" id="btn-remove-logo" onclick="eliminarLogo()" style="display:none;">🗑 Quitar</button>
-      </div>
-
-      <div style="background:#FFF4DC; padding:10px 14px; border-radius:8px; border-left:3px solid var(--tp-orange); font-size:11px; line-height:1.5; font-family:'Space Mono',monospace; letter-spacing:0.3px; color:var(--ink); margin-bottom:24px;">
-        💡 <strong>Recomendación:</strong> Usa PNG con fondo transparente, mínimo 400×400 px, cuadrado o cercano a cuadrado. Máximo 5 MB.
-      </div>
-
-      <hr style="margin:20px 0; border:none; border-top:1px solid var(--border);">
-
-      <h2>AJUSTES GENERALES</h2>
-      <div class="sub">Configuración sincronizada</div>
-      <div class="form-row"><label>URL base del QR</label><input type="text" id="cfg-qr-base" placeholder="https://tuapp.vercel.app/perfil.html?id="></div>
-      <div class="form-row"><label>Handle de Instagram</label><input type="text" id="cfg-ig" placeholder="@tacoparado.co"></div>
-
-      <hr style="margin:20px 0; border:none; border-top:1px solid var(--border);">
-
-      <h2>📍 SEDE DE RECOGIDA</h2>
-      <div class="sub">Esta info aparece en la notificación al cliente</div>
-      <div class="form-row"><label>Nombre de la sede</label><input type="text" id="cfg-sede-nombre" placeholder="Sede 6ta Etapa La Esperanza"></div>
-      <div class="form-row"><label>Dirección</label><input type="text" id="cfg-sede-direccion" placeholder="Cra. 33c #7-15"></div>
-      <div class="form-row"><label>Horario</label><input type="text" id="cfg-sede-horario" placeholder="Lun-Dom · 4:00 PM - 10:00 PM"></div>
-      <div class="form-row"><label>URL de Google Maps</label><input type="text" id="cfg-sede-maps" placeholder="https://maps.google.com/?q=..."></div>
-
-      <hr style="margin:20px 0; border:none; border-top:1px solid var(--border);">
-
-      <h2>💬 MENSAJE DE NOTIFICACIÓN</h2>
-      <div class="sub">Se envía por WhatsApp/email cuando uses "📱 AVISAR"</div>
-
-      <div class="form-row">
-        <label>Texto del mensaje</label>
-        <textarea id="cfg-mensaje-recogida" rows="11" style="width:100%; padding:12px 14px; border:2px solid var(--border); border-radius:8px; font-family:'Space Mono',monospace; font-size:12px; background:#FAFAF7; color:var(--ink); resize:vertical; line-height:1.5;" placeholder="Escribe tu mensaje aquí..."></textarea>
-      </div>
-
-      <div style="background:#FFF4DC; padding:12px 14px; border-radius:8px; border-left:3px solid var(--tp-orange); font-size:11px; line-height:1.7; margin-bottom:14px;">
-        <div style="font-family:'Space Mono',monospace; font-size:10px; letter-spacing:1.5px; color:var(--tp-dark-orange); font-weight:700; margin-bottom:6px;">🔤 VARIABLES DISPONIBLES (CLIC PARA INSERTAR):</div>
-        <div style="display:flex; flex-wrap:wrap; gap:6px;">
-          <button type="button" class="var-chip" onclick="insertarVariable('{nombre}')">{nombre}</button>
-          <button type="button" class="var-chip" onclick="insertarVariable('{nombreCompleto}')">{nombreCompleto}</button>
-          <button type="button" class="var-chip" onclick="insertarVariable('{id}')">{id}</button>
-          <button type="button" class="var-chip" onclick="insertarVariable('{tier}')">{tier}</button>
-          <button type="button" class="var-chip" onclick="insertarVariable('{sede}')">{sede}</button>
-          <button type="button" class="var-chip" onclick="insertarVariable('{direccion}')">{direccion}</button>
-          <button type="button" class="var-chip" onclick="insertarVariable('{horario}')">{horario}</button>
-          <button type="button" class="var-chip" onclick="insertarVariable('{maps}')">{maps}</button>
-        </div>
-        <div style="margin-top:8px; font-family:'Space Mono',monospace; font-size:10px; color:var(--muted); letter-spacing:0.3px;">💡 En WhatsApp: rodea texto con *asteriscos* para <strong>negrita</strong>, _guiones_ para <em>cursiva</em></div>
-      </div>
-
-      <div class="form-actions">
-        <button class="btn btn-ghost" onclick="previsualizarMensaje()" style="flex:1;">👁 Vista previa</button>
-        <button class="btn btn-ghost" onclick="restaurarMensajeDefault()" style="flex:1;">↺ Restaurar default</button>
-      </div>
-
-      <hr style="margin:20px 0; border:none; border-top:1px solid var(--border);">
-
-      <h2>🏆 NIVELES POR VISITAS</h2>
-      <div class="sub">Umbrales para subir de tier automáticamente</div>
-
-      <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:14px;">
-        <div>
-          <label>★★ Plata a los</label>
-          <input type="number" id="cfg-tier-plata" min="1" placeholder="5">
-        </div>
-        <div>
-          <label>★★★ Oro a los</label>
-          <input type="number" id="cfg-tier-oro" min="2" placeholder="10">
-        </div>
-        <div>
-          <label>♛ Master a los</label>
-          <input type="number" id="cfg-tier-master" min="3" placeholder="20">
-        </div>
-      </div>
-
-      <div style="background:#FFF4DC; padding:10px 14px; border-radius:8px; border-left:3px solid var(--tp-orange); font-size:11px; line-height:1.5; margin-bottom:14px; font-family:'Space Mono',monospace; letter-spacing:0.3px;">
-        💡 <strong>Plata &lt; Oro &lt; Master</strong>. Los clientes suben de nivel automáticamente al registrar visitas. Cambiar estos valores no afecta a clientes actuales hasta que sumen otra visita.
-      </div>
-
-      <div class="form-actions"><button class="btn btn-primary" onclick="guardarConfig()">Guardar ajustes</button></div>
-
-      <hr style="margin:20px 0; border:none; border-top:1px solid var(--border);">
-
-      <h2 style="font-size:13px; margin-bottom:10px;">BACKUP</h2>
-      <div class="form-actions"><button class="btn btn-secondary" onclick="exportarJSON()">📦 Exportar (JSON)</button></div>
-    </div>
+<!-- ============= CTA FINAL ============= -->
+<section class="cta-final">
+  <div class="container">
+    <h2>¿LISTO PARA<br>EL MEJOR TACO?</h2>
+    <p>Únete al club, acumula visitas y conviértete en parte de la familia Taco Parado. Es 100% gratis y solo te toma 30 segundos.</p>
+    <a href="registro.html" class="cta-primary">
+      <span>🌮</span>
+      <span>Sí, Quiero Mi Carnet</span>
+    </a>
   </div>
+</section>
 
+<!-- ============= FOOTER ============= -->
+<footer>
+  <div class="footer-brand">
+    <div class="footer-name">TACO <span class="accent">PARADO</span></div>
+  </div>
+  <div class="footer-links">
+    <a href="#productos">Menú</a>
+    <a href="#carnet">Carnet</a>
+    <a href="#sedes">Sedes</a>
+    <a href="registro.html">Mi Carnet</a>
+  </div>
+  <div class="footer-social">
+    <a href="https://instagram.com/tacoparado.co" target="_blank" title="Instagram">📷</a>
+    <a href="https://wa.me/573000000000" target="_blank" title="WhatsApp">💬</a>
+  </div>
+  <div class="footer-bottom">
+    © 2026 TACO PARADO · VILLAVICENCIO, COLOMBIA
+  </div>
+</footer>
+
+<!-- ============= CTA FLOTANTE MÓVIL ============= -->
+<div class="cta-floating">
+  <a href="registro.html" class="cta-primary">
+    <span>✨</span>
+    <span>Mi Carnet</span>
+  </a>
 </div>
 
-<div id="render-stage"></div>
+<script>
+  // Cargar logo y datos dinámicamente desde Supabase
+  async function cargarConfig() {
+    while (!window.supabase) await new Promise(r => setTimeout(r, 50));
 
-<div class="modal-backdrop" id="export-modal">
-  <div class="modal">
-    <h3>EXPORTAR CARNET</h3>
-    <p id="export-modal-target">Selecciona el formato</p>
-    <div class="export-grid">
-      <button class="btn btn-primary" onclick="exportarPDF('individual')">📄 PDF individual</button>
-      <button class="btn btn-secondary" onclick="exportarPDF('lamina')">🗒️ PDF lámina A4</button>
-      <button class="btn btn-secondary" onclick="exportarPNG()">🖼️ PNG 300dpi</button>
-      <button class="btn btn-secondary" onclick="exportarPDF('todos-lamina')">📚 TODOS · Lámina A4</button>
-    </div>
-    <button class="btn btn-ghost modal-close" onclick="closeExportModal()">Cancelar</button>
-  </div>
-</div>
+    try {
+      // Logo
+      const { data: logoData } = await window.supabase.from('config').select('value').eq('key', 'logoUrl').maybeSingle();
+      if (logoData?.value) {
+        const logo = logoData.value;
+        // Navbar
+        const navLogo = document.getElementById('navLogo');
+        if (navLogo) navLogo.innerHTML = `<img src="${logo}" alt="Taco Parado">`;
+        // Hero mascot
+        const heroMascot = document.getElementById('heroMascot');
+        if (heroMascot) heroMascot.innerHTML = `<img src="${logo}" alt="Taco Parado">`;
+        // Favicon
+        let fav = document.querySelector("link[rel='icon']");
+        if (!fav) { fav = document.createElement('link'); fav.rel = 'icon'; document.head.appendChild(fav); }
+        fav.href = logo;
+      }
 
-<div class="modal-backdrop" id="notify-modal">
-  <div class="modal" style="max-width:520px;">
-    <h3>📱 AVISAR AL CLIENTE</h3>
-    <p id="notify-target" style="color:var(--tp-dark-orange); font-weight:700; font-family:'Archivo',sans-serif; font-size:13px; letter-spacing:0.3px;"></p>
+      // Conteo de clientes (real-time)
+      const { count } = await window.supabase.from('clientes').select('*', { count: 'exact', head: true });
+      if (count !== null && count !== undefined) {
+        document.getElementById('statClientes').textContent = '+' + count;
+      }
 
-    <div style="background:#FAFAF7; border:2px solid var(--border); border-radius:10px; padding:14px; margin-bottom:16px; font-family:'Space Mono',monospace; font-size:11px; white-space:pre-wrap; line-height:1.5; color:var(--ink); max-height:260px; overflow-y:auto;" id="notify-msg-preview"></div>
+      // Sedes desde Supabase
+      const { data: sedes } = await window.supabase.from('sedes').select('*').eq('activa', true).order('nombre');
+      if (sedes && sedes.length > 0) {
+        const container = document.getElementById('sedesContainer');
+        container.innerHTML = sedes.map((s, i) => `
+          <div class="sede-card">
+            <div class="sede-header">
+              <div class="sede-name">${escapeHtml(s.nombre)}</div>
+              <div class="sede-tag">${i === 0 ? 'SEDE PRINCIPAL' : 'SEGUNDA SEDE'}</div>
+            </div>
+            <div class="sede-body">
+              <div class="sede-info">
+                ${s.direccion ? `<div class="sede-info-row"><span class="ico">📍</span><span>${escapeHtml(s.direccion)}</span></div>` : ''}
+                ${s.horario ? `<div class="sede-info-row"><span class="ico">🕒</span><span>${escapeHtml(s.horario)}</span></div>` : '<div class="sede-info-row"><span class="ico">🕒</span><span>Lun-Dom · 5:00pm - 11:00pm</span></div>'}
+              </div>
+              <div class="sede-actions">
+                <a href="${s.maps_url || `https://www.google.com/maps/search/${encodeURIComponent(s.direccion || s.nombre + ' Villavicencio')}`}" target="_blank" class="sede-btn maps">📍 Cómo llegar</a>
+                <a href="https://instagram.com/tacoparado.co" target="_blank" class="sede-btn wp" style="background: var(--tp-coral);">📷 Instagram</a>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+    } catch (e) {
+      console.warn('Error cargando config:', e);
+    }
+  }
 
-    <div style="display:grid; gap:8px;">
-      <button class="btn" id="notify-btn-whatsapp" style="background:#25D366; color:#fff; display:none; box-shadow:0 2px 8px rgba(37,211,102,0.35);">💬 ENVIAR POR WHATSAPP</button>
-      <button class="btn btn-secondary" id="notify-btn-email" style="display:none;">📧 ENVIAR POR EMAIL</button>
-      <button class="btn btn-ghost" id="notify-btn-copy">📋 COPIAR MENSAJE</button>
-    </div>
+  function escapeHtml(s) {
+    return (s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
 
-    <button class="btn btn-ghost modal-close" onclick="closeNotifyModal()">Cerrar</button>
-  </div>
-</div>
+  cargarConfig();
 
-<div class="modal-backdrop" id="visit-modal">
-  <div class="modal" style="max-width:520px;">
-    <div id="visit-modal-content"></div>
-  </div>
-</div>
+  // Smooth navbar effect on scroll
+  let lastScroll = 0;
+  window.addEventListener('scroll', () => {
+    const nav = document.querySelector('.navbar');
+    const cur = window.pageYOffset;
+    if (cur > 80) {
+      nav.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
+    } else {
+      nav.style.boxShadow = 'none';
+    }
+    lastScroll = cur;
+  });
+</script>
 
-<div class="modal-backdrop scanner-modal" id="scanner-modal">
-  <div class="modal" style="max-width:480px;">
-    <h3>📷 ESCANEAR CARNET</h3>
-    <p>Apunta la cámara al código QR del carnet del cliente</p>
-    <div class="scan-target">
-      <video id="scanner-video" playsinline></video>
-      <div class="scan-overlay"></div>
-    </div>
-    <div id="scanner-status" style="text-align:center; font-family:'Space Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:1px; margin:10px 0;">BUSCANDO CÓDIGO…</div>
-    <button class="btn btn-ghost modal-close" onclick="cerrarEscaneoCamara()">Cancelar</button>
-  </div>
-</div>
-
-<div class="loading-overlay" id="loading"><div class="spinner"></div><div>GENERANDO…</div><div class="progress" id="loading-progress"></div></div>
-<div class="toast" id="toast"></div>
-
-<script src="app.js"></script>
 </body>
 </html>

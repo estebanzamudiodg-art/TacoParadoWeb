@@ -1,9 +1,11 @@
 {
+  "cleanUrls": true,
+  "trailingSlash": false,
   "redirects": [
     {
-      "source": "/",
-      "destination": "/registro.html",
-      "permanent": false
+      "source": "/admin.html",
+      "destination": "/admin",
+      "permanent": true
     }
   ]
 }

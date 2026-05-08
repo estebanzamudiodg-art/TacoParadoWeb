@@ -84,7 +84,7 @@ async function checkAuth() {
   await waitForSupabase();
   const { data: { session } } = await window.supabase.auth.getSession();
   if (!session) {
-    window.location.href = 'index.html';
+    window.location.href = 'admin.html';
     return;
   }
   currentUser = session.user;
@@ -102,7 +102,7 @@ async function checkAuth() {
         <div style="font-size:48px; margin-bottom:16px;">🚫</div>
         <div style="font-family:'Bungee',sans-serif; font-size:20px; margin-bottom:8px;">SIN ACCESO</div>
         <div style="font-family:'Inter',sans-serif; font-size:14px; opacity:0.8; margin-bottom:20px;">Tu cuenta no tiene permisos para el inventario.<br>Contacta al administrador.</div>
-        <a href="index.html" style="color:var(--mustard); font-weight:700;">← Volver al panel</a>
+        <a href="admin.html" style="color:var(--mustard); font-weight:700;">← Volver al panel</a>
       </div>
     `;
     return;
@@ -119,7 +119,7 @@ async function checkAuth() {
         <div style="font-size:48px; margin-bottom:16px;">📋</div>
         <div style="font-family:'Bungee',sans-serif; font-size:20px; margin-bottom:8px;">ACCESO LIMITADO</div>
         <div style="font-family:'Inter',sans-serif; font-size:14px; opacity:0.8; margin-bottom:20px;">Tu rol de Líder de Punto no incluye acceso al inventario.<br>Usa el panel principal para registrar visitas.</div>
-        <a href="index.html" style="color:var(--mustard); font-weight:700;">← Ir al panel de clientes</a>
+        <a href="admin.html" style="color:var(--mustard); font-weight:700;">← Ir al panel de clientes</a>
       </div>
     `;
     return;
@@ -1407,7 +1407,7 @@ document.querySelectorAll('.scan-mode').forEach(btn => {
 
 window.logout = async function() {
   await window.supabase.auth.signOut();
-  window.location.href = 'index.html';
+  window.location.href = 'admin.html';
 };
 
 // ==============================================================
