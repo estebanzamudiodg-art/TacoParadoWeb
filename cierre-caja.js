@@ -1,24 +1,25 @@
 // ==============================================================
-// TACO PARADO · CIERRE DE CAJA · LÓGICA COMPLETA
+// TACO PARADO · CIERRE DE CAJA · DENOMINACIONES + TRANSFERENCIAS
 // ==============================================================
 
-// Métodos de pago estándar (igual que en tu cierre POS)
-const METODOS_PAGO = [
-  { key: 'efectivo',      nombre: 'Monto en Efectivo',  esEfectivo: true,  esBanco: false },
-  { key: 'mastercard',    nombre: 'MasterCard',          esEfectivo: false, esBanco: true  },
-  { key: 'visa',          nombre: 'Visa',                esEfectivo: false, esBanco: true  },
-  { key: 'datafono',      nombre: 'Datáfono',            esEfectivo: false, esBanco: true  },
-  { key: 'transferencia', nombre: 'Transferencia',       esEfectivo: false, esBanco: true  },
-  { key: 'bancolombia',   nombre: 'Bancolombia',         esEfectivo: false, esBanco: true  },
-  { key: 'nequi',         nombre: 'Nequi',               esEfectivo: false, esBanco: true  },
-  { key: 'davivienda',    nombre: 'Davivienda',          esEfectivo: false, esBanco: true  },
-  { key: 'daviplata',     nombre: 'Daviplata',           esEfectivo: false, esBanco: true  },
-  { key: 'apps',          nombre: 'Apps',                esEfectivo: false, esBanco: true  },
-  { key: 'consignacion',  nombre: 'Consignación',        esEfectivo: false, esBanco: true  },
-  { key: 'nota_credito',  nombre: 'Nota Crédito',        esEfectivo: false, esBanco: false },
-  { key: 'nota_debito',   nombre: 'Nota Débito',         esEfectivo: false, esBanco: false },
-  { key: 'puntos',        nombre: 'Puntos',              esEfectivo: false, esBanco: false }
+const BILLETES = [
+  { val: 100000, label: '$100.000' },
+  { val: 50000,  label: '$50.000'  },
+  { val: 20000,  label: '$20.000'  },
+  { val: 10000,  label: '$10.000'  },
+  { val: 5000,   label: '$5.000'   },
+  { val: 2000,   label: '$2.000'   }
 ];
+
+const MONEDAS = [
+  { val: 1000, label: '$1.000' },
+  { val: 500,  label: '$500'   },
+  { val: 200,  label: '$200'   },
+  { val: 100,  label: '$100'   },
+  { val: 50,   label: '$50'    }
+];
+
+const BANCOS = ['Bancolombia', 'Nequi', 'Davivienda', 'Daviplata', 'BBVA', 'Banco de Bogotá', 'Otro'];
 
 // STATE
 let currentUser = null;
@@ -28,28 +29,23 @@ let sedes = [];
 let selectedSedeId = null;
 let cierres = [];
 let editandoCierreId = null;
-let scanFile = null;
-let scanFileUrl = null;
+
+let denomCounts = {};       // {100000: 5, 50000: 8, ...}
+let transferencias = [];    // [{banco, monto, nota, hora}]
+let egresos = [];           // [{motivo, monto, metodo, recibo_url}]
+let conciliacion = {};      // {Bancolombia: {esperado, recibido, diferencia}, ...}
 
 // ============= HELPERS =============
-function fmt(n) {
-  return new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0);
-}
-function fmtMoney(n) {
-  return '$' + fmt(n);
-}
-function escapeHTML(s) {
-  return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-}
+function fmt(n) { return new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0); }
+function fmtMoney(n) { return '$' + fmt(n); }
+function escapeHTML(s) { return (s||'').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function toast(msg, type = 'success') {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'toast show ' + type;
   setTimeout(() => t.classList.remove('show'), 3000);
 }
-async function waitForSupabase() {
-  while (!window.supabase) await new Promise(r => setTimeout(r, 50));
-}
+async function waitForSupabase() { while (!window.supabase) await new Promise(r => setTimeout(r, 50)); }
 
 // ============= AUTH =============
 async function checkAuth() {
@@ -69,7 +65,6 @@ async function checkAuth() {
   userRole = r.rol;
   userSedeId = r.sede_id;
 
-  // Solo admin y admin_contador pueden acceder
   if (userRole !== 'admin' && userRole !== 'admin_contador') {
     showSinAcceso('El cierre de caja solo está disponible para administradores y contadores.');
     return;
@@ -103,7 +98,7 @@ function showApp() {
 
   renderSedeSelector();
   initFilters();
-  renderMetodosForm();
+  renderDenominaciones();
   loadCierres();
 }
 
@@ -140,8 +135,7 @@ window.changeTab = function(name) {
 
 function initFilters() {
   const mes = document.getElementById('filtroMes');
-  const hoy = new Date();
-  mes.value = hoy.toISOString().slice(0, 7);
+  mes.value = new Date().toISOString().slice(0, 7);
 }
 
 // ============= CARGAR CIERRES =============
@@ -154,13 +148,10 @@ async function loadCierres() {
     finDate.setMonth(finDate.getMonth() + 1);
     const fin = finDate.toISOString().slice(0, 10);
 
-    let q = window.supabase.from('cierres_caja').select('*')
+    const { data, error } = await window.supabase.from('cierres_caja').select('*')
+      .eq('sede_id', selectedSedeId)
       .gte('fecha', inicio).lt('fecha', fin)
       .order('fecha', { ascending: false });
-    if (userRole !== 'admin') q = q.eq('sede_id', selectedSedeId);
-    else q = q.eq('sede_id', selectedSedeId);
-
-    const { data, error } = await q;
     if (error) throw error;
     cierres = data || [];
     renderCierres();
@@ -174,29 +165,26 @@ async function loadCierres() {
 function renderCierres() {
   const tb = document.getElementById('tblCierres');
   if (cierres.length === 0) {
-    tb.innerHTML = '<tr><td colspan="9"><div class="empty">Sin cierres este mes. Crea el primero con "+ Nuevo Cierre".</div></td></tr>';
+    tb.innerHTML = '<tr><td colspan="8"><div class="empty">Sin cierres este mes. Crea el primero con "+ Nuevo Cierre".</div></td></tr>';
     return;
   }
   tb.innerHTML = cierres.map(c => {
     const sede = sedes.find(s => s.id === c.sede_id);
     const estadoBadge = c.estado === 'cerrado'
       ? '<span style="background:#DCFCE7; color:#166534; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:800;">✓ CERRADO</span>'
-      : c.estado === 'conciliado'
-      ? '<span style="background:#DBEAFE; color:#1E40AF; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:800;">🔵 CONCILIADO</span>'
       : '<span style="background:#FEF3C7; color:#854d0e; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:800;">📋 BORRADOR</span>';
     return `<tr>
       <td><strong>${c.fecha}</strong></td>
       <td>${escapeHTML(sede?.nombre || '—')}</td>
-      <td>#${c.numero_cierre || '—'}</td>
-      <td class="qty">${c.numero_facturas || 0}</td>
-      <td class="money">${fmtMoney(c.total_dia)}</td>
+      <td class="money" style="color:var(--green);">${fmtMoney(c.ventas_totales)}</td>
+      <td class="money">${fmtMoney(c.efectivo_neto)}</td>
+      <td class="money">${fmtMoney(c.total_transferencias)}</td>
       <td class="money" style="color:var(--red);">${fmtMoney(c.egresos)}</td>
-      <td class="money" style="color:var(--green);">${fmtMoney(c.total_caja)}</td>
       <td>${estadoBadge}</td>
       <td>
         <button class="btn-icon" onclick="verCierre('${c.id}')" title="Ver detalle">👁</button>
         <button class="btn-icon" onclick="editarCierre('${c.id}')" title="Editar">✎</button>
-        ${userRole === 'admin' ? `<button class="btn-icon danger" onclick="eliminarCierre('${c.id}')" title="Eliminar">✕</button>` : ''}
+        ${userRole === 'admin' ? `<button class="btn-icon danger" onclick="eliminarCierre('${c.id}')">✕</button>` : ''}
       </td>
     </tr>`;
   }).join('');
@@ -204,266 +192,358 @@ function renderCierres() {
 
 function renderResumen() {
   const stats = document.getElementById('statsResumen');
-  const totalDia = cierres.reduce((s, c) => s + (c.total_dia || 0), 0);
-  const totalEgresos = cierres.reduce((s, c) => s + (c.egresos || 0), 0);
-  const totalCaja = cierres.reduce((s, c) => s + (c.total_caja || 0), 0);
-  const totalDif = cierres.reduce((s, c) => s + (c.diferencia_declarada || 0), 0);
+  const ventas = cierres.reduce((s, c) => s + (c.ventas_totales || 0), 0);
+  const efectivo = cierres.reduce((s, c) => s + (c.efectivo_neto || 0), 0);
+  const transf = cierres.reduce((s, c) => s + (c.total_transferencias || 0), 0);
+  const eg = cierres.reduce((s, c) => s + (c.egresos || 0), 0);
 
   stats.innerHTML = `
-    <div class="stat-card green"><div class="label">Total Mes</div><div class="value">${fmtMoney(totalDia)}</div></div>
-    <div class="stat-card red"><div class="label">Egresos Mes</div><div class="value">${fmtMoney(totalEgresos)}</div></div>
-    <div class="stat-card orange"><div class="label">Caja Acumulada</div><div class="value">${fmtMoney(totalCaja)}</div></div>
-    <div class="stat-card ${totalDif < 0 ? 'red' : 'green'}"><div class="label">Diferencias</div><div class="value">${fmtMoney(totalDif)}</div></div>
+    <div class="stat-card green"><div class="label">Ventas Mes</div><div class="value">${fmtMoney(ventas)}</div></div>
+    <div class="stat-card"><div class="label">Efectivo Neto</div><div class="value">${fmtMoney(efectivo)}</div></div>
+    <div class="stat-card orange"><div class="label">Transferencias</div><div class="value">${fmtMoney(transf)}</div></div>
+    <div class="stat-card red"><div class="label">Egresos</div><div class="value">${fmtMoney(eg)}</div></div>
     <div class="stat-card"><div class="label">Cierres</div><div class="value">${cierres.length}</div></div>
   `;
 }
 
-// ============= FORM NUEVO =============
+// ============= INIT FORMULARIO NUEVO =============
 function initFormNuevo() {
   if (!editandoCierreId) {
     document.getElementById('cierreFecha').value = new Date().toISOString().slice(0, 10);
-    // Sugerir el siguiente número de cierre
-    const ultNum = Math.max(0, ...cierres.map(c => c.numero_cierre || 0));
-    document.getElementById('cierreNumero').value = ultNum + 1;
+    document.getElementById('baseInicial').value = 300000;
+    denomCounts = {};
+    transferencias = [];
+    egresos = [];
+    conciliacion = {};
+    document.getElementById('totalDatafono').value = '';
+    document.getElementById('notas').value = '';
   }
+  renderDenominaciones();
+  renderTransferencias();
+  renderEgresos();
+  renderConciliacion();
+  calcularTodo();
 }
 
-function renderMetodosForm() {
-  const tb = document.getElementById('tblMetodos');
-  tb.innerHTML = METODOS_PAGO.map(m => `
-    <tr data-metodo="${m.key}">
-      <td><strong>${escapeHTML(m.nombre)}</strong></td>
-      <td><input type="number" class="met-ingresa" data-key="${m.key}" step="100" placeholder="0" oninput="recalcularMetodos()" style="width:120px; padding:6px; border:1.5px solid var(--border); border-radius:6px; text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700;"></td>
-      <td><input type="number" class="met-sale" data-key="${m.key}" step="100" placeholder="0" oninput="recalcularMetodos()" style="width:120px; padding:6px; border:1.5px solid var(--border); border-radius:6px; text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700;"></td>
-      <td class="money met-queda" data-key="${m.key}">$0</td>
-      ${m.esBanco ? `<td><input type="number" class="met-banco" data-key="${m.key}" step="100" placeholder="0" oninput="recalcularMetodos()" style="width:120px; padding:6px; border:1.5px solid var(--border); border-radius:6px; text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700;"></td>` : '<td style="opacity:0.4; text-align:center;">—</td>'}
-      <td class="met-diff" data-key="${m.key}">—</td>
-    </tr>
-  `).join('');
+// ============= DENOMINACIONES =============
+function renderDenominaciones() {
+  const billetesGrid = document.getElementById('billetesGrid');
+  const monedasGrid = document.getElementById('monedasGrid');
+
+  billetesGrid.innerHTML = BILLETES.map(b => {
+    const cnt = denomCounts[b.val] || 0;
+    const total = cnt * b.val;
+    return `
+      <label class="denom-card ${total === 0 ? 'empty' : ''}">
+        <span class="denom-label">${b.label}</span>
+        <input type="number" min="0" value="${cnt || ''}" placeholder="0"
+          onchange="actualizarDenominacion(${b.val}, this.value)"
+          oninput="actualizarDenominacion(${b.val}, this.value)">
+        <span class="equals">=</span>
+        <span class="total">${fmtMoney(total)}</span>
+      </label>
+    `;
+  }).join('');
+
+  monedasGrid.innerHTML = MONEDAS.map(m => {
+    const cnt = denomCounts[m.val] || 0;
+    const total = cnt * m.val;
+    return `
+      <label class="denom-card ${total === 0 ? 'empty' : ''}">
+        <span class="denom-label">${m.label}</span>
+        <input type="number" min="0" value="${cnt || ''}" placeholder="0"
+          onchange="actualizarDenominacion(${m.val}, this.value)"
+          oninput="actualizarDenominacion(${m.val}, this.value)">
+        <span class="equals">=</span>
+        <span class="total">${fmtMoney(total)}</span>
+      </label>
+    `;
+  }).join('');
 }
 
-window.recalcularMetodos = function() {
-  let totalEfectivoIngresa = 0;
-  document.querySelectorAll('#tblMetodos tr').forEach(tr => {
-    const key = tr.dataset.metodo;
-    const ing = parseFloat(tr.querySelector('.met-ingresa').value) || 0;
-    const sale = parseFloat(tr.querySelector('.met-sale').value) || 0;
-    const queda = ing - sale;
-    tr.querySelector('.met-queda').textContent = fmtMoney(queda);
-
-    const metodo = METODOS_PAGO.find(m => m.key === key);
-    if (metodo?.esEfectivo) totalEfectivoIngresa += ing;
-
-    // Conciliación bancaria
-    if (metodo?.esBanco) {
-      const bancoInput = tr.querySelector('.met-banco');
-      const banco = parseFloat(bancoInput?.value) || 0;
-      const diffEl = tr.querySelector('.met-diff');
-      if (ing > 0 && banco > 0) {
-        const diff = banco - ing;
-        if (Math.abs(diff) < 1) {
-          diffEl.innerHTML = '<span style="color:var(--green); font-weight:800;">✓ Cuadra</span>';
-        } else if (diff > 0) {
-          diffEl.innerHTML = `<span style="color:var(--orange); font-weight:800;">+${fmtMoney(diff)} sobra</span>`;
-        } else {
-          diffEl.innerHTML = `<span style="color:var(--red); font-weight:800;">${fmtMoney(diff)} falta</span>`;
-        }
-      } else {
-        diffEl.innerHTML = '<span style="opacity:0.4;">—</span>';
-      }
+window.actualizarDenominacion = function(val, count) {
+  denomCounts[val] = parseInt(count) || 0;
+  // Actualizar solo la card sin re-renderizar toda la grid (mantiene el foco)
+  const cards = document.querySelectorAll('.denom-card');
+  cards.forEach(card => {
+    const label = card.querySelector('.denom-label').textContent;
+    const denoms = [...BILLETES, ...MONEDAS];
+    const d = denoms.find(x => x.label === label);
+    if (d) {
+      const cnt = denomCounts[d.val] || 0;
+      const total = cnt * d.val;
+      card.querySelector('.total').textContent = fmtMoney(total);
+      card.classList.toggle('empty', total === 0);
     }
   });
+  calcularTodo();
+};
 
-  // Actualizar el campo de Monto Efectivo
-  document.getElementById('montoEfectivo').value = totalEfectivoIngresa;
-  recalcularCaja();
-  // Auto-llenar Total Facturas si está vacío
-  const totalFact = document.getElementById('totalFacturas');
-  if (!totalFact.value || totalFact.dataset.auto === '1') {
-    const sumIngresos = Array.from(document.querySelectorAll('.met-ingresa')).reduce((s, i) => s + (parseFloat(i.value) || 0), 0);
-    totalFact.value = sumIngresos;
-    totalFact.dataset.auto = '1';
-    recalcularTotales();
+function calcularTotalEfectivo() {
+  let total = 0;
+  for (const denom in denomCounts) {
+    total += (denomCounts[denom] || 0) * parseInt(denom);
   }
+  return total;
+}
+
+// ============= TRANSFERENCIAS =============
+window.agregarTransferencia = function() {
+  transferencias.push({ banco: 'Bancolombia', monto: 0, nota: '', hora: '' });
+  renderTransferencias();
+  // Foco en el monto del último
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('#transferenciasList .item-row .monto-input');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  }, 50);
 };
 
-window.recalcularTotales = function() {
-  const tf = parseFloat(document.getElementById('totalFacturas').value) || 0;
-  const ing = parseFloat(document.getElementById('ingresos').value) || 0;
-  const ab = parseFloat(document.getElementById('abonos').value) || 0;
-  const pp = parseFloat(document.getElementById('pendientePago').value) || 0;
-  const eg = parseFloat(document.getElementById('egresos').value) || 0;
-  const total = tf + ing + ab - pp - eg;
-  document.getElementById('totalDia').value = total;
-};
-
-window.recalcularCaja = function() {
-  const monto = parseFloat(document.getElementById('montoEfectivo').value) || 0;
-  const base = parseFloat(document.getElementById('baseCaja').value) || 0;
-  const eg = parseFloat(document.getElementById('egresosEfectivo').value) || 0;
-  const total = monto + base - eg;
-  document.getElementById('totalCaja').value = total;
-  document.getElementById('totalCajaDeclarar').value = total;
-  calcularDiferencia();
-};
-
-window.calcularDiferencia = function() {
-  const total = parseFloat(document.getElementById('totalCajaDeclarar').value) || 0;
-  const dec = parseFloat(document.getElementById('montoDeclarado').value) || 0;
-  const diff = dec - total;
-  const box = document.getElementById('diferenciaBox');
-  if (dec === 0) { box.innerHTML = ''; return; }
-  if (Math.abs(diff) < 1) {
-    box.innerHTML = `<div class="alert alert-success">✅ <strong>$0 SOBRA</strong> · El cuadre es exacto. Todo cuadra perfectamente.</div>`;
-  } else if (diff > 0) {
-    box.innerHTML = `<div class="alert alert-warn">⚠️ <strong>+${fmtMoney(diff)} SOBRA</strong> · El cajero contó más dinero del esperado. Verifica si hay vueltos sin entregar o pagos no registrados.</div>`;
+function renderTransferencias() {
+  const list = document.getElementById('transferenciasList');
+  if (transferencias.length === 0) {
+    list.innerHTML = '<div class="item-empty">Sin transferencias todavía. Clic en ➕ para agregar.</div>';
   } else {
-    box.innerHTML = `<div class="alert alert-error">🚨 <strong>${fmtMoney(Math.abs(diff))} FALTA</strong> · Hay un faltante en caja. Revisa registros, posibles errores de digitación o cobros no efectivos.</div>`;
+    list.innerHTML = transferencias.map((t, i) => `
+      <div class="item-row">
+        <select onchange="actualizarTransferencia(${i}, 'banco', this.value)">
+          ${BANCOS.map(b => `<option value="${b}" ${b === t.banco ? 'selected' : ''}>${b}</option>`).join('')}
+        </select>
+        <input type="number" class="monto-input" step="100" placeholder="0"
+          value="${t.monto || ''}"
+          oninput="actualizarTransferencia(${i}, 'monto', this.value)">
+        <input type="text" class="nota-field" placeholder="Nota (opcional): cliente, mesa, etc."
+          value="${escapeHTML(t.nota || '')}"
+          oninput="actualizarTransferencia(${i}, 'nota', this.value)">
+        <button class="remove-btn" onclick="quitarTransferencia(${i})" title="Quitar">✕</button>
+      </div>
+    `).join('');
   }
-};
 
-// ============= OCR =============
-function setupDropzone() {
-  const dz = document.getElementById('dropzone');
-  if (!dz) return;
-  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-  dz.addEventListener('drop', e => {
-    e.preventDefault(); dz.classList.remove('drag-over');
-    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  // Total + breakdown
+  const total = transferencias.reduce((s, t) => s + (parseFloat(t.monto) || 0), 0);
+  document.getElementById('totalTransferencias').textContent = fmtMoney(total);
+
+  const porBanco = {};
+  transferencias.forEach(t => {
+    porBanco[t.banco] = (porBanco[t.banco] || 0) + (parseFloat(t.monto) || 0);
   });
-  document.getElementById('fileInput').addEventListener('change', e => {
-    if (e.target.files.length) handleFile(e.target.files[0]);
-  });
+  const breakdown = Object.entries(porBanco).filter(([b, m]) => m > 0).map(([b, m]) => `${b}: ${fmtMoney(m)}`).join('  ·  ');
+  document.getElementById('breakdownTransf').textContent = breakdown;
+
+  renderConciliacion();
 }
 
-function handleFile(file) {
-  if (!file || !file.type.startsWith('image/')) { toast('Solo imágenes', 'error'); return; }
-  scanFile = file;
-  const reader = new FileReader();
-  reader.onload = e => {
-    document.getElementById('previewImg').src = e.target.result;
-    scanFileUrl = e.target.result;
-    document.getElementById('previewBox').style.display = 'block';
-    document.getElementById('dropzone').style.display = 'none';
-  };
-  reader.readAsDataURL(file);
-}
+window.actualizarTransferencia = function(idx, campo, valor) {
+  if (campo === 'monto') valor = parseFloat(valor) || 0;
+  transferencias[idx][campo] = valor;
+  // Recalcular sin re-renderizar toda la lista (mantener foco)
+  const total = transferencias.reduce((s, t) => s + (parseFloat(t.monto) || 0), 0);
+  document.getElementById('totalTransferencias').textContent = fmtMoney(total);
 
-window.resetScan = function() {
-  scanFile = null;
-  scanFileUrl = null;
-  document.getElementById('fileInput').value = '';
-  document.getElementById('previewBox').style.display = 'none';
-  document.getElementById('dropzone').style.display = 'block';
-  document.getElementById('progressBox').style.display = 'none';
+  const porBanco = {};
+  transferencias.forEach(t => {
+    porBanco[t.banco] = (porBanco[t.banco] || 0) + (parseFloat(t.monto) || 0);
+  });
+  const breakdown = Object.entries(porBanco).filter(([b, m]) => m > 0).map(([b, m]) => `${b}: ${fmtMoney(m)}`).join('  ·  ');
+  document.getElementById('breakdownTransf').textContent = breakdown;
+
+  renderConciliacion();
+  calcularTodo();
 };
 
-window.procesarOCR = async function() {
-  if (!scanFile) return;
-  if (typeof Tesseract === 'undefined') { toast('Cargando OCR...', 'error'); return; }
-  const pBox = document.getElementById('progressBox');
-  const pFill = document.getElementById('progressFill');
-  const pText = document.getElementById('progressText');
-  pBox.style.display = 'block';
-  document.getElementById('btnProcesarOCR').disabled = true;
-  pFill.style.width = '0%';
-  pText.textContent = 'Iniciando OCR...';
+window.quitarTransferencia = function(idx) {
+  transferencias.splice(idx, 1);
+  renderTransferencias();
+  calcularTodo();
+};
+
+// ============= EGRESOS =============
+window.agregarEgreso = function() {
+  egresos.push({ motivo: '', monto: 0, metodo: 'efectivo', recibo_url: '' });
+  renderEgresos();
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('#egresosList .item-row .motivo-input');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  }, 50);
+};
+
+function renderEgresos() {
+  const list = document.getElementById('egresosList');
+  if (egresos.length === 0) {
+    list.innerHTML = '<div class="item-empty">Sin egresos todavía. Clic en ➕ para agregar.</div>';
+  } else {
+    list.innerHTML = egresos.map((e, i) => `
+      <div class="item-row" style="grid-template-columns: 1fr 130px 110px 70px 40px;">
+        <input type="text" class="motivo-input" placeholder="Motivo (ej: mercado, gas, sueldo)"
+          value="${escapeHTML(e.motivo || '')}"
+          oninput="actualizarEgreso(${i}, 'motivo', this.value)">
+        <input type="number" step="100" placeholder="Monto"
+          value="${e.monto || ''}"
+          oninput="actualizarEgreso(${i}, 'monto', this.value)">
+        <select onchange="actualizarEgreso(${i}, 'metodo', this.value)">
+          <option value="efectivo" ${e.metodo === 'efectivo' ? 'selected' : ''}>💵 Efectivo</option>
+          <option value="transferencia" ${e.metodo === 'transferencia' ? 'selected' : ''}>💳 Transfer.</option>
+        </select>
+        <label class="btn-icon" style="text-align:center; cursor:pointer;" title="Subir recibo">
+          ${e.recibo_url ? '✅' : '📷'}
+          <input type="file" accept="image/*" hidden onchange="subirRecibo(${i}, event)">
+        </label>
+        <button class="remove-btn" onclick="quitarEgreso(${i})">✕</button>
+      </div>
+    `).join('');
+  }
+
+  const total = egresos.reduce((s, e) => s + (parseFloat(e.monto) || 0), 0);
+  document.getElementById('totalEgresos').textContent = fmtMoney(total);
+
+  const efe = egresos.filter(e => e.metodo === 'efectivo').reduce((s, e) => s + (parseFloat(e.monto) || 0), 0);
+  const trf = egresos.filter(e => e.metodo === 'transferencia').reduce((s, e) => s + (parseFloat(e.monto) || 0), 0);
+  document.getElementById('breakdownEgresos').textContent = (efe > 0 || trf > 0)
+    ? `Efectivo: ${fmtMoney(efe)}  ·  Transferencia: ${fmtMoney(trf)}`
+    : '';
+}
+
+window.actualizarEgreso = function(idx, campo, valor) {
+  if (campo === 'monto') valor = parseFloat(valor) || 0;
+  egresos[idx][campo] = valor;
+  // Sólo recalcular total sin re-renderizar
+  const total = egresos.reduce((s, e) => s + (parseFloat(e.monto) || 0), 0);
+  document.getElementById('totalEgresos').textContent = fmtMoney(total);
+  const efe = egresos.filter(e => e.metodo === 'efectivo').reduce((s, e) => s + (parseFloat(e.monto) || 0), 0);
+  const trf = egresos.filter(e => e.metodo === 'transferencia').reduce((s, e) => s + (parseFloat(e.monto) || 0), 0);
+  document.getElementById('breakdownEgresos').textContent = (efe > 0 || trf > 0) ? `Efectivo: ${fmtMoney(efe)}  ·  Transferencia: ${fmtMoney(trf)}` : '';
+  calcularTodo();
+};
+
+window.quitarEgreso = function(idx) {
+  egresos.splice(idx, 1);
+  renderEgresos();
+  calcularTodo();
+};
+
+window.subirRecibo = async function(idx, event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 3 * 1024 * 1024) { toast('Foto muy grande (máx 3 MB)', 'error'); return; }
 
   try {
-    const result = await Tesseract.recognize(scanFile, 'spa+eng', {
-      logger: m => {
-        if (m.status === 'recognizing text') {
-          const pct = Math.round(m.progress * 100);
-          pFill.style.width = pct + '%';
-          pText.textContent = `Reconociendo... ${pct}%`;
-        } else {
-          pText.textContent = m.status;
-        }
-      }
-    });
-    pFill.style.width = '100%';
-    pText.textContent = '✓ Listo. Extrayendo datos...';
-    extraerDatosCierre(result.data.text);
+    const ext = file.name.split('.').pop();
+    const fname = `recibo_${Date.now()}_${idx}.${ext}`;
+    const { error } = await window.supabase.storage.from('cierres').upload(fname, file, { upsert: true });
+    if (error) throw error;
+    const { data: { publicUrl } } = window.supabase.storage.from('cierres').getPublicUrl(fname);
+    egresos[idx].recibo_url = publicUrl;
+    renderEgresos();
+    toast('✓ Recibo cargado');
   } catch (err) {
-    console.error(err);
-    toast('Error en OCR', 'error');
-  } finally {
-    document.getElementById('btnProcesarOCR').disabled = false;
+    toast('Error: ' + err.message, 'error');
   }
 };
 
-// Función inteligente para extraer datos del cierre POS
-function extraerDatosCierre(texto) {
-  if (!texto || !texto.trim()) { toast('Sin texto detectado', 'error'); return; }
-  const lineas = texto.split('\n').map(l => l.trim()).filter(l => l);
-  let extraidos = 0;
+// ============= CONCILIACIÓN BANCARIA =============
+function renderConciliacion() {
+  const list = document.getElementById('conciliacionList');
+  // Bancos donde hubo transferencias
+  const bancosUsados = [...new Set(transferencias.map(t => t.banco).filter(Boolean))];
 
-  // Patrones a buscar
-  const patrones = {
-    'cierreNumero':   /cierre\s*(?:de\s*)?caja[:\s#]*(\d+)/i,
-    'cierreFacturas': /(?:registro\s*de\s*facturas|total\s*facturas)[:\s#]*(\d+)/i,
-    'totalFacturas':  /total\s*factura[s]?[:\s]+\$?([\d.,]+)/i,
-    'ingresos':       /^ingresos[:\s]+\$?([\d.,]+)/i,
-    'abonos':         /^abonos[:\s]+\$?([\d.,]+)/i,
-    'pendientePago':  /pendiente\s*(?:de\s*)?pago[:\s]+\$?([\d.,]+)/i,
-    'egresos':        /^egresos[:\s]+\$?([\d.,]+)/i,
-    'baseCaja':       /^base[:\s]+\$?([\d.,]+)/i,
-    'egresosEfectivo':/egresos\s*efectivo[:\s]+\$?([\d.,]+)/i,
-    'montoDeclarado': /monto\s*declarado[:\s]+\$?([\d.,]+)/i
-  };
-
-  // Buscar en todas las líneas
-  for (const linea of lineas) {
-    for (const [campo, regex] of Object.entries(patrones)) {
-      const m = linea.match(regex);
-      if (m && m[1]) {
-        const valor = parseFloat(m[1].replace(/[.,]/g, ''));
-        const el = document.getElementById(campo);
-        if (el && !el.value) {
-          el.value = valor || 0;
-          extraidos++;
-        }
-      }
-    }
+  if (bancosUsados.length === 0) {
+    list.innerHTML = '<div class="item-empty">No hay transferencias todavía. La conciliación aparecerá aquí cuando agregues alguna.</div>';
+    return;
   }
 
-  // Detectar montos por método de pago (heurística simple)
-  const metodosTexto = {
-    'efectivo':      /(?:monto\s+(?:en\s+)?efectivo|^efectivo)[:\s]+\$?([\d.,]+)/i,
-    'mastercard':    /master\s*card[:\s]+\$?([\d.,]+)/i,
-    'visa':          /^visa[:\s]+\$?([\d.,]+)/i,
-    'datafono':      /dat[áa]fono[:\s]+\$?([\d.,]+)/i,
-    'transferencia': /transferencia[:\s]+\$?([\d.,]+)/i,
-    'bancolombia':   /bancolombia[:\s]+\$?([\d.,]+)/i,
-    'nequi':         /nequi[:\s]+\$?([\d.,]+)/i,
-    'davivienda':    /davivienda[:\s]+\$?([\d.,]+)/i,
-    'consignacion':  /consignaci[óo]n[:\s]+\$?([\d.,]+)/i
-  };
+  list.innerHTML = bancosUsados.map(banco => {
+    const esperado = transferencias.filter(t => t.banco === banco).reduce((s, t) => s + (parseFloat(t.monto) || 0), 0);
+    const recibido = parseFloat(conciliacion[banco]?.recibido) || 0;
+    const diff = recibido - esperado;
+    const cls = recibido > 0 ? (Math.abs(diff) < 1 ? 'match' : 'mismatch') : '';
+    const status = recibido === 0
+      ? '<span style="color:var(--text-soft);">Pendiente</span>'
+      : Math.abs(diff) < 1
+      ? '<span style="color:var(--green); font-weight:800;">✅ Cuadra</span>'
+      : diff > 0
+      ? `<span style="color:var(--orange); font-weight:800;">+${fmtMoney(diff)} sobra</span>`
+      : `<span style="color:var(--red); font-weight:800;">${fmtMoney(diff)} falta</span>`;
 
-  for (const linea of lineas) {
-    for (const [key, regex] of Object.entries(metodosTexto)) {
-      const m = linea.match(regex);
-      if (m && m[1]) {
-        const valor = parseFloat(m[1].replace(/[.,]/g, ''));
-        const input = document.querySelector(`.met-ingresa[data-key="${key}"]`);
-        if (input && !input.value && valor > 0) {
-          input.value = valor;
-          extraidos++;
-        }
-      }
-    }
-  }
+    return `
+      <div class="concil-card ${cls}">
+        <div class="banco-name">${escapeHTML(banco)}</div>
+        <div>
+          <div style="font-size:10px; color:var(--text-soft); letter-spacing:1px; text-transform:uppercase; font-weight:800;">Esperado</div>
+          <div class="esperado">${fmtMoney(esperado)}</div>
+        </div>
+        <div>
+          <div style="font-size:10px; color:var(--text-soft); letter-spacing:1px; text-transform:uppercase; font-weight:800;">Recibido en banco</div>
+          <input type="number" step="100" placeholder="0"
+            value="${conciliacion[banco]?.recibido || ''}"
+            oninput="actualizarConciliacion('${banco}', this.value)">
+        </div>
+        <div>${status}</div>
+      </div>
+    `;
+  }).join('');
+}
 
-  recalcularMetodos();
-  recalcularTotales();
+window.actualizarConciliacion = function(banco, recibido) {
+  if (!conciliacion[banco]) conciliacion[banco] = {};
+  conciliacion[banco].recibido = parseFloat(recibido) || 0;
+  renderConciliacion();
+};
 
-  if (extraidos > 0) {
-    toast(`✓ ${extraidos} campos extraídos · Revisa y corrige si es necesario`);
-    document.querySelector('.form-section:nth-of-type(2)').scrollIntoView({ behavior: 'smooth' });
-  } else {
-    toast('No se detectaron datos · llena el formulario manualmente', 'error');
-  }
+// ============= CÁLCULO RESUMEN =============
+function calcularTodo() {
+  const efectivoContado = calcularTotalEfectivo();
+  const baseInicial = parseFloat(document.getElementById('baseInicial').value) || 0;
+  const totalEgresos = egresos.reduce((s, e) => s + (parseFloat(e.monto) || 0), 0);
+  const egresosEfectivo = egresos.filter(e => e.metodo === 'efectivo').reduce((s, e) => s + (parseFloat(e.monto) || 0), 0);
+  const totalTransf = transferencias.reduce((s, t) => s + (parseFloat(t.monto) || 0), 0);
+  const totalDatafono = parseFloat(document.getElementById('totalDatafono').value) || 0;
+
+  // Efectivo neto = lo contado - base + egresos en efectivo
+  // (porque los egresos ya salieron, no están en lo contado, hay que sumarlos)
+  const efectivoNeto = efectivoContado - baseInicial + egresosEfectivo;
+
+  // Ventas totales = efectivo neto + transferencias + datafono
+  const ventasTotales = efectivoNeto + totalTransf + totalDatafono;
+
+  // Actualizar total efectivo arriba
+  document.getElementById('totalEfectivo').textContent = fmtMoney(efectivoContado);
+
+  // Construir resumen visual
+  const cont = document.getElementById('resumenContent');
+  cont.innerHTML = `
+    <div class="resumen-row">
+      <span>Efectivo contado en caja</span>
+      <span>${fmtMoney(efectivoContado)}</span>
+    </div>
+    <div class="resumen-row subtract">
+      <span style="margin-left:14px;">Base inicial (no es venta)</span>
+      <span>${fmtMoney(baseInicial)}</span>
+    </div>
+    <div class="resumen-row add">
+      <span style="margin-left:14px;">Egresos en efectivo (salieron de la caja)</span>
+      <span>${fmtMoney(egresosEfectivo)}</span>
+    </div>
+    <div class="resumen-row" style="font-weight:800; padding:10px 0; border-top:2px dashed rgba(255,255,255,0.3); border-bottom:2px dashed rgba(255,255,255,0.3); margin:6px 0;">
+      <span>EFECTIVO NETO (ventas en efectivo)</span>
+      <span style="color:#86efac;">${fmtMoney(efectivoNeto)}</span>
+    </div>
+    <div class="resumen-row add">
+      <span>Transferencias del día</span>
+      <span>${fmtMoney(totalTransf)}</span>
+    </div>
+    <div class="resumen-row add">
+      <span>Datáfono / Tarjetas</span>
+      <span>${fmtMoney(totalDatafono)}</span>
+    </div>
+    <div class="resumen-row total">
+      <span>💰 VENTAS TOTALES DEL DÍA</span>
+      <span>${fmtMoney(ventasTotales)}</span>
+    </div>
+    <div style="margin-top:14px; font-size:11px; color:rgba(255,255,255,0.7); display:flex; gap:14px; flex-wrap:wrap; padding-top:12px; border-top:1px dashed rgba(255,255,255,0.15);">
+      <span>📊 ${transferencias.length} transferencia${transferencias.length !== 1 ? 's' : ''}</span>
+      <span>📤 ${egresos.length} egreso${egresos.length !== 1 ? 's' : ''} ($${fmt(totalEgresos)})</span>
+    </div>
+  `;
 }
 
 // ============= GUARDAR CIERRE =============
@@ -472,40 +552,36 @@ window.guardarCierre = async function(estado) {
   if (!fecha) { toast('Falta la fecha', 'error'); return; }
   if (!selectedSedeId) { toast('Selecciona una sede', 'error'); return; }
 
-  // Recopilar datos del formulario
+  const efectivoContado = calcularTotalEfectivo();
+  const baseInicial = parseFloat(document.getElementById('baseInicial').value) || 0;
+  const totalEgresos = egresos.reduce((s, e) => s + (parseFloat(e.monto) || 0), 0);
+  const egresosEfectivo = egresos.filter(e => e.metodo === 'efectivo').reduce((s, e) => s + (parseFloat(e.monto) || 0), 0);
+  const totalTransf = transferencias.reduce((s, t) => s + (parseFloat(t.monto) || 0), 0);
+  const totalDatafono = parseFloat(document.getElementById('totalDatafono').value) || 0;
+  const efectivoNeto = efectivoContado - baseInicial + egresosEfectivo;
+  const ventasTotales = efectivoNeto + totalTransf + totalDatafono;
+
   const datos = {
     sede_id: selectedSedeId,
     fecha,
-    numero_cierre: parseInt(document.getElementById('cierreNumero').value) || null,
-    numero_facturas: parseInt(document.getElementById('cierreFacturas').value) || 0,
-    total_facturas: parseFloat(document.getElementById('totalFacturas').value) || 0,
-    ingresos: parseFloat(document.getElementById('ingresos').value) || 0,
-    abonos: parseFloat(document.getElementById('abonos').value) || 0,
-    pendiente_pago: parseFloat(document.getElementById('pendientePago').value) || 0,
-    egresos: parseFloat(document.getElementById('egresos').value) || 0,
-    total_dia: parseFloat(document.getElementById('totalDia').value) || 0,
-    monto_efectivo: parseFloat(document.getElementById('montoEfectivo').value) || 0,
-    base_caja: parseFloat(document.getElementById('baseCaja').value) || 0,
-    egresos_efectivo: parseFloat(document.getElementById('egresosEfectivo').value) || 0,
-    total_caja: parseFloat(document.getElementById('totalCaja').value) || 0,
-    monto_declarado: parseFloat(document.getElementById('montoDeclarado').value) || 0,
-    diferencia_declarada: (parseFloat(document.getElementById('montoDeclarado').value) || 0) - (parseFloat(document.getElementById('totalCajaDeclarar').value) || 0),
+    efectivo_contado: efectivoContado,
+    base_caja: baseInicial,
+    monto_efectivo: efectivoContado,
+    egresos_efectivo: egresosEfectivo,
+    total_caja: efectivoContado,
+    efectivo_neto: efectivoNeto,
+    total_transferencias: totalTransf,
+    total_datafono: totalDatafono,
+    ventas_totales: ventasTotales,
+    egresos: totalEgresos,
+    total_dia: ventasTotales,
+    denominaciones: denomCounts,
     notas: document.getElementById('notas').value.trim() || null,
     estado,
     cerrado_por: currentUser.id,
     cerrado_por_email: currentUser.email,
     updated_at: new Date().toISOString()
   };
-
-  // Horas inicio/fin
-  const ti = document.getElementById('cierreHoraInicio').value;
-  const tf = document.getElementById('cierreHoraFin').value;
-  if (ti) datos.fecha_inicio = `${fecha}T${ti}:00`;
-  if (tf) {
-    const fechaSig = new Date(fecha);
-    fechaSig.setDate(fechaSig.getDate() + 1);
-    datos.fecha_fin = `${fechaSig.toISOString().slice(0,10)}T${tf}:00`;
-  }
 
   try {
     let cierreId;
@@ -514,10 +590,9 @@ window.guardarCierre = async function(estado) {
       if (error) throw error;
       cierreId = editandoCierreId;
     } else {
-      // Verificar si ya existe (sede + fecha es único)
       const existente = cierres.find(c => c.fecha === fecha && c.sede_id === selectedSedeId);
       if (existente) {
-        if (!confirm(`Ya existe un cierre del ${fecha} para esta sede. ¿Reemplazar?`)) return;
+        if (!confirm(`Ya existe un cierre del ${fecha}. ¿Reemplazar?`)) return;
         await window.supabase.from('cierres_caja').delete().eq('id', existente.id);
       }
       const { data, error } = await window.supabase.from('cierres_caja').insert(datos).select().single();
@@ -525,45 +600,51 @@ window.guardarCierre = async function(estado) {
       cierreId = data.id;
     }
 
-    // Subir archivo OCR si lo hay
-    if (scanFile) {
-      const ext = scanFile.name.split('.').pop();
-      const fname = `cierre_${cierreId}_${Date.now()}.${ext}`;
-      const { error: upErr } = await window.supabase.storage.from('cierres').upload(fname, scanFile, { upsert: true });
-      if (!upErr) {
-        const { data: { publicUrl } } = window.supabase.storage.from('cierres').getPublicUrl(fname);
-        await window.supabase.from('cierres_caja').update({ archivo_url: publicUrl }).eq('id', cierreId);
-      }
+    // Limpiar y reinsertar transferencias
+    await window.supabase.from('cierres_transferencias').delete().eq('cierre_id', cierreId);
+    if (transferencias.length > 0) {
+      const tInsert = transferencias.filter(t => t.monto > 0).map(t => ({
+        cierre_id: cierreId,
+        banco: t.banco,
+        monto: t.monto,
+        nota: t.nota || null
+      }));
+      if (tInsert.length > 0) await window.supabase.from('cierres_transferencias').insert(tInsert);
     }
 
-    // Guardar métodos de pago
-    await window.supabase.from('cierres_metodos_pago').delete().eq('cierre_id', cierreId);
-    const metodos = [];
-    document.querySelectorAll('#tblMetodos tr').forEach(tr => {
-      const key = tr.dataset.metodo;
-      const meta = METODOS_PAGO.find(m => m.key === key);
-      const ing = parseFloat(tr.querySelector('.met-ingresa').value) || 0;
-      const sale = parseFloat(tr.querySelector('.met-sale').value) || 0;
-      const banco = parseFloat(tr.querySelector('.met-banco')?.value) || 0;
-      if (ing > 0 || sale > 0 || banco > 0) {
-        metodos.push({
-          cierre_id: cierreId,
-          metodo: meta.nombre,
-          ingresa: ing,
-          sale: sale,
-          queda: ing - sale,
-          esperado_banco: meta.esBanco ? ing : null,
-          recibido_banco: meta.esBanco ? banco : null,
-          diferencia: meta.esBanco ? (banco - ing) : 0,
-          conciliado: meta.esBanco ? (Math.abs(banco - ing) < 1) : false
-        });
-      }
-    });
-    if (metodos.length > 0) await window.supabase.from('cierres_metodos_pago').insert(metodos);
+    // Limpiar y reinsertar egresos
+    await window.supabase.from('cierres_egresos').delete().eq('cierre_id', cierreId);
+    if (egresos.length > 0) {
+      const eInsert = egresos.filter(e => e.motivo && e.monto > 0).map(e => ({
+        cierre_id: cierreId,
+        motivo: e.motivo,
+        monto: e.monto,
+        metodo: e.metodo,
+        recibo_url: e.recibo_url || null
+      }));
+      if (eInsert.length > 0) await window.supabase.from('cierres_egresos').insert(eInsert);
+    }
 
-    toast(estado === 'cerrado' ? '✓ Cierre guardado correctamente' : '📋 Borrador guardado');
+    // Conciliación bancaria
+    await window.supabase.from('cierres_conciliacion_bancos').delete().eq('cierre_id', cierreId);
+    const concilEntries = Object.entries(conciliacion).filter(([b, c]) => c.recibido > 0);
+    if (concilEntries.length > 0) {
+      const cInsert = concilEntries.map(([banco, c]) => {
+        const esperado = transferencias.filter(t => t.banco === banco).reduce((s, t) => s + (parseFloat(t.monto) || 0), 0);
+        return {
+          cierre_id: cierreId,
+          banco,
+          esperado,
+          recibido: c.recibido,
+          diferencia: c.recibido - esperado,
+          conciliado: Math.abs(c.recibido - esperado) < 1
+        };
+      });
+      await window.supabase.from('cierres_conciliacion_bancos').insert(cInsert);
+    }
+
+    toast(estado === 'cerrado' ? '✓ Cierre guardado' : '📋 Borrador guardado');
     editandoCierreId = null;
-    resetForm();
     changeTab('historial');
     await loadCierres();
   } catch (err) {
@@ -572,56 +653,41 @@ window.guardarCierre = async function(estado) {
   }
 };
 
-function resetForm() {
-  document.querySelectorAll('#panel-nuevo input').forEach(i => {
-    if (i.id === 'baseCaja') { i.value = '300000'; return; }
-    if (i.id === 'cierreHoraInicio' || i.id === 'cierreHoraFin') { i.value = '05:00'; return; }
-    if (i.type !== 'date' && i.type !== 'time') i.value = '';
-  });
-  document.getElementById('notas').value = '';
-  document.getElementById('diferenciaBox').innerHTML = '';
-  resetScan();
-}
+window.cancelarNuevo = function() {
+  editandoCierreId = null;
+  changeTab('historial');
+};
 
 // ============= EDITAR =============
 window.editarCierre = async function(id) {
   const c = cierres.find(x => x.id === id);
   if (!c) return;
   editandoCierreId = id;
+
+  // Cargar transferencias y egresos
+  const { data: trf } = await window.supabase.from('cierres_transferencias').select('*').eq('cierre_id', id);
+  const { data: egr } = await window.supabase.from('cierres_egresos').select('*').eq('cierre_id', id);
+  const { data: cnc } = await window.supabase.from('cierres_conciliacion_bancos').select('*').eq('cierre_id', id);
+
+  transferencias = (trf || []).map(t => ({ banco: t.banco, monto: t.monto, nota: t.nota || '' }));
+  egresos = (egr || []).map(e => ({ motivo: e.motivo, monto: e.monto, metodo: e.metodo, recibo_url: e.recibo_url || '' }));
+  conciliacion = {};
+  (cnc || []).forEach(x => { conciliacion[x.banco] = { recibido: x.recibido }; });
+  denomCounts = c.denominaciones || {};
+
   changeTab('nuevo');
   setTimeout(() => {
     document.getElementById('cierreFecha').value = c.fecha;
-    document.getElementById('cierreNumero').value = c.numero_cierre || '';
-    document.getElementById('cierreFacturas').value = c.numero_facturas || '';
-    document.getElementById('totalFacturas').value = c.total_facturas || '';
-    document.getElementById('ingresos').value = c.ingresos || '';
-    document.getElementById('abonos').value = c.abonos || '';
-    document.getElementById('pendientePago').value = c.pendiente_pago || '';
-    document.getElementById('egresos').value = c.egresos || '';
-    document.getElementById('baseCaja').value = c.base_caja || 300000;
-    document.getElementById('egresosEfectivo').value = c.egresos_efectivo || '';
-    document.getElementById('montoDeclarado').value = c.monto_declarado || '';
+    document.getElementById('baseInicial').value = c.base_caja || 0;
+    document.getElementById('totalDatafono').value = c.total_datafono || '';
     document.getElementById('notas').value = c.notas || '';
-    cargarMetodosCierre(id);
-    recalcularTotales();
+    renderDenominaciones();
+    renderTransferencias();
+    renderEgresos();
+    renderConciliacion();
+    calcularTodo();
   }, 100);
 };
-
-async function cargarMetodosCierre(cierreId) {
-  const { data: metodos } = await window.supabase.from('cierres_metodos_pago').select('*').eq('cierre_id', cierreId);
-  if (!metodos) return;
-  metodos.forEach(m => {
-    const meta = METODOS_PAGO.find(x => x.nombre === m.metodo);
-    if (!meta) return;
-    const tr = document.querySelector(`#tblMetodos tr[data-metodo="${meta.key}"]`);
-    if (!tr) return;
-    tr.querySelector('.met-ingresa').value = m.ingresa || '';
-    tr.querySelector('.met-sale').value = m.sale || '';
-    const banco = tr.querySelector('.met-banco');
-    if (banco) banco.value = m.recibido_banco || '';
-  });
-  recalcularMetodos();
-}
 
 window.eliminarCierre = async function(id) {
   const c = cierres.find(x => x.id === id);
@@ -640,21 +706,26 @@ window.verCierre = async function(id) {
   const c = cierres.find(x => x.id === id);
   if (!c) return;
   const sede = sedes.find(s => s.id === c.sede_id);
-  const { data: metodos } = await window.supabase.from('cierres_metodos_pago').select('*').eq('cierre_id', id);
+  const { data: trf } = await window.supabase.from('cierres_transferencias').select('*').eq('cierre_id', id);
+  const { data: egr } = await window.supabase.from('cierres_egresos').select('*').eq('cierre_id', id);
+  const { data: cnc } = await window.supabase.from('cierres_conciliacion_bancos').select('*').eq('cierre_id', id);
 
-  const metodosRows = (metodos || []).map(m => `
-    <tr>
-      <td><strong>${escapeHTML(m.metodo)}</strong></td>
-      <td class="money">${fmtMoney(m.ingresa)}</td>
-      <td class="money">${fmtMoney(m.sale)}</td>
-      <td class="money">${fmtMoney(m.queda)}</td>
-      <td class="money">${m.recibido_banco !== null ? fmtMoney(m.recibido_banco) : '—'}</td>
-      <td>${m.diferencia === 0 ? '<span style="color:var(--green); font-weight:800;">✓</span>' : (m.diferencia > 0 ? `<span style="color:var(--orange);">+${fmtMoney(m.diferencia)}</span>` : `<span style="color:var(--red);">${fmtMoney(m.diferencia)}</span>`)}</td>
-    </tr>
-  `).join('');
+  const denomList = Object.entries(c.denominaciones || {})
+    .filter(([v, cnt]) => cnt > 0)
+    .sort((a, b) => parseInt(b[0]) - parseInt(a[0]))
+    .map(([v, cnt]) => `<tr><td>${fmtMoney(parseInt(v))}</td><td class="qty">x ${cnt}</td><td class="money">${fmtMoney(parseInt(v) * cnt)}</td></tr>`)
+    .join('');
 
-  const totalIng = (metodos || []).reduce((s, m) => s + (m.ingresa || 0), 0);
-  const totalSale = (metodos || []).reduce((s, m) => s + (m.sale || 0), 0);
+  const trfRows = (trf || []).map(t => `<tr><td><strong>${escapeHTML(t.banco)}</strong></td><td class="money">${fmtMoney(t.monto)}</td><td style="font-size:11px; color:var(--text-soft);">${escapeHTML(t.nota || '—')}</td></tr>`).join('');
+  const egrRows = (egr || []).map(e => `<tr><td><strong>${escapeHTML(e.motivo)}</strong></td><td>${e.metodo === 'efectivo' ? '💵' : '💳'}</td><td class="money" style="color:var(--red);">${fmtMoney(e.monto)}</td><td>${e.recibo_url ? `<a href="${e.recibo_url}" target="_blank" class="btn-icon">📷 Ver</a>` : '—'}</td></tr>`).join('');
+  const cncRows = (cnc || []).map(x => {
+    const status = Math.abs(x.diferencia) < 1
+      ? '<span style="color:var(--green); font-weight:800;">✅ Cuadra</span>'
+      : x.diferencia > 0
+      ? `<span style="color:var(--orange); font-weight:800;">+${fmtMoney(x.diferencia)} sobra</span>`
+      : `<span style="color:var(--red); font-weight:800;">${fmtMoney(x.diferencia)} falta</span>`;
+    return `<tr><td><strong>${escapeHTML(x.banco)}</strong></td><td class="money">${fmtMoney(x.esperado)}</td><td class="money">${fmtMoney(x.recibido)}</td><td>${status}</td></tr>`;
+  }).join('');
 
   const modal = document.createElement('div');
   modal.className = 'modal-overlay';
@@ -662,45 +733,48 @@ window.verCierre = async function(id) {
     <div class="modal">
       <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
         <div>
-          <div style="font-family:'Bungee',sans-serif; font-size:22px; color:var(--ink);">📋 CIERRE #${c.numero_cierre || '—'} · ${c.fecha}</div>
+          <div style="font-family:'Bungee',sans-serif; font-size:22px; color:var(--ink);">📋 CIERRE · ${c.fecha}</div>
           <div style="font-size:13px; color:var(--text-soft); margin-top:4px;">${escapeHTML(sede?.nombre || '')} · Por ${escapeHTML(c.cerrado_por_email || '')}</div>
         </div>
         <button onclick="this.closest('.modal-overlay').remove()" class="btn" style="background:var(--blood); color:white;">✕ CERRAR</button>
       </div>
 
       <div class="stats-grid">
-        <div class="stat-card green"><div class="label">Total del Día</div><div class="value">${fmtMoney(c.total_dia)}</div></div>
+        <div class="stat-card green"><div class="label">Ventas Totales</div><div class="value">${fmtMoney(c.ventas_totales)}</div></div>
+        <div class="stat-card"><div class="label">Efectivo Neto</div><div class="value">${fmtMoney(c.efectivo_neto)}</div></div>
+        <div class="stat-card orange"><div class="label">Transferencias</div><div class="value">${fmtMoney(c.total_transferencias)}</div></div>
         <div class="stat-card red"><div class="label">Egresos</div><div class="value">${fmtMoney(c.egresos)}</div></div>
-        <div class="stat-card orange"><div class="label">Total Caja</div><div class="value">${fmtMoney(c.total_caja)}</div></div>
-        <div class="stat-card ${c.diferencia_declarada === 0 ? 'green' : (c.diferencia_declarada > 0 ? 'orange' : 'red')}">
-          <div class="label">Diferencia</div>
-          <div class="value">${c.diferencia_declarada === 0 ? '$0 ✓' : fmtMoney(c.diferencia_declarada)}</div>
-        </div>
       </div>
 
       ${c.notas ? `<div class="alert alert-warn" style="margin:14px 0;"><strong>📝 Notas:</strong> ${escapeHTML(c.notas)}</div>` : ''}
 
-      <h3 style="font-family:'Bungee',sans-serif; font-size:14px; margin:18px 0 10px;">💳 Métodos de Pago</h3>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>Método</th><th class="money">Ingresa</th><th class="money">Sale</th><th class="money">Queda</th><th class="money">Banco</th><th>Estado</th></tr></thead>
-          <tbody>${metodosRows || '<tr><td colspan="6" style="text-align:center; opacity:0.5;">Sin movimientos</td></tr>'}</tbody>
-        </table>
-      </div>
+      ${denomList ? `
+        <h3 style="font-family:'Bungee',sans-serif; font-size:14px; margin:18px 0 10px;">💵 Denominaciones</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Denominación</th><th class="qty">Cantidad</th><th class="money">Subtotal</th></tr></thead>
+          <tbody>${denomList}</tbody>
+        </table></div>` : ''}
 
-      <h3 style="font-family:'Bungee',sans-serif; font-size:14px; margin:18px 0 10px;">📊 Detallado</h3>
-      <div class="table-wrap">
-        <table>
-          <tr><td>Total contado</td><td class="money">${fmtMoney(c.total_facturas)}</td></tr>
-          <tr><td>Ingresos</td><td class="money">${fmtMoney(c.ingresos)}</td></tr>
-          <tr><td>Abonos</td><td class="money">${fmtMoney(c.abonos)}</td></tr>
-          <tr><td>Pendiente de pago</td><td class="money">${fmtMoney(c.pendiente_pago)}</td></tr>
-          <tr><td>Egresos</td><td class="money" style="color:var(--red);">${fmtMoney(c.egresos)}</td></tr>
-          <tr style="background:var(--paper); font-weight:800;"><td><strong>TOTAL DEL DÍA</strong></td><td class="money"><strong>${fmtMoney(c.total_dia)}</strong></td></tr>
-        </table>
-      </div>
+      ${trfRows ? `
+        <h3 style="font-family:'Bungee',sans-serif; font-size:14px; margin:18px 0 10px;">💳 Transferencias</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Banco</th><th class="money">Monto</th><th>Nota</th></tr></thead>
+          <tbody>${trfRows}</tbody>
+        </table></div>` : ''}
 
-      ${c.archivo_url ? `<div style="margin-top:14px;"><a href="${c.archivo_url}" target="_blank" class="btn">📎 Ver archivo OCR original</a></div>` : ''}
+      ${egrRows ? `
+        <h3 style="font-family:'Bungee',sans-serif; font-size:14px; margin:18px 0 10px;">📤 Egresos</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Motivo</th><th>Método</th><th class="money">Monto</th><th>Recibo</th></tr></thead>
+          <tbody>${egrRows}</tbody>
+        </table></div>` : ''}
+
+      ${cncRows ? `
+        <h3 style="font-family:'Bungee',sans-serif; font-size:14px; margin:18px 0 10px;">🏦 Conciliación Bancaria</h3>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Banco</th><th class="money">Esperado</th><th class="money">Recibido</th><th>Estado</th></tr></thead>
+          <tbody>${cncRows}</tbody>
+        </table></div>` : ''}
     </div>
   `;
   document.body.appendChild(modal);
@@ -711,44 +785,41 @@ window.verCierre = async function(id) {
 async function loadReportes() {
   const stats = document.getElementById('statsReportes');
   const totales = cierres.reduce((acc, c) => ({
-    dia: acc.dia + (c.total_dia || 0),
-    egresos: acc.egresos + (c.egresos || 0),
-    caja: acc.caja + (c.total_caja || 0),
-    facturas: acc.facturas + (c.numero_facturas || 0),
-    diferencias: acc.diferencias + (c.diferencia_declarada || 0)
-  }), { dia: 0, egresos: 0, caja: 0, facturas: 0, diferencias: 0 });
+    ventas: acc.ventas + (c.ventas_totales || 0),
+    efectivo: acc.efectivo + (c.efectivo_neto || 0),
+    transf: acc.transf + (c.total_transferencias || 0),
+    datafono: acc.datafono + (c.total_datafono || 0),
+    egresos: acc.egresos + (c.egresos || 0)
+  }), { ventas: 0, efectivo: 0, transf: 0, datafono: 0, egresos: 0 });
 
-  const promedio = cierres.length > 0 ? totales.dia / cierres.length : 0;
+  const promedio = cierres.length > 0 ? totales.ventas / cierres.length : 0;
 
   stats.innerHTML = `
-    <div class="stat-card green"><div class="label">Ventas del Mes</div><div class="value">${fmtMoney(totales.dia)}</div></div>
+    <div class="stat-card green"><div class="label">Ventas del Mes</div><div class="value">${fmtMoney(totales.ventas)}</div></div>
     <div class="stat-card orange"><div class="label">Promedio Diario</div><div class="value">${fmtMoney(promedio)}</div></div>
-    <div class="stat-card red"><div class="label">Egresos Totales</div><div class="value">${fmtMoney(totales.egresos)}</div></div>
-    <div class="stat-card"><div class="label">Total Facturas</div><div class="value">${totales.facturas}</div></div>
-    <div class="stat-card"><div class="label">Días con Cierre</div><div class="value">${cierres.length}</div></div>
-    <div class="stat-card ${totales.diferencias < 0 ? 'red' : (totales.diferencias > 0 ? 'orange' : 'green')}">
-      <div class="label">Faltantes/Sobrantes</div>
-      <div class="value">${fmtMoney(totales.diferencias)}</div>
-    </div>
+    <div class="stat-card"><div class="label">Efectivo Neto</div><div class="value">${fmtMoney(totales.efectivo)}</div></div>
+    <div class="stat-card"><div class="label">Transferencias</div><div class="value">${fmtMoney(totales.transf)}</div></div>
+    <div class="stat-card"><div class="label">Datáfono</div><div class="value">${fmtMoney(totales.datafono)}</div></div>
+    <div class="stat-card red"><div class="label">Egresos</div><div class="value">${fmtMoney(totales.egresos)}</div></div>
   `;
 
-  // Resumen por día
-  const resumenMes = document.getElementById('resumenMes');
+  const cont = document.getElementById('resumenMes');
   if (cierres.length === 0) {
-    resumenMes.innerHTML = '<div class="empty">Sin datos para este mes</div>';
+    cont.innerHTML = '<div class="empty">Sin datos para este mes</div>';
     return;
   }
 
-  resumenMes.innerHTML = `
+  cont.innerHTML = `
     <table style="width:100%; border-collapse:collapse;">
-      <thead><tr style="background:var(--ink); color:white;"><th style="padding:10px; text-align:left;">Fecha</th><th style="padding:10px; text-align:right;">Ventas</th><th style="padding:10px; text-align:right;">Egresos</th><th style="padding:10px; text-align:right;">Caja</th></tr></thead>
+      <thead><tr style="background:var(--ink); color:white;"><th style="padding:10px; text-align:left;">Fecha</th><th style="padding:10px; text-align:right;">Ventas</th><th style="padding:10px; text-align:right;">Efectivo</th><th style="padding:10px; text-align:right;">Transf.</th><th style="padding:10px; text-align:right;">Egresos</th></tr></thead>
       <tbody>
         ${cierres.map(c => `
           <tr style="border-bottom:1px solid var(--border);">
             <td style="padding:10px;"><strong>${c.fecha}</strong></td>
-            <td style="padding:10px; text-align:right; font-family:'JetBrains Mono',monospace; color:var(--green);">${fmtMoney(c.total_dia)}</td>
+            <td style="padding:10px; text-align:right; font-family:'JetBrains Mono',monospace; color:var(--green);">${fmtMoney(c.ventas_totales)}</td>
+            <td style="padding:10px; text-align:right; font-family:'JetBrains Mono',monospace;">${fmtMoney(c.efectivo_neto)}</td>
+            <td style="padding:10px; text-align:right; font-family:'JetBrains Mono',monospace;">${fmtMoney(c.total_transferencias)}</td>
             <td style="padding:10px; text-align:right; font-family:'JetBrains Mono',monospace; color:var(--red);">${fmtMoney(c.egresos)}</td>
-            <td style="padding:10px; text-align:right; font-family:'JetBrains Mono',monospace;">${fmtMoney(c.total_caja)}</td>
           </tr>
         `).join('')}
       </tbody>
@@ -757,5 +828,4 @@ async function loadReportes() {
 }
 
 // ============= INIT =============
-setupDropzone();
 checkAuth();
