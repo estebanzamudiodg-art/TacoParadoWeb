@@ -1,0 +1,1379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taco Parado · Tacos auténticos en Villavicencio</title>
+<meta name="description" content="Los mejores tacos al pastor, suadero, longaniza y más en Villavicencio. Únete al club y obtén beneficios exclusivos con tu carnet de fidelidad.">
+<meta property="og:title" content="Taco Parado · Tacos auténticos en Villavicencio">
+<meta property="og:description" content="Únete al club y obtén beneficios exclusivos con tu carnet de fidelidad.">
+<meta property="og:image" content="favicon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Archivo+Black&family=Space+Mono:wght@400;700&family=Archivo:wght@400;500;600;700;800;900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+  const SUPABASE_URL = 'https://xyqyhabhujmmjofnfizg.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5cXloYWJodWptbWpvZm5maXpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODE5NzAsImV4cCI6MjA5MjM1Nzk3MH0.9Cj7XZUjLUiBHPWw6Br4FWz2_g8T1hgg20zyrrThhZQ'
+  window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+</script>
+
+<style>
+  :root {
+    --tp-orange: #FF9000;
+    --tp-orange-dark: #EC7020;
+    --tp-blue: #5271FF;
+    --tp-deep-blue: #1A3F91;
+    --tp-cream: #FFF8E7;
+    --tp-paper: #FFF7ED;
+    --tp-ink: #0d2451;
+    --tp-mustard: #FFD24D;
+    --tp-green: #5BAE4C;
+    --tp-coral: #FF6B6B;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--tp-cream);
+    color: var(--tp-ink);
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* Patrón decorativo de fondo */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 30px,
+      rgba(26,63,145,0.02) 30px,
+      rgba(26,63,145,0.02) 31px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ============= NAVBAR ============= */
+  .navbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    background: rgba(255,248,231,0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 3px solid var(--tp-ink);
+    z-index: 100;
+    padding: 12px 20px;
+    transition: all 0.3s ease;
+  }
+  .nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+  }
+  .nav-logo {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--tp-blue);
+    border: 3px solid var(--tp-ink);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 0 var(--tp-ink);
+    flex-shrink: 0;
+  }
+  .nav-logo img { width: 100%; height: 100%; object-fit: cover; }
+  .nav-logo span { font-size: 24px; }
+  .nav-name {
+    font-family: 'Bungee', sans-serif;
+    font-size: 18px;
+    color: var(--tp-ink);
+    letter-spacing: 0.5px;
+    line-height: 1;
+  }
+  .nav-name .accent { color: var(--tp-orange); }
+  .nav-links {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+  .nav-link {
+    color: var(--tp-ink);
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+  }
+  .nav-link:hover { background: var(--tp-orange); color: #fff; }
+  .nav-cta {
+    background: var(--tp-orange);
+    color: #fff;
+    border: 2.5px solid var(--tp-ink);
+    padding: 8px 18px;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    box-shadow: 0 3px 0 var(--tp-ink);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .nav-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 var(--tp-ink);
+    background: var(--tp-orange-dark);
+  }
+  .nav-cta:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 0 var(--tp-ink);
+  }
+
+  /* ============= HERO ============= */
+  .hero {
+    min-height: 100vh;
+    background: linear-gradient(135deg, var(--tp-orange) 0%, var(--tp-orange-dark) 50%, var(--tp-deep-blue) 100%);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 100px 20px 60px;
+  }
+  .hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 40px,
+      rgba(255,255,255,0.05) 40px,
+      rgba(255,255,255,0.05) 42px
+    );
+  }
+  .hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    max-width: 900px;
+    color: #fff;
+  }
+  .hero-tag {
+    display: inline-block;
+    background: var(--tp-mustard);
+    color: var(--tp-ink);
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    border: 2.5px solid var(--tp-ink);
+    box-shadow: 0 3px 0 var(--tp-ink);
+    text-transform: uppercase;
+    animation: bounce-tag 2.5s ease-in-out infinite;
+  }
+  @keyframes bounce-tag {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+  .hero h1 {
+    font-family: 'Bungee', sans-serif;
+    font-size: clamp(40px, 9vw, 88px);
+    line-height: 0.95;
+    letter-spacing: -0.02em;
+    margin-bottom: 18px;
+    text-shadow: 4px 4px 0 var(--tp-ink), 8px 8px 0 rgba(13,36,81,0.3);
+  }
+  .hero h1 .crown { color: var(--tp-mustard); }
+  .hero p.lead {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(15px, 2.2vw, 19px);
+    line-height: 1.5;
+    margin-bottom: 32px;
+    font-weight: 500;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    opacity: 0.95;
+  }
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+  .hero-stat {
+    text-align: center;
+  }
+  .hero-stat .num {
+    font-family: 'Bungee', sans-serif;
+    font-size: clamp(28px, 5vw, 42px);
+    color: var(--tp-mustard);
+    line-height: 1;
+    text-shadow: 2px 2px 0 var(--tp-ink);
+  }
+  .hero-stat .lbl {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: 4px;
+    opacity: 0.85;
+  }
+  .cta-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--tp-mustard);
+    color: var(--tp-ink);
+    padding: 18px 40px;
+    border-radius: 14px;
+    font-family: 'Bungee', sans-serif;
+    font-size: clamp(16px, 2.5vw, 20px);
+    letter-spacing: 1.5px;
+    text-decoration: none;
+    border: 4px solid var(--tp-ink);
+    box-shadow: 0 6px 0 var(--tp-ink), 0 10px 30px rgba(0,0,0,0.3);
+    transition: all 0.15s;
+    cursor: pointer;
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-primary::after {
+    content: "";
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.6s;
+  }
+  .cta-primary:hover::after { left: 100%; }
+  .cta-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 9px 0 var(--tp-ink), 0 14px 40px rgba(0,0,0,0.4);
+  }
+  .cta-primary:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 var(--tp-ink), 0 4px 12px rgba(0,0,0,0.3);
+  }
+
+  .hero-mascot {
+    width: clamp(120px, 18vw, 180px);
+    height: clamp(120px, 18vw, 180px);
+    margin: 0 auto 24px;
+    background: var(--tp-mustard);
+    border-radius: 50%;
+    border: 5px solid var(--tp-ink);
+    box-shadow: 0 8px 0 var(--tp-ink), 0 16px 40px rgba(0,0,0,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    animation: wobble 3s ease-in-out infinite;
+  }
+  .hero-mascot img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .hero-mascot .emoji {
+    font-size: clamp(60px, 10vw, 100px);
+  }
+  @keyframes wobble {
+    0%, 100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg); }
+  }
+
+  .hero-scroll {
+    position: absolute;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #fff;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    opacity: 0.7;
+    animation: scroll-hint 2s ease-in-out infinite;
+  }
+  @keyframes scroll-hint {
+    0%, 100% { transform: translate(-50%, 0); opacity: 0.7; }
+    50% { transform: translate(-50%, 6px); opacity: 1; }
+  }
+
+  /* ============= SECTION GENERAL ============= */
+  section {
+    padding: 80px 20px;
+    position: relative;
+    z-index: 1;
+  }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  .section-tag {
+    display: inline-block;
+    background: var(--tp-blue);
+    color: #fff;
+    padding: 5px 14px;
+    border-radius: 16px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 14px;
+    border: 2.5px solid var(--tp-ink);
+    box-shadow: 0 3px 0 var(--tp-ink);
+    text-transform: uppercase;
+  }
+  .section-title {
+    font-family: 'Bungee', sans-serif;
+    font-size: clamp(32px, 6vw, 56px);
+    line-height: 1;
+    color: var(--tp-ink);
+    margin-bottom: 14px;
+    letter-spacing: -0.01em;
+  }
+  .section-title .accent { color: var(--tp-orange); }
+  .section-sub {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(14px, 1.8vw, 17px);
+    color: var(--tp-ink);
+    opacity: 0.7;
+    margin-bottom: 50px;
+    max-width: 600px;
+    line-height: 1.5;
+  }
+
+  /* ============= PRODUCTOS ============= */
+  .productos {
+    background: var(--tp-paper);
+    border-top: 5px solid var(--tp-ink);
+    border-bottom: 5px solid var(--tp-ink);
+  }
+  .grid-productos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 22px;
+  }
+  .producto-card {
+    background: #fff;
+    border: 3px solid var(--tp-ink);
+    border-radius: 16px;
+    overflow: hidden;
+    transition: all 0.2s;
+    box-shadow: 0 5px 0 var(--tp-ink);
+    position: relative;
+  }
+  .producto-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 9px 0 var(--tp-ink);
+  }
+  .producto-img {
+    aspect-ratio: 4/3;
+    background: linear-gradient(135deg, var(--tp-mustard), var(--tp-orange));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+    border-bottom: 3px solid var(--tp-ink);
+    position: relative;
+    overflow: hidden;
+  }
+  .producto-img img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .producto-card .badge {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: var(--tp-coral);
+    color: #fff;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    border: 2px solid var(--tp-ink);
+    text-transform: uppercase;
+  }
+  .producto-info {
+    padding: 16px 18px;
+  }
+  .producto-nombre {
+    font-family: 'Bungee', sans-serif;
+    font-size: 17px;
+    color: var(--tp-ink);
+    margin-bottom: 4px;
+    text-transform: capitalize;
+    letter-spacing: 0.5px;
+  }
+  .producto-desc {
+    font-family: 'Archivo', sans-serif;
+    font-size: 12px;
+    color: var(--tp-ink);
+    opacity: 0.7;
+    line-height: 1.4;
+  }
+
+  /* Precio en producto */
+  .producto-precio {
+    font-family: 'Bungee', sans-serif;
+    font-size: 16px;
+    color: var(--tp-orange);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 2px dashed rgba(13,36,81,0.15);
+    letter-spacing: 0.5px;
+  }
+  .producto-precio .moneda {
+    font-size: 11px;
+    opacity: 0.7;
+    margin-right: 1px;
+  }
+
+  /* Producto agotado */
+  .producto-card.agotado {
+    opacity: 0.5;
+    position: relative;
+  }
+  .producto-card.agotado::after {
+    content: "AGOTADO";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-15deg);
+    background: var(--tp-coral);
+    color: #fff;
+    padding: 8px 22px;
+    font-family: 'Bungee', sans-serif;
+    font-size: 18px;
+    border: 3px solid var(--tp-ink);
+    border-radius: 8px;
+    box-shadow: 0 4px 0 var(--tp-ink);
+    z-index: 5;
+    letter-spacing: 2px;
+  }
+
+  /* Filtros de categoría */
+  .menu-categorias {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .cat-btn {
+    background: #fff;
+    border: 3px solid var(--tp-ink);
+    color: var(--tp-ink);
+    padding: 10px 20px;
+    border-radius: 12px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    box-shadow: 0 3px 0 var(--tp-ink);
+    transition: all 0.15s;
+    text-transform: uppercase;
+  }
+  .cat-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 var(--tp-ink);
+  }
+  .cat-btn.active {
+    background: var(--tp-orange);
+    color: #fff;
+  }
+
+  /* Categoría título dentro del listado */
+  .menu-cat-section {
+    margin-bottom: 40px;
+  }
+  .menu-cat-section:last-child { margin-bottom: 0; }
+  .menu-cat-titulo {
+    font-family: 'Bungee', sans-serif;
+    font-size: 24px;
+    color: var(--tp-ink);
+    margin-bottom: 18px;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .menu-cat-titulo::before {
+    content: "";
+    flex: 1;
+    height: 3px;
+    background: var(--tp-orange);
+    border-radius: 2px;
+  }
+  .menu-cat-titulo::after {
+    content: "";
+    flex: 1;
+    height: 3px;
+    background: var(--tp-orange);
+    border-radius: 2px;
+  }
+
+  .menu-loading {
+    text-align: center;
+    padding: 60px 20px;
+    font-family: 'Bungee', sans-serif;
+    font-size: 14px;
+    letter-spacing: 2px;
+    color: var(--tp-ink);
+    opacity: 0.6;
+  }
+  .spinner-menu {
+    width: 40px;
+    height: 40px;
+    margin: 0 auto 16px;
+    border: 4px solid rgba(13,36,81,0.15);
+    border-top-color: var(--tp-orange);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .menu-empty {
+    text-align: center;
+    padding: 60px 20px;
+    font-family: 'Archivo', sans-serif;
+    color: var(--tp-ink);
+    opacity: 0.6;
+  }
+  .menu-empty .emoji-big {
+    font-size: 60px;
+    margin-bottom: 16px;
+  }
+
+  /* ============= CARNET / BENEFICIOS ============= */
+  .carnet-section {
+    background: linear-gradient(135deg, var(--tp-deep-blue) 0%, var(--tp-blue) 100%);
+    color: #fff;
+    border-bottom: 5px solid var(--tp-ink);
+    overflow: hidden;
+  }
+  .carnet-section .section-title { color: #fff; }
+  .carnet-section .section-title .accent { color: var(--tp-mustard); }
+  .carnet-section .section-tag { background: var(--tp-orange); color: #fff; }
+  .carnet-section .section-sub { color: rgba(255,255,255,0.85); }
+
+  .grid-tiers {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 50px;
+  }
+  .tier-card {
+    background: rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    border: 3px solid rgba(255,255,255,0.3);
+    border-radius: 16px;
+    padding: 22px 14px;
+    text-align: center;
+    transition: all 0.3s;
+    position: relative;
+  }
+  .tier-card:hover {
+    transform: translateY(-6px);
+    background: rgba(255,255,255,0.18);
+  }
+  .tier-icon {
+    font-size: 42px;
+    margin-bottom: 10px;
+    line-height: 1;
+  }
+  .tier-name {
+    font-family: 'Bungee', sans-serif;
+    font-size: 16px;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+  }
+  .tier-visits {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    opacity: 0.8;
+    text-transform: uppercase;
+  }
+  .tier-card.bronce { border-color: #CD7F32; }
+  .tier-card.bronce .tier-name { color: #FFB347; }
+  .tier-card.plata { border-color: #C0C0C0; }
+  .tier-card.plata .tier-name { color: #E5E5E5; }
+  .tier-card.oro { border-color: var(--tp-mustard); }
+  .tier-card.oro .tier-name { color: var(--tp-mustard); }
+  .tier-card.master { border-color: var(--tp-coral); }
+  .tier-card.master .tier-name { color: var(--tp-coral); }
+
+  .beneficios-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+    margin-bottom: 40px;
+  }
+  .beneficio {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .beneficio-icon {
+    width: 44px; height: 44px;
+    background: var(--tp-mustard);
+    border: 3px solid var(--tp-ink);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    box-shadow: 0 3px 0 var(--tp-ink);
+  }
+  .beneficio-text {
+    font-family: 'Archivo', sans-serif;
+    font-size: 14px;
+    line-height: 1.45;
+    padding-top: 4px;
+  }
+  .beneficio-text strong {
+    font-family: 'Bungee', sans-serif;
+    font-size: 13px;
+    color: var(--tp-mustard);
+    letter-spacing: 0.5px;
+    display: block;
+    margin-bottom: 3px;
+  }
+
+  .cta-card-section { text-align: center; margin-top: 30px; }
+
+  /* ============= UBICACIÓN / SEDES ============= */
+  .ubicacion {
+    background: var(--tp-cream);
+    padding-bottom: 100px;
+  }
+  .grid-sedes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
+  }
+  .sede-card {
+    background: #fff;
+    border: 4px solid var(--tp-ink);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 6px 0 var(--tp-ink);
+    transition: all 0.2s;
+  }
+  .sede-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 9px 0 var(--tp-ink);
+  }
+  .sede-header {
+    background: var(--tp-orange);
+    color: #fff;
+    padding: 22px;
+    border-bottom: 4px solid var(--tp-ink);
+    position: relative;
+  }
+  .sede-header::before {
+    content: "📍";
+    font-size: 32px;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    opacity: 0.4;
+  }
+  .sede-name {
+    font-family: 'Bungee', sans-serif;
+    font-size: 22px;
+    letter-spacing: 0.5px;
+  }
+  .sede-tag {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    margin-top: 4px;
+    opacity: 0.9;
+    text-transform: uppercase;
+  }
+  .sede-body {
+    padding: 22px;
+  }
+  .sede-info {
+    margin-bottom: 16px;
+  }
+  .sede-info-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-family: 'Archivo', sans-serif;
+    font-size: 14px;
+    align-items: flex-start;
+  }
+  .sede-info-row .ico {
+    font-size: 16px;
+    width: 24px;
+    flex-shrink: 0;
+  }
+  .sede-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+  }
+  .sede-btn {
+    flex: 1;
+    padding: 11px;
+    text-align: center;
+    border: 2.5px solid var(--tp-ink);
+    border-radius: 10px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s;
+    box-shadow: 0 3px 0 var(--tp-ink);
+  }
+  .sede-btn.maps {
+    background: var(--tp-blue);
+    color: #fff;
+  }
+  .sede-btn.maps:hover {
+    background: var(--tp-deep-blue);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 var(--tp-ink);
+  }
+  .sede-btn.wp {
+    background: #25D366;
+    color: #fff;
+  }
+  .sede-btn.wp:hover {
+    background: #128C7E;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 0 var(--tp-ink);
+  }
+
+  /* ============= CTA FINAL ============= */
+  .cta-final {
+    background: linear-gradient(135deg, var(--tp-orange) 0%, var(--tp-coral) 50%, var(--tp-orange-dark) 100%);
+    color: #fff;
+    text-align: center;
+    border-top: 5px solid var(--tp-ink);
+    border-bottom: 5px solid var(--tp-ink);
+    padding: 90px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .cta-final::before {
+    content: "🌮";
+    position: absolute;
+    font-size: 200px;
+    opacity: 0.08;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+  }
+  .cta-final h2 {
+    font-family: 'Bungee', sans-serif;
+    font-size: clamp(36px, 7vw, 64px);
+    line-height: 1;
+    margin-bottom: 16px;
+    text-shadow: 3px 3px 0 var(--tp-ink), 6px 6px 0 rgba(0,0,0,0.2);
+    position: relative;
+  }
+  .cta-final p {
+    font-family: 'Archivo', sans-serif;
+    font-size: clamp(15px, 2vw, 18px);
+    margin-bottom: 36px;
+    opacity: 0.95;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    position: relative;
+    line-height: 1.5;
+  }
+  .cta-final .cta-primary {
+    background: var(--tp-mustard);
+    position: relative;
+  }
+
+  /* ============= FOOTER ============= */
+  footer {
+    background: var(--tp-ink);
+    color: #fff;
+    padding: 50px 20px 30px;
+    text-align: center;
+  }
+  .footer-brand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .footer-name {
+    font-family: 'Bungee', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+  }
+  .footer-name .accent { color: var(--tp-orange); }
+  .footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 26px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .footer-links a {
+    color: #fff;
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    opacity: 0.85;
+    transition: opacity 0.2s;
+  }
+  .footer-links a:hover { opacity: 1; color: var(--tp-mustard); }
+  .footer-social {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    margin-bottom: 22px;
+  }
+  .footer-social a {
+    width: 40px; height: 40px;
+    background: rgba(255,255,255,0.1);
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    text-decoration: none;
+    color: #fff;
+    transition: all 0.2s;
+  }
+  .footer-social a:hover {
+    background: var(--tp-orange);
+    border-color: var(--tp-orange);
+    transform: translateY(-3px);
+  }
+  .footer-bottom {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    opacity: 0.5;
+    letter-spacing: 1px;
+  }
+
+  /* ============= CTA FLOTANTE MÓVIL ============= */
+  .cta-floating {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 50;
+    display: none;
+  }
+  .cta-floating .cta-primary {
+    padding: 14px 28px;
+    font-size: 14px;
+    box-shadow: 0 4px 0 var(--tp-ink), 0 8px 24px rgba(0,0,0,0.3);
+  }
+
+  /* ============= RESPONSIVE ============= */
+  @media (max-width: 768px) {
+    .nav-links .nav-link:not(.nav-cta) { display: none; }
+    .nav-name { font-size: 16px; }
+    section { padding: 60px 18px; }
+    .grid-tiers { grid-template-columns: repeat(2, 1fr); }
+    .hero-stats { gap: 18px; }
+    .cta-floating { display: block; }
+    .hero { padding-bottom: 100px; }
+  }
+
+  @media (max-width: 480px) {
+    .nav-cta { padding: 7px 12px; font-size: 11px; }
+    .nav-logo { width: 38px; height: 38px; }
+    .grid-productos { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+    .producto-info { padding: 12px; }
+    .producto-nombre { font-size: 14px; }
+    .producto-desc { font-size: 11px; }
+    .producto-img { font-size: 44px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============= NAVBAR ============= -->
+<nav class="navbar">
+  <div class="nav-container">
+    <a href="#" class="nav-brand">
+      <div class="nav-logo" id="navLogo">
+        <span>🌮</span>
+      </div>
+      <div class="nav-name">TACO <span class="accent">PARADO</span></div>
+    </a>
+    <div class="nav-links">
+      <a href="#productos" class="nav-link">Menú</a>
+      <a href="#carnet" class="nav-link">Carnet</a>
+      <a href="#sedes" class="nav-link">Sedes</a>
+      <a href="registro.html" class="nav-cta">✨ Mi Carnet</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============= HERO ============= -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-mascot" id="heroMascot">
+      <span class="emoji">🌮</span>
+    </div>
+    <div class="hero-tag">🔥 LOS TACOS DE VILLAVO 🔥</div>
+    <h1>TACOS QUE TE <span class="crown">ENAMORAN</span></h1>
+    <p class="lead">
+      Auténticos sabores mexicanos en el corazón de Villavicencio.
+      Pastor, suadero, longaniza, birria y más, hechos al momento.
+    </p>
+
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <div class="num" id="statClientes">+280</div>
+        <div class="lbl">Clientes Felices</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">2</div>
+        <div class="lbl">Sedes en Villavo</div>
+      </div>
+      <div class="hero-stat">
+        <div class="num">7</div>
+        <div class="lbl">Tipos de Taco</div>
+      </div>
+    </div>
+
+    <a href="registro.html" class="cta-primary">
+      <span>✨</span>
+      <span>Obtener Mi Carnet</span>
+    </a>
+  </div>
+  <div class="hero-scroll">↓ DESCUBRE MÁS</div>
+</section>
+
+<!-- ============= PRODUCTOS ============= -->
+<section class="productos" id="productos">
+  <div class="container">
+    <div class="section-tag">🥩 Nuestro Menú</div>
+    <h2 class="section-title">El <span class="accent">Menú</span></h2>
+    <p class="section-sub">Cada producto es preparado al momento, con ingredientes frescos y la receta tradicional mexicana.</p>
+
+    <!-- Filtros de categoría (se generan dinámicos) -->
+    <div class="menu-categorias" id="menuCategorias"></div>
+
+    <!-- Productos (se cargan dinámicos desde Supabase) -->
+    <div id="menuContainer">
+      <div class="menu-loading">
+        <div class="spinner-menu"></div>
+        <div>CARGANDO MENÚ…</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============= CARNET / BENEFICIOS ============= -->
+<section class="carnet-section" id="carnet">
+  <div class="container">
+    <div class="section-tag">💳 Club Taco Parado</div>
+    <h2 class="section-title">Tu <span class="accent">Carnet</span> de Fidelidad</h2>
+    <p class="section-sub">Cada visita suma. Sube de nivel y desbloquea beneficios exclusivos solo para nuestros clientes leales.</p>
+
+    <div class="grid-tiers">
+      <div class="tier-card bronce">
+        <div class="tier-icon">🥉</div>
+        <div class="tier-name">Bronce</div>
+        <div class="tier-visits">0-4 Visitas</div>
+      </div>
+      <div class="tier-card plata">
+        <div class="tier-icon">🥈</div>
+        <div class="tier-name">Plata</div>
+        <div class="tier-visits">5-9 Visitas</div>
+      </div>
+      <div class="tier-card oro">
+        <div class="tier-icon">🥇</div>
+        <div class="tier-name">Oro</div>
+        <div class="tier-visits">10-19 Visitas</div>
+      </div>
+      <div class="tier-card master">
+        <div class="tier-icon">👑</div>
+        <div class="tier-name">Master</div>
+        <div class="tier-visits">20+ Visitas</div>
+      </div>
+    </div>
+
+    <div class="beneficios-list">
+      <div class="beneficio">
+        <div class="beneficio-icon">🎂</div>
+        <div class="beneficio-text">
+          <strong>Beneficio de Cumpleaños</strong>
+          Sorpresa especial el día de tu cumple
+        </div>
+      </div>
+      <div class="beneficio">
+        <div class="beneficio-icon">⚡</div>
+        <div class="beneficio-text">
+          <strong>Acumula Visitas</strong>
+          Cada ida cuenta para subir de nivel
+        </div>
+      </div>
+      <div class="beneficio">
+        <div class="beneficio-icon">🎁</div>
+        <div class="beneficio-text">
+          <strong>Promos Exclusivas</strong>
+          Solo para miembros del club
+        </div>
+      </div>
+      <div class="beneficio">
+        <div class="beneficio-icon">📱</div>
+        <div class="beneficio-text">
+          <strong>Carnet Digital</strong>
+          Siempre en tu celular, no se pierde
+        </div>
+      </div>
+      <div class="beneficio">
+        <div class="beneficio-icon">🏆</div>
+        <div class="beneficio-text">
+          <strong>Reconocimiento</strong>
+          Te tratamos como mereces — eres familia
+        </div>
+      </div>
+      <div class="beneficio">
+        <div class="beneficio-icon">💸</div>
+        <div class="beneficio-text">
+          <strong>100% Gratis</strong>
+          Sin costos, sin letra chica
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-card-section">
+      <a href="registro.html" class="cta-primary">
+        <span>✨</span>
+        <span>Activar Mi Carnet Gratis</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============= UBICACIÓN ============= -->
+<section class="ubicacion" id="sedes">
+  <div class="container">
+    <div class="section-tag">📍 Encuéntranos</div>
+    <h2 class="section-title">Nuestras <span class="accent">Sedes</span></h2>
+    <p class="section-sub">2 puntos en Villavicencio para que siempre tengas un Taco Parado cerca.</p>
+
+    <div class="grid-sedes" id="sedesContainer">
+      <!-- Sedes cargadas desde Supabase -->
+      <div class="sede-card">
+        <div class="sede-header">
+          <div class="sede-name">6ta Etapa La Esperanza</div>
+        </div>
+        <div class="sede-body">
+          <div class="sede-info">
+            <div class="sede-info-row">
+              <span class="ico">📍</span>
+              <span>Cra. 33c #7-15, Villavicencio</span>
+            </div>
+            <div class="sede-info-row">
+              <span class="ico">🕒</span>
+              <span>Lun-Dom · 5:00pm - 11:00pm</span>
+            </div>
+          </div>
+          <div class="sede-actions">
+            <a href="https://www.google.com/maps/search/Cra.+33c+%237-15+Villavicencio" target="_blank" class="sede-btn maps">📍 Cómo llegar</a>
+            <a href="https://wa.me/573114822019" target="_blank" class="sede-btn wp">💬 WhatsApp</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="sede-card">
+        <div class="sede-header">
+          <div class="sede-name">7 de Agosto</div>
+        </div>
+        <div class="sede-body">
+          <div class="sede-info">
+            <div class="sede-info-row">
+              <span class="ico">📍</span>
+              <span>Cra. 39 #26c-90 — Al lado de la URI</span>
+            </div>
+            <div class="sede-info-row">
+              <span class="ico">🕒</span>
+              <span>Lun-Dom · 5:00pm - 11:00pm</span>
+            </div>
+          </div>
+          <div class="sede-actions">
+            <a href="https://www.google.com/maps/search/Cra.+39+%2326c-90+Villavicencio" target="_blank" class="sede-btn maps">📍 Cómo llegar</a>
+            <a href="https://wa.me/573114822019" target="_blank" class="sede-btn wp">💬 WhatsApp</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============= CTA FINAL ============= -->
+<section class="cta-final">
+  <div class="container">
+    <h2>¿LISTO PARA<br>EL MEJOR TACO?</h2>
+    <p>Únete al club, acumula visitas y conviértete en parte de la familia Taco Parado. Es 100% gratis y solo te toma 30 segundos.</p>
+    <a href="registro.html" class="cta-primary">
+      <span>🌮</span>
+      <span>Sí, Quiero Mi Carnet</span>
+    </a>
+  </div>
+</section>
+
+<!-- ============= FOOTER ============= -->
+<footer>
+  <div class="footer-brand">
+    <div class="footer-name">TACO <span class="accent">PARADO</span></div>
+  </div>
+  <div class="footer-links">
+    <a href="#productos">Menú</a>
+    <a href="#carnet">Carnet</a>
+    <a href="#sedes">Sedes</a>
+    <a href="registro.html">Mi Carnet</a>
+  </div>
+  <div class="footer-social">
+    <a href="https://instagram.com/tacoparado.co" target="_blank" title="Instagram">📷</a>
+    <a href="https://wa.me/573114822019" target="_blank" title="WhatsApp">💬</a>
+  </div>
+  <div class="footer-bottom">
+    © 2026 TACO PARADO · VILLAVICENCIO, COLOMBIA
+  </div>
+</footer>
+
+<!-- ============= CTA FLOTANTE MÓVIL ============= -->
+<div class="cta-floating">
+  <a href="registro.html" class="cta-primary">
+    <span>✨</span>
+    <span>Mi Carnet</span>
+  </a>
+</div>
+
+<script>
+  // Cargar logo y datos dinámicamente desde Supabase
+  async function cargarConfig() {
+    while (!window.supabase) await new Promise(r => setTimeout(r, 50));
+
+    try {
+      // Logo
+      const { data: logoData } = await window.supabase.from('config').select('value').eq('key', 'logoUrl').maybeSingle();
+      if (logoData?.value) {
+        const logo = logoData.value;
+        // Navbar
+        const navLogo = document.getElementById('navLogo');
+        if (navLogo) navLogo.innerHTML = `<img src="${logo}" alt="Taco Parado">`;
+        // Hero mascot
+        const heroMascot = document.getElementById('heroMascot');
+        if (heroMascot) heroMascot.innerHTML = `<img src="${logo}" alt="Taco Parado">`;
+        // Favicon
+        let fav = document.querySelector("link[rel='icon']");
+        if (!fav) { fav = document.createElement('link'); fav.rel = 'icon'; document.head.appendChild(fav); }
+        fav.href = logo;
+      }
+
+      // Conteo de clientes (real-time)
+      const { count } = await window.supabase.from('clientes').select('*', { count: 'exact', head: true });
+      if (count !== null && count !== undefined) {
+        document.getElementById('statClientes').textContent = '+' + count;
+      }
+
+      // Sedes desde Supabase
+      const { data: sedes } = await window.supabase.from('sedes').select('*').eq('activa', true).order('nombre');
+      if (sedes && sedes.length > 0) {
+        const container = document.getElementById('sedesContainer');
+        container.innerHTML = sedes.map(s => `
+          <div class="sede-card">
+            <div class="sede-header">
+              <div class="sede-name">${escapeHtml(s.nombre)}</div>
+            </div>
+            <div class="sede-body">
+              <div class="sede-info">
+                ${s.direccion ? `<div class="sede-info-row"><span class="ico">📍</span><span>${escapeHtml(s.direccion)}</span></div>` : ''}
+                ${s.horario ? `<div class="sede-info-row"><span class="ico">🕒</span><span>${escapeHtml(s.horario)}</span></div>` : '<div class="sede-info-row"><span class="ico">🕒</span><span>Lun-Dom · 5:00pm - 11:00pm</span></div>'}
+              </div>
+              <div class="sede-actions">
+                <a href="${s.maps_url || `https://www.google.com/maps/search/${encodeURIComponent(s.direccion || s.nombre + ' Villavicencio')}`}" target="_blank" class="sede-btn maps">📍 Cómo llegar</a>
+                <a href="https://wa.me/573114822019" target="_blank" class="sede-btn wp">💬 WhatsApp</a>
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+    } catch (e) {
+      console.warn('Error cargando config:', e);
+    }
+  }
+
+  function escapeHtml(s) {
+    return (s || '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  function fmtMoney(n) {
+    return '<span class="moneda">$</span>' + new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n || 0);
+  }
+
+  // ============= CARGAR MENÚ DINÁMICO =============
+  let menuProductos = [];
+  let categoriaActiva = 'todas';
+
+  async function cargarMenu() {
+    while (!window.supabase) await new Promise(r => setTimeout(r, 50));
+    try {
+      const { data } = await window.supabase
+        .from('productos_menu')
+        .select('*')
+        .eq('activo', true)
+        .order('orden');
+
+      // Orden personalizado de categorías
+      const ORDEN_CATEGORIAS = ['Tacos', 'Bandejas', 'Combos', 'Hamburguesas', 'Bebidas', 'Adicionales'];
+      menuProductos = (data || []).sort((a, b) => {
+        const ia = ORDEN_CATEGORIAS.indexOf(a.categoria);
+        const ib = ORDEN_CATEGORIAS.indexOf(b.categoria);
+        const va = ia === -1 ? 999 : ia;  // categorías nuevas van al final
+        const vb = ib === -1 ? 999 : ib;
+        if (va !== vb) return va - vb;
+        return (a.orden || 0) - (b.orden || 0);
+      });
+
+      if (menuProductos.length === 0) {
+        document.getElementById('menuContainer').innerHTML = `
+          <div class="menu-empty">
+            <div class="emoji-big">🌮</div>
+            <div style="font-family:'Bungee',sans-serif; font-size:18px; margin-bottom:8px;">MENÚ EN PREPARACIÓN</div>
+            <div style="font-size:14px;">Pronto verás todos nuestros tacos aquí.</div>
+          </div>
+        `;
+        document.getElementById('menuCategorias').style.display = 'none';
+        return;
+      }
+
+      renderCategorias();
+      renderMenu();
+    } catch (e) {
+      console.warn('Error cargando menú:', e);
+      document.getElementById('menuContainer').innerHTML = `
+        <div class="menu-empty">
+          <div>No se pudo cargar el menú. Intenta refrescar.</div>
+        </div>
+      `;
+    }
+  }
+
+  function renderCategorias() {
+    const cats = [...new Set(menuProductos.map(p => p.categoria || 'Otros'))];
+    const container = document.getElementById('menuCategorias');
+    container.innerHTML = `
+      <button class="cat-btn ${categoriaActiva === 'todas' ? 'active' : ''}" onclick="filtrarCategoria('todas')">Todo</button>
+      ${cats.map(c => `<button class="cat-btn ${categoriaActiva === c ? 'active' : ''}" onclick="filtrarCategoria('${c.replace(/'/g, "\\'")}')">${escapeHtml(c)}</button>`).join('')}
+    `;
+  }
+
+  window.filtrarCategoria = function(cat) {
+    categoriaActiva = cat;
+    renderCategorias();
+    renderMenu();
+  };
+
+  function renderMenu() {
+    const container = document.getElementById('menuContainer');
+    let lista = menuProductos;
+    if (categoriaActiva !== 'todas') {
+      lista = lista.filter(p => (p.categoria || 'Otros') === categoriaActiva);
+    }
+
+    if (lista.length === 0) {
+      container.innerHTML = '<div class="menu-empty">Sin productos en esta categoría.</div>';
+      return;
+    }
+
+    const grupos = {};
+    lista.forEach(p => {
+      const cat = p.categoria || 'Otros';
+      if (!grupos[cat]) grupos[cat] = [];
+      grupos[cat].push(p);
+    });
+
+    container.innerHTML = Object.entries(grupos).map(([cat, items]) => `
+      ${categoriaActiva === 'todas' ? `<div class="menu-cat-titulo">${escapeHtml(cat)}</div>` : ''}
+      <div class="grid-productos menu-cat-section">
+        ${items.map(p => `
+          <div class="producto-card ${p.agotado ? 'agotado' : ''}">
+            <div class="producto-img">
+              ${p.imagen_url
+                ? `<img src="${escapeHtml(p.imagen_url)}" alt="${escapeHtml(p.nombre)}">`
+                : `<span>${p.emoji || '🌮'}</span>`}
+              ${p.destacado ? '<div class="badge">⭐ DESTACADO</div>' : ''}
+            </div>
+            <div class="producto-info">
+              <div class="producto-nombre">${escapeHtml(p.nombre)}</div>
+              ${p.descripcion ? `<div class="producto-desc">${escapeHtml(p.descripcion)}</div>` : ''}
+              ${p.precio > 0 ? `<div class="producto-precio">${fmtMoney(p.precio)}</div>` : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `).join('');
+  }
+
+  cargarConfig();
+  cargarMenu();
+
+  // Smooth navbar effect on scroll
+  let lastScroll = 0;
+  window.addEventListener('scroll', () => {
+    const nav = document.querySelector('.navbar');
+    const cur = window.pageYOffset;
+    if (cur > 80) {
+      nav.style.boxShadow = '0 4px 20px rgba(0,0,0,0.1)';
+    } else {
+      nav.style.boxShadow = 'none';
+    }
+    lastScroll = cur;
+  });
+</script>
+
+</body>
+</html>
