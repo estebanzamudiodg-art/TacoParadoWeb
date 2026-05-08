@@ -275,15 +275,13 @@ window.saveProveedor = async function() {
   try {
     if (id) {
       const antes = proveedores.find(x => x.id === id);
-      const update = { nombre, categoria, contacto: telefono ? `${contacto} · ${telefono}` : contacto };
+      const update = { nombre, categoria, contacto, telefono };
       const { error } = await window.supabase.from('proveedores').update(update).eq('id', id);
       if (error) throw error;
       await logAudit('editar', 'proveedor', id, `Editó proveedor "${nombre}"`, antes, update);
       toast('Proveedor actualizado');
     } else {
-      const insert = {
-        sede_id: selectedSedeId, nombre, categoria, contacto: telefono ? `${contacto} · ${telefono}` : contacto
-      };
+      const insert = { sede_id: selectedSedeId, nombre, categoria, contacto, telefono };
       const { data, error } = await window.supabase.from('proveedores').insert(insert).select().single();
       if (error) throw error;
       await logAudit('crear', 'proveedor', data.id, `Agregó proveedor "${nombre}"`, null, insert);
@@ -302,9 +300,8 @@ window.editProveedor = function(id) {
   document.getElementById('provId').value = p.id;
   document.getElementById('provNombre').value = p.nombre;
   document.getElementById('provCategoria').value = p.categoria || 'general';
-  const parts = (p.contacto || '').split(' · ');
-  document.getElementById('provContacto').value = parts[0] || '';
-  document.getElementById('provTelefono').value = parts[1] || '';
+  document.getElementById('provContacto').value = p.contacto || '';
+  document.getElementById('provTelefono').value = p.telefono || '';
   document.getElementById('formProveedorTitle').textContent = 'Editar proveedor';
   const f = document.getElementById('formProveedor');
   if (!f.classList.contains('open')) f.classList.add('open');
@@ -337,8 +334,8 @@ function renderProveedores() {
     return `<tr>
       <td><strong>${escapeHTML(p.nombre)}</strong></td>
       <td><span class="badge ${p.categoria || 'general'}">${p.categoria || 'general'}</span></td>
-      <td>${escapeHTML(p.contacto || '—')}</td>
-      <td></td>
+      <td>${p.telefono ? `📱 ${escapeHTML(p.telefono)}` : '<em style="opacity:.4">—</em>'}</td>
+      <td>${p.contacto ? `👤 ${escapeHTML(p.contacto)}` : '<em style="opacity:.4">—</em>'}</td>
       <td class="qty">${count}</td>
       <td>
         <button class="btn-icon" onclick="editProveedor('${p.id}')">✎</button>
