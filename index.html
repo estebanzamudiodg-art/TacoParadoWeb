@@ -1265,10 +1265,18 @@
         .from('productos_menu')
         .select('*')
         .eq('activo', true)
-        .order('categoria')
         .order('orden');
 
-      menuProductos = data || [];
+      // Orden personalizado de categorías
+      const ORDEN_CATEGORIAS = ['Tacos', 'Bandejas', 'Hamburguesas', 'Nachos', 'Burritos', 'Bebidas'];
+      menuProductos = (data || []).sort((a, b) => {
+        const ia = ORDEN_CATEGORIAS.indexOf(a.categoria);
+        const ib = ORDEN_CATEGORIAS.indexOf(b.categoria);
+        const va = ia === -1 ? 999 : ia;  // categorías nuevas van al final
+        const vb = ib === -1 ? 999 : ib;
+        if (va !== vb) return va - vb;
+        return (a.orden || 0) - (b.orden || 0);
+      });
 
       if (menuProductos.length === 0) {
         document.getElementById('menuContainer').innerHTML = `
