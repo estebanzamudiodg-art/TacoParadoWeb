@@ -1739,8 +1739,8 @@
         </div>
       </div>
 
-      <div class="form-field">
-        <label>🏪 Sede</label>
+      <div class="form-field" id="fieldSede">
+        <label>🏪 Sede de recogida</label>
         <div class="sede-options" id="checkoutSedes">
           <!-- Se carga dinámico -->
         </div>
@@ -2171,8 +2171,11 @@
     });
     checkoutData.modo = modo;
 
-    // Mostrar/ocultar campo de dirección
+    // Mostrar/ocultar campos según modalidad
+    // - "recoger": muestra sede, oculta dirección
+    // - "domicilio": muestra dirección, oculta sede
     document.getElementById('fieldDireccion').style.display = modo === 'domicilio' ? 'block' : 'none';
+    document.getElementById('fieldSede').style.display = modo === 'recoger' ? 'block' : 'none';
   };
 
   window.enviarWhatsApp = function() {
@@ -2191,8 +2194,8 @@
       document.getElementById('checkoutDireccion').focus();
       return;
     }
-    if (!checkoutData.sedeId) {
-      alert('Selecciona una sede');
+    if (checkoutData.modo === 'recoger' && !checkoutData.sedeId) {
+      alert('Selecciona una sede para recoger');
       return;
     }
 
@@ -2213,9 +2216,10 @@
     mensaje += `📋 *Datos del pedido:*\n`;
     mensaje += `👤 Nombre: ${nombre}\n`;
     mensaje += `${checkoutData.modo === 'domicilio' ? '🛵' : '🏃'} Modalidad: ${checkoutData.modo === 'domicilio' ? 'Domicilio' : 'Para recoger'}\n`;
-    mensaje += `🏪 Sede: ${checkoutData.sedeNombre}\n`;
 
-    if (checkoutData.modo === 'domicilio') {
+    if (checkoutData.modo === 'recoger') {
+      mensaje += `🏪 Sede: ${checkoutData.sedeNombre}\n`;
+    } else {
       mensaje += `🏠 Dirección: ${direccion}\n`;
     }
 
