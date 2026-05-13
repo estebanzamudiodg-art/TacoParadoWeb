@@ -2090,7 +2090,15 @@
       ${categoriaActiva === 'todas' ? `<div class="menu-cat-titulo">${escapeHtml(cat)}</div>` : ''}
       <div class="grid-productos menu-cat-section">
         ${items.map(p => {
-          const cantidadEnCarrito = carrito.find(x => x.id === p.id)?.cantidad || 0;
+          const tieneOpciones = p.opciones && p.opciones.length > 0;
+          // Para productos sin opciones, contar cuántos hay en el carrito (siempre 1 item posible)
+          // Para productos CON opciones, contar el TOTAL en el carrito (suma de todas las variantes)
+          let cantidadEnCarrito = 0;
+          if (tieneOpciones) {
+            cantidadEnCarrito = carrito.filter(x => x.id === p.id).reduce((s, x) => s + x.cantidad, 0);
+          } else {
+            cantidadEnCarrito = carrito.find(x => x.id === p.id && !x.opcionesElegidas)?.cantidad || 0;
+          }
           return `
           <div class="producto-card ${p.agotado ? 'agotado' : ''}" data-producto-id="${p.id}">
             <div class="producto-img">
@@ -2105,15 +2113,16 @@
               ${p.precio > 0 ? `<div class="producto-precio">${fmtMoney(p.precio)}</div>` : ''}
               ${!p.agotado && p.precio > 0 ? `
                 <div class="producto-actions">
-                  ${cantidadEnCarrito === 0 ? `
+                  ${cantidadEnCarrito === 0 || tieneOpciones ? `
                     <button class="btn-agregar" onclick="agregarAlCarrito('${p.id}')">
-                      <span>+</span><span>AGREGAR</span>
+                      ${cantidadEnCarrito > 0 ? `<span style="background:var(--tp-ink); color:#fff; border-radius:50%; padding:2px 8px; font-size:11px; margin-right:6px;">${cantidadEnCarrito}</span>` : '<span>+</span>'}
+                      <span>AGREGAR</span>
                     </button>
                   ` : `
                     <div class="card-counter">
-                      <button onclick="cambiarCantidad('${p.id}', -1)">−</button>
+                      <button onclick="cambiarCantidadEnCard('${p.id}', -1)">−</button>
                       <span>${cantidadEnCarrito}</span>
-                      <button onclick="cambiarCantidad('${p.id}', 1)">+</button>
+                      <button onclick="cambiarCantidadEnCard('${p.id}', 1)">+</button>
                     </div>
                   `}
                 </div>
@@ -2383,13 +2392,13 @@
     return `<div class="cart-item-opciones">${partes.map(p => `<span>${escapeHtml(p)}</span>`).join('')}</div>`;
   }
 
-  window.cambiarCantidad = function(itemKey, delta) {
-    const item = carrito.find(x => x.itemKey === itemKey);
+  window.cambiarCantidad = function(idx, delta) {
+    const item = carrito[idx];
     if (!item) return;
 
     item.cantidad += delta;
     if (item.cantidad <= 0) {
-      carrito = carrito.filter(x => x.itemKey !== itemKey);
+      carrito.splice(idx, 1);
     }
     actualizarCarritoUI();
 
@@ -2400,10 +2409,24 @@
     }
   };
 
-  window.quitarDelCarrito = function(itemKey) {
-    carrito = carrito.filter(x => x.itemKey !== itemKey);
+  window.quitarDelCarrito = function(idx) {
+    carrito.splice(idx, 1);
     actualizarCarritoUI();
     renderCartItems();
+  };
+
+  // Para productos sin opciones, mantener compatibilidad con cards del menú
+  window.cambiarCantidadEnCard = function(productoId, delta) {
+    // Solo aplica a productos sin opciones (los con opciones solo se gestionan desde el carrito)
+    const idx = carrito.findIndex(x => x.id === productoId && !x.opcionesElegidas);
+    if (idx === -1) {
+      if (delta > 0) {
+        const producto = menuProductos.find(p => p.id === productoId);
+        if (producto) agregarItemAlCarrito(producto, null);
+      }
+      return;
+    }
+    cambiarCantidad(idx, delta);
   };
 
   window.abrirCarrito = function() {
@@ -2433,7 +2456,7 @@
     const total = carrito.reduce((s, x) => s + (x.precio * x.cantidad), 0);
 
     cont.innerHTML = `
-      ${carrito.map(item => `
+      ${carrito.map((item, idx) => `
         <div class="cart-item">
           <div class="cart-item-img">
             ${item.imagen_url
@@ -2446,11 +2469,11 @@
             <div class="cart-item-price">${fmtMoney(item.precio)} c/u</div>
           </div>
           <div class="cart-item-controls">
-            <button onclick="cambiarCantidad('${item.itemKey}', -1)">−</button>
+            <button onclick="cambiarCantidad(${idx}, -1)">−</button>
             <span>${item.cantidad}</span>
-            <button onclick="cambiarCantidad('${item.itemKey}', 1)">+</button>
+            <button onclick="cambiarCantidad(${idx}, 1)">+</button>
           </div>
-          <button class="cart-item-remove" onclick="quitarDelCarrito('${item.itemKey}')" title="Quitar">✕</button>
+          <button class="cart-item-remove" onclick="quitarDelCarrito(${idx})" title="Quitar">✕</button>
         </div>
       `).join('')}
 
