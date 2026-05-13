@@ -812,6 +812,152 @@
     color: var(--tp-mustard);
   }
 
+  /* === MODAL DE OPCIONES === */
+  .opciones-group {
+    margin-bottom: 18px;
+  }
+  .opciones-group:last-child { margin-bottom: 0; }
+  .opciones-group .label {
+    font-family: 'Bungee', sans-serif;
+    font-size: 14px;
+    color: var(--tp-ink);
+    margin-bottom: 10px;
+    letter-spacing: 0.3px;
+  }
+  .opciones-group .obligatorio {
+    color: var(--tp-orange);
+    font-size: 11px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    margin-left: 6px;
+  }
+  .opciones-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .opcion-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    background: var(--tp-paper, #fff7ed);
+    border: 2.5px solid rgba(13,36,81,0.15);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--tp-ink);
+  }
+  .opcion-item:hover {
+    background: var(--tp-mustard);
+    border-color: var(--tp-ink);
+  }
+  .opcion-item.selected {
+    background: var(--tp-orange);
+    color: #fff;
+    border-color: var(--tp-ink);
+    box-shadow: 0 3px 0 var(--tp-ink);
+  }
+  .opcion-item .check {
+    width: 22px; height: 22px;
+    border: 2.5px solid currentColor;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 14px;
+    font-weight: 900;
+  }
+  .opcion-item.selected .check::before { content: "✓"; }
+
+  /* Multi-quantity: con − y + */
+  .opcion-mqty {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--tp-paper, #fff7ed);
+    border: 2.5px solid rgba(13,36,81,0.15);
+    border-radius: 12px;
+    margin-bottom: 8px;
+  }
+  .opcion-mqty .nombre {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    color: var(--tp-ink);
+  }
+  .opcion-mqty-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .opcion-mqty-controls button {
+    width: 32px; height: 32px;
+    background: #fff;
+    border: 2px solid var(--tp-ink);
+    border-radius: 8px;
+    font-family: 'Bungee', sans-serif;
+    font-size: 16px;
+    color: var(--tp-ink);
+    cursor: pointer;
+  }
+  .opcion-mqty-controls button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+  }
+  .opcion-mqty-controls span {
+    min-width: 28px;
+    text-align: center;
+    font-family: 'Bungee', sans-serif;
+    font-size: 16px;
+    color: var(--tp-ink);
+  }
+  .opcion-mqty-summary {
+    background: var(--tp-deep-blue, #1A3F91);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 10px;
+    margin-top: 8px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+  .opcion-mqty-summary.error { background: var(--tp-coral, #FF6B6B); }
+
+  .btn-cart-action {
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-family: 'Bungee', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 var(--tp-ink);
+    letter-spacing: 0.5px;
+  }
+
+  /* Opciones en el item del carrito */
+  .cart-item-opciones {
+    font-size: 11px;
+    color: var(--tp-deep-blue, #1A3F91);
+    font-family: 'Space Mono', monospace;
+    margin: 2px 0 4px;
+    line-height: 1.4;
+  }
+  .cart-item-opciones span {
+    background: rgba(82, 113, 255, 0.12);
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-right: 4px;
+    display: inline-block;
+    margin-top: 2px;
+  }
+
   .checkout-btn {
     width: 100%;
     margin-top: 14px;
@@ -1706,6 +1852,23 @@
   </button>
 </div>
 
+<!-- ============= MODAL OPCIONES (taco/bandeja/bebida con elección) ============= -->
+<div class="modal-overlay" id="modalOpciones" onclick="if(event.target===this) cerrarModalOpciones()">
+  <div class="modal-content" style="max-width: 480px;">
+    <div class="modal-header">
+      <div class="modal-title" id="opcionesTitle">Elige tu opción</div>
+      <button class="modal-close" onclick="cerrarModalOpciones()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="opcionesContent"></div>
+      <div style="display: flex; gap: 10px; margin-top: 16px;">
+        <button class="btn-cart-action" onclick="cerrarModalOpciones()" style="background: var(--tp-cream); border: 2.5px solid var(--tp-ink); flex: 1;">Cancelar</button>
+        <button class="btn-cart-action" id="btnConfirmarOpciones" onclick="confirmarOpciones()" style="background: var(--tp-orange); color: #fff; border: 2.5px solid var(--tp-ink); flex: 2;">✅ Agregar al carrito</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- ============= MODAL CARRITO ============= -->
 <div class="modal-overlay" id="modalCarrito" onclick="if(event.target===this) cerrarCarrito()">
   <div class="modal-content">
@@ -2005,36 +2168,228 @@
     const producto = menuProductos.find(p => p.id === productoId);
     if (!producto || producto.agotado) return;
 
-    const existente = carrito.find(x => x.id === productoId);
+    // Si tiene opciones, abrir modal primero
+    if (producto.opciones && producto.opciones.length > 0) {
+      abrirModalOpciones(producto);
+      return;
+    }
+
+    // Sin opciones: agregar directo
+    agregarItemAlCarrito(producto, null);
+  };
+
+  function agregarItemAlCarrito(producto, opcionesElegidas) {
+    // Para productos con opciones, cada combinación es un item separado
+    // Identificador único: id + serialización de opciones
+    const opcKey = opcionesElegidas ? JSON.stringify(opcionesElegidas) : '';
+    const itemKey = producto.id + opcKey;
+
+    const existente = carrito.find(x => x.itemKey === itemKey);
     if (existente) {
       existente.cantidad++;
     } else {
       carrito.push({
         id: producto.id,
+        itemKey,
         nombre: producto.nombre,
         precio: producto.precio,
         cantidad: 1,
         emoji: producto.emoji || '🌮',
-        imagen_url: producto.imagen_url
+        imagen_url: producto.imagen_url,
+        opcionesElegidas
       });
     }
     actualizarCarritoUI();
 
-    // Animación del botón de carrito
+    // Animación
     const cartBtn = document.querySelector('.cart-button');
     if (cartBtn) {
       cartBtn.style.transform = 'scale(1.1)';
       setTimeout(() => { cartBtn.style.transform = ''; }, 200);
     }
+  }
+
+  // ============================================================
+  // MODAL DE OPCIONES (cuando un producto requiere elección)
+  // ============================================================
+  let productoEnModalOpciones = null;
+  let seleccionesActuales = {};        // {0: 'Pastor', 1: {'Suadero': 1, 'Oreja': 1}, ...}
+
+  function abrirModalOpciones(producto) {
+    productoEnModalOpciones = producto;
+    seleccionesActuales = {};
+
+    document.getElementById('opcionesTitle').textContent = `${producto.emoji || '🌮'} ${producto.nombre}`;
+    renderOpcionesModal();
+    document.getElementById('modalOpciones').classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  window.cerrarModalOpciones = function() {
+    document.getElementById('modalOpciones').classList.remove('active');
+    document.body.style.overflow = '';
+    productoEnModalOpciones = null;
+    seleccionesActuales = {};
   };
 
-  window.cambiarCantidad = function(productoId, delta) {
-    const item = carrito.find(x => x.id === productoId);
+  function renderOpcionesModal() {
+    if (!productoEnModalOpciones) return;
+    const opciones = productoEnModalOpciones.opciones || [];
+    const cont = document.getElementById('opcionesContent');
+
+    cont.innerHTML = opciones.map((grupo, gIdx) => {
+      if (grupo.tipo === 'multi-quantity') {
+        return renderGrupoMultiQuantity(grupo, gIdx);
+      }
+      return renderGrupoSingle(grupo, gIdx);
+    }).join('');
+
+    actualizarBotonConfirmar();
+  }
+
+  function renderGrupoSingle(grupo, gIdx) {
+    const seleccionado = seleccionesActuales[gIdx];
+    return `
+      <div class="opciones-group">
+        <div class="label">
+          ${escapeHtml(grupo.label)}
+          ${grupo.obligatorio ? '<span class="obligatorio">*OBLIGATORIO</span>' : ''}
+        </div>
+        <div class="opciones-list">
+          ${grupo.valores.map(v => `
+            <div class="opcion-item ${seleccionado === v ? 'selected' : ''}" 
+                 onclick="seleccionarOpcionSingle(${gIdx}, '${v.replace(/'/g, "\\'")}')">
+              <div class="check"></div>
+              <span>${escapeHtml(v)}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderGrupoMultiQuantity(grupo, gIdx) {
+    const sel = seleccionesActuales[gIdx] || {};
+    const totalSel = Object.values(sel).reduce((s, n) => s + n, 0);
+    const total = grupo.total || 0;
+    const falta = total - totalSel;
+
+    return `
+      <div class="opciones-group">
+        <div class="label">
+          ${escapeHtml(grupo.label)}
+          ${grupo.obligatorio ? '<span class="obligatorio">*OBLIGATORIO</span>' : ''}
+        </div>
+        ${grupo.valores.map(v => {
+          const cnt = sel[v] || 0;
+          return `
+            <div class="opcion-mqty">
+              <div class="nombre">${escapeHtml(v)}</div>
+              <div class="opcion-mqty-controls">
+                <button onclick="cambiarOpcionMqty(${gIdx}, '${v.replace(/'/g, "\\'")}', -1)" ${cnt === 0 ? 'disabled' : ''}>−</button>
+                <span>${cnt}</span>
+                <button onclick="cambiarOpcionMqty(${gIdx}, '${v.replace(/'/g, "\\'")}', 1)" ${falta === 0 ? 'disabled' : ''}>+</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+        <div class="opcion-mqty-summary ${falta < 0 ? 'error' : ''}">
+          ${totalSel === total
+            ? `✓ Listo: ${total} de ${total} seleccionados`
+            : falta > 0
+            ? `⚠️ Faltan ${falta} de ${total}`
+            : `❌ Te pasaste por ${Math.abs(falta)}`}
+        </div>
+      </div>
+    `;
+  }
+
+  window.seleccionarOpcionSingle = function(gIdx, valor) {
+    seleccionesActuales[gIdx] = valor;
+    renderOpcionesModal();
+  };
+
+  window.cambiarOpcionMqty = function(gIdx, valor, delta) {
+    if (!seleccionesActuales[gIdx]) seleccionesActuales[gIdx] = {};
+    const sel = seleccionesActuales[gIdx];
+    const cnt = sel[valor] || 0;
+    const nuevo = cnt + delta;
+    if (nuevo <= 0) {
+      delete sel[valor];
+    } else {
+      sel[valor] = nuevo;
+    }
+    renderOpcionesModal();
+  };
+
+  function actualizarBotonConfirmar() {
+    if (!productoEnModalOpciones) return;
+    const btn = document.getElementById('btnConfirmarOpciones');
+    const opciones = productoEnModalOpciones.opciones || [];
+
+    // Verificar que todas las opciones obligatorias estén completas
+    let valido = true;
+    opciones.forEach((grupo, gIdx) => {
+      if (!grupo.obligatorio) return;
+      const sel = seleccionesActuales[gIdx];
+      if (grupo.tipo === 'multi-quantity') {
+        const totalSel = sel ? Object.values(sel).reduce((s, n) => s + n, 0) : 0;
+        if (totalSel !== (grupo.total || 0)) valido = false;
+      } else {
+        if (!sel) valido = false;
+      }
+    });
+
+    btn.disabled = !valido;
+    btn.style.opacity = valido ? '1' : '0.5';
+    btn.style.cursor = valido ? 'pointer' : 'not-allowed';
+  }
+
+  window.confirmarOpciones = function() {
+    if (!productoEnModalOpciones) return;
+    const opciones = productoEnModalOpciones.opciones || [];
+
+    // Construir el objeto de opciones elegidas
+    const elegidas = opciones.map((grupo, gIdx) => {
+      const sel = seleccionesActuales[gIdx];
+      if (!sel) return null;
+      if (grupo.tipo === 'multi-quantity') {
+        return {
+          label: grupo.label,
+          tipo: 'multi-quantity',
+          items: sel  // {Suadero: 1, Oreja: 1}
+        };
+      }
+      return {
+        label: grupo.label,
+        tipo: 'single',
+        valor: sel
+      };
+    }).filter(Boolean);
+
+    agregarItemAlCarrito(productoEnModalOpciones, elegidas);
+    cerrarModalOpciones();
+  };
+
+  // Renderizar las opciones elegidas en una línea (para el carrito)
+  function renderOpcionesItem(opciones) {
+    if (!opciones || opciones.length === 0) return '';
+    const partes = opciones.map(o => {
+      if (o.tipo === 'multi-quantity') {
+        return Object.entries(o.items).map(([n, c]) => `${c} ${n}`).join(' + ');
+      }
+      return o.valor;
+    });
+    return `<div class="cart-item-opciones">${partes.map(p => `<span>${escapeHtml(p)}</span>`).join('')}</div>`;
+  }
+
+  window.cambiarCantidad = function(itemKey, delta) {
+    const item = carrito.find(x => x.itemKey === itemKey);
     if (!item) return;
 
     item.cantidad += delta;
     if (item.cantidad <= 0) {
-      carrito = carrito.filter(x => x.id !== productoId);
+      carrito = carrito.filter(x => x.itemKey !== itemKey);
     }
     actualizarCarritoUI();
 
@@ -2045,8 +2400,8 @@
     }
   };
 
-  window.quitarDelCarrito = function(productoId) {
-    carrito = carrito.filter(x => x.id !== productoId);
+  window.quitarDelCarrito = function(itemKey) {
+    carrito = carrito.filter(x => x.itemKey !== itemKey);
     actualizarCarritoUI();
     renderCartItems();
   };
@@ -2087,14 +2442,15 @@
           </div>
           <div class="cart-item-info">
             <div class="cart-item-name">${escapeHtml(item.nombre)}</div>
+            ${renderOpcionesItem(item.opcionesElegidas)}
             <div class="cart-item-price">${fmtMoney(item.precio)} c/u</div>
           </div>
           <div class="cart-item-controls">
-            <button onclick="cambiarCantidad('${item.id}', -1)">−</button>
+            <button onclick="cambiarCantidad('${item.itemKey}', -1)">−</button>
             <span>${item.cantidad}</span>
-            <button onclick="cambiarCantidad('${item.id}', 1)">+</button>
+            <button onclick="cambiarCantidad('${item.itemKey}', 1)">+</button>
           </div>
-          <button class="cart-item-remove" onclick="quitarDelCarrito('${item.id}')" title="Quitar">✕</button>
+          <button class="cart-item-remove" onclick="quitarDelCarrito('${item.itemKey}')" title="Quitar">✕</button>
         </div>
       `).join('')}
 
@@ -2207,6 +2563,17 @@
     carrito.forEach(item => {
       const subtotal = item.precio * item.cantidad;
       mensaje += `• ${item.cantidad}x ${item.nombre} - ${fmtMoneyText(subtotal)}\n`;
+      // Agregar opciones elegidas si las tiene
+      if (item.opcionesElegidas && item.opcionesElegidas.length > 0) {
+        item.opcionesElegidas.forEach(o => {
+          if (o.tipo === 'multi-quantity') {
+            const detalle = Object.entries(o.items).map(([n, c]) => `${c} ${n}`).join(', ');
+            mensaje += `   └ ${o.label}: ${detalle}\n`;
+          } else {
+            mensaje += `   └ ${o.label}: ${o.valor}\n`;
+          }
+        });
+      }
     });
 
     mensaje += `\n*━━━━━━━━━━━━━━━━━━*\n`;
