@@ -424,7 +424,7 @@ window.quitarEgreso = function(idx) {
 window.subirRecibo = async function(idx, event) {
   const file = event.target.files[0];
   if (!file) return;
-  if (file.size > 3 * 1024 * 1024) { toast('Foto muy grande (máx 3 MB)', 'error'); return; }
+  if (file.size > 5 * 1024 * 1024) { toast('Foto muy grande (máx 5 MB)', 'error'); return; }
 
   try {
     const ext = file.name.split('.').pop();
