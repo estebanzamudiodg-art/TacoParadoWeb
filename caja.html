@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<link rel="icon" type="image/png" href="favicon.png">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taco Parado · Caja POS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script type="module">
+  import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+  const SUPABASE_URL = 'https://xyqyhabhujmmjofnfizg.supabase.co'
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh5cXloYWJodWptbWpvZm5maXpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3ODE5NzAsImV4cCI6MjA5MjM1Nzk3MH0.9Cj7XZUjLUiBHPWw6Br4FWz2_g8T1hgg20zyrrThhZQ'
+  window.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+</script>
+<style>
+  :root {
+    --ink: #0d2451;
+    --paper: #fff7ed;
+    --orange: #FF9000;
+    --blood: #f97316;
+    --green: #16a34a;
+    --green-soft: #DCFCE7;
+    --red: #dc2626;
+    --red-soft: #FEE2E2;
+    --cream: #FFF8E7;
+    --mustard: #FFD24D;
+    --blue: #5271FF;
+    --deep-blue: #1A3F91;
+    --border: rgba(13,36,81,0.15);
+    --text-soft: rgba(13,36,81,0.65);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--orange); color: var(--ink); min-height: 100vh; padding: 12px; }
+
+  /* === HEADER === */
+  header {
+    background: var(--cream);
+    border: 4px solid var(--ink);
+    border-radius: 16px;
+    padding: 12px 18px;
+    margin-bottom: 12px;
+    box-shadow: 0 5px 0 rgba(13,36,81,0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-logo {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--mustard);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    border: 3px solid var(--ink);
+  }
+  .brand-mark { font-family: 'Bungee', sans-serif; font-size: 20px; }
+  .brand-mark span { color: var(--orange); }
+  .sede-tag {
+    background: var(--blue);
+    color: white;
+    padding: 5px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 800;
+    border: 2px solid var(--ink);
+  }
+  .user-info {
+    display: flex; gap: 10px; align-items: center;
+    background: rgba(13,36,81,0.08);
+    border: 2px solid var(--ink);
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .role-badge {
+    background: var(--green);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    letter-spacing: 0.05em;
+  }
+  .nav-btn {
+    background: var(--cream);
+    border: 2.5px solid var(--ink);
+    border-radius: 10px;
+    padding: 7px 14px;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--ink);
+    text-decoration: none;
+    box-shadow: 0 3px 0 var(--ink);
+    cursor: pointer;
+  }
+  .logout-btn {
+    background: transparent;
+    border: none;
+    color: var(--red);
+    font-weight: 800;
+    cursor: pointer;
+    font-size: 10px;
+  }
+
+  /* === TABS === */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .tab {
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    color: var(--ink);
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    box-shadow: 0 3px 0 var(--ink);
+    text-transform: uppercase;
+  }
+  .tab.active { background: var(--blood); color: white; }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* === MESAS GRID === */
+  .mesas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 12px;
+    background: var(--cream);
+    border: 4px solid var(--ink);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 5px 0 rgba(13,36,81,0.3);
+  }
+  .mesa-card {
+    background: white;
+    border: 3px solid var(--ink);
+    border-radius: 14px;
+    padding: 14px;
+    text-align: center;
+    cursor: pointer;
+    box-shadow: 0 4px 0 var(--ink);
+    transition: all 0.15s;
+    position: relative;
+  }
+  .mesa-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 0 var(--ink);
+  }
+  .mesa-card.libre {
+    background: var(--green-soft);
+    border-color: var(--green);
+  }
+  .mesa-card.ocupada {
+    background: #FEF3C7;
+    border-color: var(--orange);
+  }
+  .mesa-card.reservada {
+    background: var(--red-soft);
+    border-color: var(--red);
+  }
+  .mesa-num {
+    font-family: 'Bungee', sans-serif;
+    font-size: 32px;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .mesa-label {
+    font-size: 11px;
+    color: var(--text-soft);
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 700;
+  }
+  .mesa-info {
+    font-size: 11px;
+    color: var(--ink);
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+  }
+  .mesa-quick {
+    display: flex; gap: 6px; justify-content: center; margin-top: 6px;
+  }
+  .mesa-quick button {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1.5px solid var(--ink);
+    background: white;
+    font-size: 10px;
+    font-weight: 800;
+    cursor: pointer;
+  }
+  .mesa-add {
+    background: var(--blue);
+    color: white;
+    border: 3px dashed var(--ink);
+    border-radius: 14px;
+    padding: 14px;
+    text-align: center;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    font-family: 'Bungee', sans-serif;
+    min-height: 110px;
+  }
+  .mesa-add .plus { font-size: 36px; line-height: 1; }
+  .mesa-add .lbl { font-size: 11px; margin-top: 4px; letter-spacing: 1px; }
+
+  /* === LAYOUT POS === */
+  .pos-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 12px;
+  }
+  @media (max-width: 900px) {
+    .pos-layout { grid-template-columns: 1fr; }
+  }
+
+  .pos-menu, .pos-cart {
+    background: var(--cream);
+    border: 4px solid var(--ink);
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 5px 0 rgba(13,36,81,0.3);
+  }
+
+  /* === MENU CATEGORIAS === */
+  .menu-cats {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+  .cat-btn {
+    background: white;
+    border: 2.5px solid var(--ink);
+    color: var(--ink);
+    padding: 7px 14px;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    box-shadow: 0 2px 0 var(--ink);
+    text-transform: uppercase;
+  }
+  .cat-btn.active { background: var(--orange); color: white; }
+
+  .menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 8px;
+    max-height: calc(100vh - 280px);
+    overflow-y: auto;
+    padding: 4px;
+  }
+  .prod-btn {
+    background: white;
+    border: 2.5px solid var(--ink);
+    border-radius: 10px;
+    padding: 10px 8px;
+    cursor: pointer;
+    text-align: center;
+    box-shadow: 0 3px 0 var(--ink);
+    transition: all 0.1s;
+    min-height: 90px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .prod-btn:hover {
+    transform: translateY(-1px);
+    background: var(--mustard);
+  }
+  .prod-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 1px 0 var(--ink);
+  }
+  .prod-btn.agotado {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #eee;
+  }
+  .prod-nombre {
+    font-family: 'Bungee', sans-serif;
+    font-size: 12px;
+    color: var(--ink);
+    line-height: 1.1;
+    margin-bottom: 4px;
+  }
+  .prod-precio {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    font-size: 11px;
+    color: var(--orange);
+  }
+  .prod-emoji { font-size: 22px; margin-bottom: 2px; }
+
+  /* === CART === */
+  .cart-header {
+    border-bottom: 3px solid var(--ink);
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+  }
+  .cart-pedido-num {
+    font-family: 'Bungee', sans-serif;
+    font-size: 22px;
+    color: var(--ink);
+    line-height: 1;
+  }
+  .cart-mesa-tag {
+    display: inline-block;
+    background: var(--orange);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 800;
+    margin-top: 4px;
+  }
+  .cart-cliente-tag {
+    display: inline-block;
+    background: var(--blue);
+    color: white;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 800;
+    margin-top: 4px;
+    margin-left: 4px;
+  }
+
+  .cart-items {
+    max-height: calc(100vh - 480px);
+    overflow-y: auto;
+    margin-bottom: 8px;
+  }
+  .cart-item {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 8px;
+    padding: 8px;
+    border-bottom: 1px dashed var(--border);
+    align-items: center;
+  }
+  .cart-item-info {
+    font-size: 12px;
+  }
+  .cart-item-nombre {
+    font-weight: 800;
+    color: var(--ink);
+  }
+  .cart-item-opciones {
+    font-size: 10px;
+    color: var(--text-soft);
+    margin-top: 2px;
+  }
+  .cart-item-controls {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .cart-item-controls button {
+    width: 24px; height: 24px;
+    background: var(--cream);
+    border: 1.5px solid var(--ink);
+    border-radius: 4px;
+    font-weight: 800;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  .cart-item-cant {
+    min-width: 24px;
+    text-align: center;
+    font-weight: 800;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .cart-item-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    color: var(--ink);
+    font-size: 12px;
+  }
+  .cart-item-x {
+    background: transparent;
+    border: none;
+    color: var(--red);
+    font-weight: 900;
+    cursor: pointer;
+    font-size: 14px;
+    grid-column: 1 / -1;
+    text-align: right;
+    padding-top: 0;
+  }
+
+  .cart-empty {
+    text-align: center;
+    padding: 30px 12px;
+    color: var(--text-soft);
+  }
+  .cart-empty .emoji { font-size: 40px; margin-bottom: 8px; }
+  .cart-empty .lbl {
+    font-family: 'Bungee', sans-serif;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  /* === TOTALES === */
+  .cart-totales {
+    background: white;
+    border: 2.5px solid var(--ink);
+    border-radius: 10px;
+    padding: 10px;
+    margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .cart-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 13px;
+  }
+  .cart-row.total {
+    border-top: 2px solid var(--ink);
+    margin-top: 4px;
+    padding-top: 8px;
+    font-family: 'Bungee', sans-serif;
+    font-size: 20px;
+    color: var(--orange);
+  }
+  .propina-input {
+    width: 80px;
+    padding: 4px 8px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    text-align: right;
+    font-weight: 700;
+  }
+
+  /* === BOTONES === */
+  .btn-cobrar {
+    width: 100%;
+    background: var(--green);
+    color: white;
+    border: 4px solid var(--ink);
+    padding: 14px;
+    border-radius: 12px;
+    font-family: 'Bungee', sans-serif;
+    font-size: 17px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    box-shadow: 0 5px 0 var(--ink);
+    margin-top: 10px;
+    text-transform: uppercase;
+  }
+  .btn-cobrar:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+  .btn-cobrar:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 0 var(--ink);
+  }
+  .btn-cobrar:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 var(--ink);
+  }
+  .btn-cancelar {
+    width: 100%;
+    background: white;
+    color: var(--red);
+    border: 2.5px solid var(--red);
+    padding: 8px;
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 11px;
+    cursor: pointer;
+    margin-top: 6px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .btn-add-cliente {
+    width: 100%;
+    background: var(--blue);
+    color: white;
+    border: 2.5px solid var(--ink);
+    padding: 8px;
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 11px;
+    cursor: pointer;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 0 var(--ink);
+    letter-spacing: 1px;
+  }
+
+  /* === MODAL === */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(13,36,81,0.85);
+    display: none;
+    align-items: center; justify-content: center;
+    z-index: 200;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--cream);
+    border: 4px solid var(--ink);
+    border-radius: 18px;
+    padding: 22px;
+    max-width: 540px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+  .modal-title {
+    font-family: 'Bungee', sans-serif;
+    font-size: 22px;
+    color: var(--ink);
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 3px solid var(--orange);
+  }
+  .modal-section {
+    margin-bottom: 14px;
+  }
+  .modal-section-title {
+    font-size: 11px;
+    font-weight: 800;
+    color: var(--text-soft);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .modal input[type="text"], .modal input[type="number"], .modal select, .modal textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+  }
+
+  /* Botones método pago */
+  .pago-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+  }
+  .pago-btn {
+    background: white;
+    border: 2.5px solid var(--ink);
+    border-radius: 10px;
+    padding: 14px 6px;
+    cursor: pointer;
+    text-align: center;
+    box-shadow: 0 3px 0 var(--ink);
+    font-weight: 800;
+    font-size: 11px;
+  }
+  .pago-btn:hover { transform: translateY(-1px); }
+  .pago-btn.selected {
+    background: var(--orange);
+    color: white;
+  }
+  .pago-btn .ico { font-size: 24px; display: block; margin-bottom: 4px; }
+
+  /* === ESTADÍSTICAS === */
+  .stats-bar {
+    background: var(--cream);
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    padding: 10px 16px;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 20px;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .stats-bar .stat .num {
+    font-family: 'Bungee', sans-serif;
+    color: var(--orange);
+    font-size: 18px;
+  }
+  .stats-bar .stat .lbl {
+    color: var(--text-soft);
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* === LISTA PEDIDOS === */
+  .pedido-row {
+    background: white;
+    border: 2.5px solid var(--ink);
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 8px;
+    display: grid;
+    grid-template-columns: 60px 1fr auto auto;
+    gap: 10px;
+    align-items: center;
+    box-shadow: 0 3px 0 var(--ink);
+  }
+  .pedido-num-badge {
+    background: var(--ink);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-family: 'Bungee', sans-serif;
+    text-align: center;
+    font-size: 14px;
+  }
+  .pedido-info { font-size: 12px; }
+  .pedido-info-titulo { font-weight: 800; color: var(--ink); }
+  .pedido-info-sub { color: var(--text-soft); font-size: 11px; margin-top: 2px; }
+  .pedido-total {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    color: var(--green);
+    font-size: 14px;
+  }
+  .pedido-acciones { display: flex; gap: 4px; }
+  .pedido-acciones button {
+    padding: 5px 10px;
+    border-radius: 6px;
+    border: 1.5px solid var(--ink);
+    background: var(--cream);
+    font-weight: 800;
+    font-size: 10px;
+    cursor: pointer;
+  }
+
+  /* === TOAST === */
+  .toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(120px);
+    background: var(--ink);
+    color: white;
+    padding: 12px 22px;
+    border-radius: 10px;
+    border: 3px solid var(--ink);
+    font-weight: 700;
+    font-size: 13px;
+    z-index: 1000;
+    transition: transform 0.3s;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.error { background: var(--red); }
+
+  /* === LOADING === */
+  .loading-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: 'Bungee', sans-serif;
+    font-size: 18px;
+    letter-spacing: 2px;
+  }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 4px solid rgba(255,255,255,0.3);
+    border-top-color: var(--mustard);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* === IMPRESIÓN === */
+  @media print {
+    body * { visibility: hidden; }
+    .printable, .printable * { visibility: visible; }
+    .printable {
+      position: absolute;
+      left: 0; top: 0;
+      width: 80mm;
+      padding: 4mm;
+      background: white;
+      color: black;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+    }
+    .printable .tit { text-align: center; font-size: 16px; font-weight: 900; margin-bottom: 4px; }
+    .printable .sub { text-align: center; font-size: 9px; margin-bottom: 8px; }
+    .printable hr { border: none; border-top: 1px dashed #000; margin: 6px 0; }
+    .printable table { width: 100%; }
+    .printable .row { display: flex; justify-content: space-between; font-size: 10px; padding: 1px 0; }
+    .printable .row.bold { font-weight: 900; font-size: 12px; }
+    .printable .center { text-align: center; }
+    .printable .small { font-size: 9px; }
+  }
+
+  @media (max-width: 600px) {
+    .brand-mark { font-size: 16px; }
+    .menu-grid { max-height: 250px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loading-screen" class="loading-screen">
+  <div style="text-align:center;"><div class="spinner"></div><div>CARGANDO CAJA…</div></div>
+</div>
+
+<div id="app" style="display:none;">
+
+<header>
+  <div class="brand">
+    <div class="brand-logo">💰</div>
+    <div>
+      <div class="brand-mark">CAJA <span>POS</span></div>
+      <div style="font-size: 10px; opacity: 0.6; letter-spacing: 1px; text-transform: uppercase;">Punto de venta</div>
+    </div>
+    <div class="sede-tag" id="sedeTag">📍 ...</div>
+  </div>
+  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+    <a href="admin.html" class="nav-btn">← Admin</a>
+    <a href="cierre-caja.html" class="nav-btn">💰 Cierre</a>
+    <div class="user-info">
+      <span id="userEmail">...</span>
+      <span class="role-badge" id="userRole">...</span>
+      <button class="logout-btn" onclick="logout()">SALIR</button>
+    </div>
+  </div>
+</header>
+
+<!-- Stats del día -->
+<div class="stats-bar">
+  <div class="stat"><div class="num" id="statPedidos">0</div><div class="lbl">Pedidos Hoy</div></div>
+  <div class="stat"><div class="num" id="statVentas">$0</div><div class="lbl">Ventas Hoy</div></div>
+  <div class="stat"><div class="num" id="statAbiertos">0</div><div class="lbl">Mesas Ocupadas</div></div>
+  <div class="stat"><div class="num" id="statTicket">$0</div><div class="lbl">Ticket Promedio</div></div>
+</div>
+
+<!-- Tabs -->
+<nav class="tabs">
+  <button class="tab active" data-panel="mesas" onclick="changeTab('mesas')">🍽️ Mesas</button>
+  <button class="tab" data-panel="llevar" onclick="changeTab('llevar')">🥡 Para Llevar</button>
+  <button class="tab" data-panel="historial" onclick="changeTab('historial')">📋 Historial</button>
+</nav>
+
+<!-- ============ PANEL MESAS ============ -->
+<section class="panel active" id="panel-mesas">
+  <div class="mesas-grid" id="mesasContainer"></div>
+</section>
+
+<!-- ============ PANEL LLEVAR ============ -->
+<section class="panel" id="panel-llevar">
+  <div class="pos-layout">
+    <div class="pos-menu">
+      <div class="menu-cats" id="menuCatsLlevar"></div>
+      <div class="menu-grid" id="menuGridLlevar"></div>
+    </div>
+    <div class="pos-cart">
+      <div class="cart-header">
+        <div class="cart-pedido-num">🥡 PARA LLEVAR</div>
+        <div id="cartClienteLlevar"></div>
+      </div>
+      <button class="btn-add-cliente" onclick="abrirBuscadorCliente()">
+        <span id="clienteLabel">👤 + Asociar cliente</span>
+      </button>
+      <div class="cart-items" id="cartItemsLlevar">
+        <div class="cart-empty">
+          <div class="emoji">🌮</div>
+          <div class="lbl">SIN PRODUCTOS</div>
+          <div style="font-size: 11px;">Toca un producto del menú</div>
+        </div>
+      </div>
+      <div class="cart-totales" id="cartTotalesLlevar" style="display:none;"></div>
+      <button class="btn-cobrar" id="btnCobrarLlevar" onclick="abrirCobro()" disabled>💵 COBRAR</button>
+      <button class="btn-cancelar" onclick="limpiarCarrito()">✕ Cancelar pedido</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PANEL HISTORIAL ============ -->
+<section class="panel" id="panel-historial">
+  <div style="background: var(--cream); border: 4px solid var(--ink); border-radius: 16px; padding: 16px; box-shadow: 0 5px 0 rgba(13,36,81,0.3);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+      <h2 style="font-family: 'Bungee', sans-serif; font-size: 20px;">Pedidos del día</h2>
+      <input type="date" id="filtroFecha" onchange="loadPedidos()" style="padding: 8px; border: 2px solid var(--ink); border-radius: 8px; font-weight: 700;">
+    </div>
+    <div id="pedidosListado"></div>
+  </div>
+</section>
+
+</div><!-- /app -->
+
+<!-- ============ MODAL: PEDIDO DE MESA ============ -->
+<div class="modal-overlay" id="modalMesa" onclick="if(event.target===this) cerrarMesa()">
+  <div class="modal" style="max-width: 920px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div class="modal-title" style="margin: 0; border: none; padding: 0;" id="mesaModalTitulo">🍽️ Mesa</div>
+      <button onclick="cerrarMesa()" style="background: transparent; border: none; font-size: 28px; cursor: pointer; color: var(--red); font-weight: 900;">✕</button>
+    </div>
+    <div class="pos-layout" style="grid-template-columns: 1fr 320px;">
+      <div class="pos-menu" style="border-width: 2px; box-shadow: none;">
+        <div class="menu-cats" id="menuCatsMesa"></div>
+        <div class="menu-grid" id="menuGridMesa" style="max-height: 360px;"></div>
+      </div>
+      <div class="pos-cart" style="border-width: 2px; box-shadow: none;">
+        <div id="mesaClienteInfo"></div>
+        <button class="btn-add-cliente" onclick="abrirBuscadorCliente()">
+          <span id="clienteLabelMesa">👤 + Asociar cliente</span>
+        </button>
+        <div class="cart-items" id="cartItemsMesa" style="max-height: 280px;"></div>
+        <div class="cart-totales" id="cartTotalesMesa" style="display:none;"></div>
+        <button class="btn-cobrar" id="btnCobrarMesa" onclick="abrirCobro()" disabled>💵 COBRAR</button>
+        <button class="btn-cancelar" onclick="cancelarPedidoMesa()">✕ Cancelar pedido</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: BUSCAR CLIENTE ============ -->
+<div class="modal-overlay" id="modalCliente" onclick="if(event.target===this) cerrarBuscadorCliente()">
+  <div class="modal">
+    <div class="modal-title">👤 Buscar Cliente</div>
+    <input type="text" id="buscarClienteInput" placeholder="Escribe nombre, código TP-XXX o teléfono..." oninput="buscarClientes(this.value)" autocomplete="off">
+    <div id="resultadosClientes" style="margin-top: 12px; max-height: 320px; overflow-y: auto;"></div>
+    <div style="display: flex; gap: 8px; margin-top: 16px;">
+      <button onclick="quitarCliente()" style="flex: 1; padding: 10px; border: 2px solid var(--ink); border-radius: 8px; background: white; font-weight: 800; cursor: pointer;">✕ Quitar cliente</button>
+      <button onclick="cerrarBuscadorCliente()" style="flex: 1; padding: 10px; border: 2px solid var(--ink); border-radius: 8px; background: var(--cream); font-weight: 800; cursor: pointer;">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: COBRO ============ -->
+<div class="modal-overlay" id="modalCobro" onclick="if(event.target===this) cerrarCobro()">
+  <div class="modal">
+    <div class="modal-title">💵 COBRAR <span id="cobroTotal" style="float: right; color: var(--orange);">$0</span></div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Método de pago</div>
+      <div class="pago-grid">
+        <div class="pago-btn selected" data-metodo="efectivo" onclick="seleccionarMetodo('efectivo')">
+          <span class="ico">💵</span>Efectivo
+        </div>
+        <div class="pago-btn" data-metodo="datafono" onclick="seleccionarMetodo('datafono')">
+          <span class="ico">💳</span>Datáfono
+        </div>
+        <div class="pago-btn" data-metodo="transferencia" onclick="seleccionarMetodo('transferencia')">
+          <span class="ico">📱</span>Transfer.
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section" id="seccionEfectivo">
+      <div class="modal-section-title">Recibido del cliente</div>
+      <input type="number" id="efectivoRecibido" placeholder="0" step="100" oninput="calcularVuelto()">
+      <div style="margin-top: 6px; font-size: 13px; font-weight: 800;">
+        Vuelto: <span id="vueltoCalc" style="color: var(--green); font-family: 'JetBrains Mono', monospace;">$0</span>
+      </div>
+    </div>
+
+    <div class="modal-section" id="seccionTransferencia" style="display:none;">
+      <div class="modal-section-title">Banco</div>
+      <select id="bancoTransferencia">
+        <option value="Bancolombia">Bancolombia</option>
+        <option value="Nequi">Nequi</option>
+        <option value="Davivienda">Davivienda</option>
+        <option value="Daviplata">Daviplata</option>
+        <option value="BBVA">BBVA</option>
+        <option value="Otro">Otro</option>
+      </select>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Notas (opcional)</div>
+      <input type="text" id="notasCobro" placeholder="Ej: cliente pidió picante extra">
+    </div>
+
+    <div style="display: flex; gap: 10px; margin-top: 16px;">
+      <button onclick="cerrarCobro()" style="flex: 1; padding: 12px; border: 2.5px solid var(--ink); border-radius: 10px; background: white; font-weight: 800; cursor: pointer;">Cancelar</button>
+      <button onclick="procesarCobro()" id="btnConfirmarCobro" style="flex: 2; padding: 12px; border: 3px solid var(--ink); border-radius: 10px; background: var(--green); color: white; font-weight: 800; cursor: pointer; font-family: 'Bungee', sans-serif; letter-spacing: 1px; box-shadow: 0 3px 0 var(--ink);">✅ Confirmar Cobro</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ MODAL: EXITO ============ -->
+<div class="modal-overlay" id="modalExito" onclick="if(event.target===this) cerrarExito()">
+  <div class="modal" style="text-align: center; max-width: 420px;">
+    <div style="font-size: 60px;">✅</div>
+    <div style="font-family: 'Bungee', sans-serif; font-size: 22px; color: var(--green); margin-bottom: 6px;">PEDIDO COBRADO</div>
+    <div id="exitoDetalle" style="font-size: 13px; color: var(--text-soft); margin-bottom: 18px;"></div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+      <button onclick="imprimirRecibo()" style="padding: 12px; border: 3px solid var(--ink); border-radius: 10px; background: var(--blue); color: white; font-weight: 800; cursor: pointer; font-family: 'Bungee', sans-serif; font-size: 12px;">🧾 Recibo</button>
+      <button onclick="imprimirComanda()" style="padding: 12px; border: 3px solid var(--ink); border-radius: 10px; background: var(--orange); color: white; font-weight: 800; cursor: pointer; font-family: 'Bungee', sans-serif; font-size: 12px;">👨‍🍳 Comanda</button>
+      <button onclick="imprimirAmbos()" style="grid-column: 1 / -1; padding: 12px; border: 3px solid var(--ink); border-radius: 10px; background: var(--ink); color: white; font-weight: 800; cursor: pointer; font-family: 'Bungee', sans-serif; font-size: 12px;">📄 Imprimir Ambos</button>
+      <button onclick="cerrarExito()" style="grid-column: 1 / -1; padding: 10px; border: 2px solid var(--ink); border-radius: 8px; background: var(--cream); font-weight: 800; cursor: pointer; font-size: 12px;">Cerrar y nuevo pedido</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PRINTABLE ============ -->
+<div class="printable" id="printableContent" style="display: none;"></div>
+
+<div class="toast" id="toast"></div>
+
+<script src="caja.js"></script>
+</body>
+</html>

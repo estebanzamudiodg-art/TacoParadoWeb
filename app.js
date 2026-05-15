@@ -238,6 +238,10 @@ async function mostrarTabInventario() {
         const tabCC = document.getElementById('tab-cierre-caja');
         if (tabCC) tabCC.style.display = 'inline-block';
       }
+      if (rol === 'admin' || rol === 'cajero' || rol === 'lider_punto') {
+        const tabPOS = document.getElementById('tab-caja-pos');
+        if (tabPOS) tabPOS.style.display = 'inline-block';
+      }
     }
   } catch (e) {
     console.error('Error cargando rol:', e);
