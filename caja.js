@@ -991,45 +991,115 @@ function imprimirEnVentana(htmlContent, titulo) {
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; background: #fff; }
 body {
-  font-family: 'Courier New', 'Lucida Console', monospace;
-  font-size: 12px;
+  font-family: 'Arial Black', 'Helvetica', 'Arial', sans-serif;
+  font-size: 14px;
+  font-weight: 900;
   color: #000;
-  padding: 4mm;
+  padding: 3mm;
   width: 80mm;
-  line-height: 1.35;
+  line-height: 1.4;
+  -webkit-font-smoothing: none;
+  text-rendering: geometricPrecision;
 }
-.tit { text-align: center; font-size: 16px; font-weight: 900; margin-bottom: 4px; }
-.sub { text-align: center; font-size: 10px; margin-bottom: 2px; }
-hr { border: none; border-top: 1px dashed #000; margin: 6px 0; }
-.row { display: flex; justify-content: space-between; font-size: 11px; padding: 1px 0; gap: 6px; }
-.row.bold { font-weight: 900; font-size: 13px; }
+/* Todo el texto en bold para impresoras térmicas con poca tinta */
+* { font-weight: 900 !important; color: #000 !important; }
+
+.tit {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 900;
+  margin-bottom: 6px;
+  letter-spacing: 0.5px;
+}
+.sub {
+  text-align: center;
+  font-size: 13px;
+  margin-bottom: 3px;
+  font-weight: 900;
+}
+hr {
+  border: none;
+  border-top: 2px solid #000;
+  margin: 8px 0;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  padding: 2px 0;
+  gap: 8px;
+  font-weight: 900;
+}
+.row.bold {
+  font-weight: 900;
+  font-size: 15px;
+}
 .row span:last-child { white-space: nowrap; }
 .center { text-align: center; }
-.small { font-size: 9px; }
+.small {
+  font-size: 12px;
+  font-weight: 900;
+}
 .bold { font-weight: 900; }
-.item-line { margin: 4px 0; }
-.item-line .item-name { font-weight: 700; }
-.item-line .item-opt { font-size: 10px; padding-left: 8px; color: #333; }
-.actions { padding: 10px; text-align: center; }
+.item-line {
+  margin: 6px 0;
+  padding: 3px 0;
+  border-bottom: 1px dashed #000;
+}
+.item-line:last-child { border-bottom: none; }
+.item-line .item-name {
+  font-weight: 900;
+  font-size: 14px;
+}
+.item-line .item-opt {
+  font-size: 12px;
+  padding-left: 10px;
+  margin-top: 3px;
+  font-weight: 900;
+}
+.actions {
+  padding: 12px;
+  text-align: center;
+  background: #f0f0f0;
+}
 .actions button {
-  padding: 10px 20px;
+  padding: 12px 24px;
   margin: 4px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: bold;
   cursor: pointer;
   border: 2px solid #000;
   border-radius: 6px;
   background: #FF9000;
-  color: #fff;
+  color: #fff !important;
 }
-.actions button.secundario { background: #fff; color: #000; }
+.actions button.secundario {
+  background: #fff;
+  color: #000 !important;
+}
+
+/* AL IMPRIMIR: ocultar botones, formato compacto */
 @media print {
   .actions, .no-print { display: none !important; }
-  body { padding: 2mm; }
+  body {
+    padding: 2mm;
+    font-size: 14px;
+  }
+  /* Forzar tinta máxima en impresora térmica */
+  * {
+    color: #000 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
 @media screen {
   body { max-width: 80mm; margin: 0 auto; }
-  .ticket-wrap { border: 1px dashed #999; padding: 4mm; margin: 10px auto; }
+  .ticket-wrap {
+    border: 2px dashed #999;
+    padding: 4mm;
+    margin: 10px auto;
+    background: #fff;
+  }
 }
 </style>
 </head>
@@ -1116,22 +1186,25 @@ function generarComandaHTML() {
   if (!pedidoCobrado) return '';
   const fecha = new Date(pedidoCobrado.fecha);
   return `
-    <div class="tit">*** COMANDA ***</div>
-    <div class="tit" style="font-size: 28px; margin: 8px 0;">#${pedidoCobrado.numero}</div>
-    <hr>
-    <div class="row bold"><span>${pedidoCobrado.modalidad === 'mesa' ? 'MESA ' + pedidoCobrado.mesa_numero : pedidoCobrado.modalidad === 'llevar' ? 'PARA LLEVAR' : 'DOMICILIO'}</span><span>${fecha.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'})}</span></div>
-    ${pedidoCobrado.cliente_nombre ? `<div class="row"><span>Cliente:</span><span>${escapeHTML(pedidoCobrado.cliente_nombre)}</span></div>` : ''}
-    <hr>
+    <div class="tit" style="font-size: 18px;">*** COMANDA ***</div>
+    <div class="tit" style="font-size: 36px; margin: 10px 0; padding: 6px 0; border: 3px solid #000;">#${pedidoCobrado.numero}</div>
+    <hr style="border-top: 3px solid #000;">
+    <div class="row bold" style="font-size: 17px;">
+      <span>${pedidoCobrado.modalidad === 'mesa' ? 'MESA ' + pedidoCobrado.mesa_numero : pedidoCobrado.modalidad === 'llevar' ? 'P/LLEVAR' : 'DOMICILIO'}</span>
+      <span>${fecha.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'})}</span>
+    </div>
+    ${pedidoCobrado.cliente_nombre ? `<div class="row" style="font-size: 14px;"><span>Cliente:</span><span>${escapeHTML(pedidoCobrado.cliente_nombre)}</span></div>` : ''}
+    <hr style="border-top: 3px solid #000;">
     ${pedidoCobrado.items.map(i => `
-      <div class="item-line">
-        <div class="row bold"><span>${i.cantidad}x ${escapeHTML(i.nombre)}</span></div>
-        ${i.opciones ? `<div class="item-opt">→ ${escapeHTML(renderOpcionesTextoPlain(i.opciones))}</div>` : ''}
-        ${i.notas ? `<div class="item-opt">📝 ${escapeHTML(i.notas)}</div>` : ''}
+      <div class="item-line" style="border-bottom: 2px dashed #000; padding: 6px 0; margin: 4px 0;">
+        <div style="font-size: 18px; font-weight: 900; margin-bottom: 3px;">${i.cantidad}x ${escapeHTML(i.nombre).toUpperCase()}</div>
+        ${i.opciones ? `<div style="font-size: 14px; padding-left: 12px; font-weight: 900;">► ${escapeHTML(renderOpcionesTextoPlain(i.opciones)).toUpperCase()}</div>` : ''}
+        ${i.notas ? `<div style="font-size: 13px; padding-left: 12px; font-weight: 900;">📝 ${escapeHTML(i.notas)}</div>` : ''}
       </div>
     `).join('')}
-    ${pedidoCobrado.notas ? `<hr><div class="bold">NOTAS:</div><div class="small">${escapeHTML(pedidoCobrado.notas)}</div>` : ''}
-    <hr>
-    <div class="center small">${fecha.toLocaleString('es-CO')}</div>
+    ${pedidoCobrado.notas ? `<hr style="border-top: 3px solid #000;"><div style="font-size: 15px; font-weight: 900;">NOTAS GENERALES:</div><div style="font-size: 14px; font-weight: 900;">${escapeHTML(pedidoCobrado.notas)}</div>` : ''}
+    <hr style="border-top: 3px solid #000;">
+    <div class="center" style="font-size: 12px;">${fecha.toLocaleDateString('es-CO')} · ${fecha.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit', second:'2-digit'})}</div>
   `;
 }
 
