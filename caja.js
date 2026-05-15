@@ -813,6 +813,7 @@ function renderPedidos() {
         <div class="pedido-total">${fmtMoney(p.total)}</div>
         <div class="pedido-acciones">
           <button onclick="verPedido('${p.id}')">👁 Ver</button>
+          <button onclick="cambiarMetodoPago('${p.id}')" title="Cambiar solo método de pago">💳 Pago</button>
           <button onclick="reimprimirPedido('${p.id}')">🖨 Imprimir</button>
         </div>
       </div>
@@ -847,7 +848,229 @@ window.reimprimirPedido = async function(id) {
   imprimirAmbos();
 };
 
-// ============= IMPRESIÓN =============
+// ============= CAMBIAR MÉTODO DE PAGO (sin tocar valor ni items) =============
+window.cambiarMetodoPago = async function(id) {
+  const p = pedidosHistorial.find(x => x.id === id);
+  if (!p) return;
+
+  // Crear modal dinámico
+  const modal = document.createElement('div');
+  modal.className = 'modal-overlay active';
+  modal.style.zIndex = '300';
+  modal.innerHTML = `
+    <div class="modal" style="max-width: 480px;">
+      <div class="modal-title">💳 Cambiar método de pago</div>
+      <div style="background: var(--cream); border: 2px solid var(--ink); border-radius: 10px; padding: 12px; margin-bottom: 14px; font-size: 13px;">
+        <div><strong>Pedido:</strong> #${p.numero} · ${fmtMoney(p.total)}</div>
+        <div><strong>Método actual:</strong> ${(p.metodo_pago || '—').toUpperCase()}</div>
+        ${p.banco_transferencia ? `<div><strong>Banco:</strong> ${escapeHTML(p.banco_transferencia)}</div>` : ''}
+        ${p.efectivo_recibido ? `<div><strong>Efectivo recibido:</strong> ${fmtMoney(p.efectivo_recibido)} (vuelto: ${fmtMoney(p.vuelto)})</div>` : ''}
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">Nuevo método</div>
+        <div class="pago-grid">
+          <div class="pago-btn ${p.metodo_pago === 'efectivo' ? 'selected' : ''}" data-metodo="efectivo" onclick="seleccionarMetodoEdit(this, 'efectivo')">
+            <span class="ico">💵</span>Efectivo
+          </div>
+          <div class="pago-btn ${p.metodo_pago === 'datafono' ? 'selected' : ''}" data-metodo="datafono" onclick="seleccionarMetodoEdit(this, 'datafono')">
+            <span class="ico">💳</span>Datáfono
+          </div>
+          <div class="pago-btn ${p.metodo_pago === 'transferencia' ? 'selected' : ''}" data-metodo="transferencia" onclick="seleccionarMetodoEdit(this, 'transferencia')">
+            <span class="ico">📱</span>Transfer.
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-section" id="seccionEfectivoEdit" style="display:${p.metodo_pago === 'efectivo' ? 'block' : 'none'};">
+        <div class="modal-section-title">Recibido del cliente</div>
+        <input type="number" id="efectivoRecibidoEdit" placeholder="0" step="100" value="${p.efectivo_recibido || p.total}" oninput="calcularVueltoEdit(${p.total})">
+        <div style="margin-top: 6px; font-size: 13px; font-weight: 800;">
+          Vuelto: <span id="vueltoCalcEdit" style="color: var(--green); font-family: 'JetBrains Mono', monospace;">${fmtMoney(p.vuelto || 0)}</span>
+        </div>
+      </div>
+
+      <div class="modal-section" id="seccionTransferenciaEdit" style="display:${p.metodo_pago === 'transferencia' ? 'block' : 'none'};">
+        <div class="modal-section-title">Banco</div>
+        <select id="bancoTransferenciaEdit">
+          ${['Bancolombia','Nequi','Davivienda','Daviplata','BBVA','Otro'].map(b => 
+            `<option value="${b}" ${p.banco_transferencia === b ? 'selected' : ''}>${b}</option>`
+          ).join('')}
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 16px;">
+        <button onclick="this.closest('.modal-overlay').remove()" style="flex: 1; padding: 12px; border: 2.5px solid var(--ink); border-radius: 10px; background: white; font-weight: 800; cursor: pointer;">Cancelar</button>
+        <button onclick="confirmarCambioMetodo('${id}', ${p.total})" style="flex: 2; padding: 12px; border: 3px solid var(--ink); border-radius: 10px; background: var(--blue); color: white; font-weight: 800; cursor: pointer; font-family: 'Bungee', sans-serif; letter-spacing: 1px; box-shadow: 0 3px 0 var(--ink);">✅ Guardar cambio</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  window.__metodoEdit = p.metodo_pago || 'efectivo';
+
+  modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+};
+
+window.seleccionarMetodoEdit = function(btn, metodo) {
+  window.__metodoEdit = metodo;
+  const grid = btn.closest('.pago-grid');
+  grid.querySelectorAll('.pago-btn').forEach(b => b.classList.toggle('selected', b.dataset.metodo === metodo));
+  // Mostrar/ocultar secciones
+  const modal = btn.closest('.modal');
+  modal.querySelector('#seccionEfectivoEdit').style.display = metodo === 'efectivo' ? 'block' : 'none';
+  modal.querySelector('#seccionTransferenciaEdit').style.display = metodo === 'transferencia' ? 'block' : 'none';
+};
+
+window.calcularVueltoEdit = function(total) {
+  const recibido = parseInt(document.getElementById('efectivoRecibidoEdit').value) || 0;
+  const vuelto = recibido - total;
+  const el = document.getElementById('vueltoCalcEdit');
+  if (vuelto >= 0) {
+    el.textContent = fmtMoney(vuelto);
+    el.style.color = 'var(--green)';
+  } else {
+    el.textContent = `Faltan ${fmtMoney(-vuelto)}`;
+    el.style.color = 'var(--red)';
+  }
+};
+
+window.confirmarCambioMetodo = async function(pedidoId, total) {
+  const nuevoMetodo = window.__metodoEdit;
+  if (!nuevoMetodo) { toast('Selecciona un método', 'error'); return; }
+
+  const updateData = {
+    metodo_pago: nuevoMetodo,
+    updated_at: new Date().toISOString()
+  };
+
+  if (nuevoMetodo === 'efectivo') {
+    const recibido = parseInt(document.getElementById('efectivoRecibidoEdit').value) || total;
+    if (recibido < total) { toast('Efectivo recibido es menor al total', 'error'); return; }
+    updateData.efectivo_recibido = recibido;
+    updateData.vuelto = recibido - total;
+    updateData.banco_transferencia = null;
+  } else if (nuevoMetodo === 'transferencia') {
+    updateData.banco_transferencia = document.getElementById('bancoTransferenciaEdit').value;
+    updateData.efectivo_recibido = 0;
+    updateData.vuelto = 0;
+  } else {
+    // datáfono
+    updateData.efectivo_recibido = 0;
+    updateData.vuelto = 0;
+    updateData.banco_transferencia = null;
+  }
+
+  try {
+    const { error } = await window.supabase.from('pedidos').update(updateData).eq('id', pedidoId);
+    if (error) throw error;
+    toast('✓ Método de pago actualizado');
+    document.querySelectorAll('.modal-overlay').forEach(m => { if (m.style.zIndex === '300') m.remove(); });
+    await loadPedidos();
+  } catch (err) {
+    toast('Error: ' + err.message, 'error');
+  }
+};
+
+// ============= IMPRESIÓN (ventana popup, más confiable que media print) =============
+function imprimirEnVentana(htmlContent, titulo) {
+  // Abrir ventana popup
+  const win = window.open('', '_blank', 'width=420,height=700,scrollbars=yes');
+  if (!win) {
+    toast('⚠️ Permite popups en tu navegador para imprimir', 'error');
+    return;
+  }
+
+  const documentoCompleto = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${titulo}</title>
+<style>
+@page { size: 80mm auto; margin: 0; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: #fff; }
+body {
+  font-family: 'Courier New', 'Lucida Console', monospace;
+  font-size: 12px;
+  color: #000;
+  padding: 4mm;
+  width: 80mm;
+  line-height: 1.35;
+}
+.tit { text-align: center; font-size: 16px; font-weight: 900; margin-bottom: 4px; }
+.sub { text-align: center; font-size: 10px; margin-bottom: 2px; }
+hr { border: none; border-top: 1px dashed #000; margin: 6px 0; }
+.row { display: flex; justify-content: space-between; font-size: 11px; padding: 1px 0; gap: 6px; }
+.row.bold { font-weight: 900; font-size: 13px; }
+.row span:last-child { white-space: nowrap; }
+.center { text-align: center; }
+.small { font-size: 9px; }
+.bold { font-weight: 900; }
+.item-line { margin: 4px 0; }
+.item-line .item-name { font-weight: 700; }
+.item-line .item-opt { font-size: 10px; padding-left: 8px; color: #333; }
+.actions { padding: 10px; text-align: center; }
+.actions button {
+  padding: 10px 20px;
+  margin: 4px;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  border: 2px solid #000;
+  border-radius: 6px;
+  background: #FF9000;
+  color: #fff;
+}
+.actions button.secundario { background: #fff; color: #000; }
+@media print {
+  .actions, .no-print { display: none !important; }
+  body { padding: 2mm; }
+}
+@media screen {
+  body { max-width: 80mm; margin: 0 auto; }
+  .ticket-wrap { border: 1px dashed #999; padding: 4mm; margin: 10px auto; }
+}
+</style>
+</head>
+<body>
+<div class="actions no-print">
+  <button onclick="window.print()">🖨️ Imprimir</button>
+  <button class="secundario" onclick="window.close()">✕ Cerrar</button>
+</div>
+<div class="ticket-wrap" id="ticket">
+${htmlContent}
+</div>
+</body>
+</html>`;
+
+  // Usar document.open/write/close (más confiable que innerHTML para nuevas ventanas)
+  win.document.open();
+  win.document.write(documentoCompleto);
+  win.document.close();
+
+  // Esperar a que cargue todo y luego imprimir
+  // Usar evento load + timeout doble para máxima compatibilidad
+  const intentarImprimir = () => {
+    try {
+      win.focus();
+      setTimeout(() => {
+        win.print();
+      }, 300);
+    } catch (e) {
+      console.error('Error al imprimir:', e);
+    }
+  };
+
+  if (win.document.readyState === 'complete') {
+    intentarImprimir();
+  } else {
+    win.addEventListener('load', intentarImprimir);
+    // Fallback por si el load no se dispara
+    setTimeout(intentarImprimir, 800);
+  }
+}
+
 function generarReciboHTML() {
   if (!pedidoCobrado) return '';
   const sede = sedes.find(s => s.id === pedidoCobrado.sede_id);
@@ -856,16 +1079,19 @@ function generarReciboHTML() {
     <div class="tit">TACO PARADO</div>
     <div class="sub">${escapeHTML(sede?.nombre || '')}</div>
     <div class="sub">${escapeHTML(sede?.direccion || '')}</div>
+    <div class="sub">+57 311 482 2019</div>
     <hr>
     <div class="row"><span>Pedido:</span><span class="bold">#${pedidoCobrado.numero}</span></div>
     <div class="row"><span>Fecha:</span><span>${fecha.toLocaleString('es-CO')}</span></div>
-    <div class="row"><span>Cajero:</span><span>${escapeHTML(pedidoCobrado.cajero_email || '')}</span></div>
+    <div class="row"><span>Cajero:</span><span>${escapeHTML((pedidoCobrado.cajero_email || '').split('@')[0])}</span></div>
     ${pedidoCobrado.mesa_numero ? `<div class="row"><span>Mesa:</span><span>${pedidoCobrado.mesa_numero}</span></div>` : ''}
     ${pedidoCobrado.cliente_nombre ? `<div class="row"><span>Cliente:</span><span>${escapeHTML(pedidoCobrado.cliente_nombre)}</span></div>` : ''}
     <hr>
     ${pedidoCobrado.items.map(i => `
-      <div class="row"><span>${i.cantidad}x ${escapeHTML(i.nombre)}</span><span>${fmtMoney(i.subtotal)}</span></div>
-      ${i.opciones ? `<div class="small">  ${escapeHTML(renderOpcionesTextoPlain(i.opciones))}</div>` : ''}
+      <div class="item-line">
+        <div class="row"><span class="item-name">${i.cantidad}x ${escapeHTML(i.nombre)}</span><span>${fmtMoney(i.subtotal)}</span></div>
+        ${i.opciones ? `<div class="item-opt">→ ${escapeHTML(renderOpcionesTextoPlain(i.opciones))}</div>` : ''}
+      </div>
     `).join('')}
     <hr>
     <div class="row"><span>Subtotal:</span><span>${fmtMoney(pedidoCobrado.subtotal)}</span></div>
@@ -873,17 +1099,16 @@ function generarReciboHTML() {
     <div class="row bold"><span>TOTAL:</span><span>${fmtMoney(pedidoCobrado.total)}</span></div>
     <hr>
     <div class="row"><span>Pago:</span><span>${(pedidoCobrado.metodo_pago || '').toUpperCase()}</span></div>
-    ${pedidoCobrado.metodo_pago === 'efectivo' ? `
+    ${pedidoCobrado.metodo_pago === 'efectivo' && pedidoCobrado.efectivo_recibido > 0 ? `
       <div class="row"><span>Recibido:</span><span>${fmtMoney(pedidoCobrado.efectivo_recibido)}</span></div>
       <div class="row"><span>Vuelto:</span><span>${fmtMoney(pedidoCobrado.vuelto)}</span></div>
     ` : ''}
     ${pedidoCobrado.banco_transferencia ? `<div class="row"><span>Banco:</span><span>${escapeHTML(pedidoCobrado.banco_transferencia)}</span></div>` : ''}
     <hr>
     <div class="center small">¡Gracias por tu compra!</div>
-    <div class="center small">Síguenos @tacoparado.co</div>
-    <div class="center small">+57 311 482 2019</div>
+    <div class="center small">Sigue @tacoparado.co</div>
     <div class="center small" style="margin-top: 8px;">*** RECIBO DE VENTA ***</div>
-    <div class="center small">No constituye factura electrónica</div>
+    <div class="center small">No constituye factura electronica</div>
   `;
 }
 
@@ -891,17 +1116,17 @@ function generarComandaHTML() {
   if (!pedidoCobrado) return '';
   const fecha = new Date(pedidoCobrado.fecha);
   return `
-    <div class="tit">*** COMANDA COCINA ***</div>
-    <div class="tit" style="font-size: 24px; margin: 6px 0;">#${pedidoCobrado.numero}</div>
+    <div class="tit">*** COMANDA ***</div>
+    <div class="tit" style="font-size: 28px; margin: 8px 0;">#${pedidoCobrado.numero}</div>
     <hr>
-    <div class="row bold"><span>${pedidoCobrado.modalidad === 'mesa' ? `🍽️ MESA ${pedidoCobrado.mesa_numero}` : pedidoCobrado.modalidad === 'llevar' ? '🥡 PARA LLEVAR' : '🛵 DOMICILIO'}</span><span>${fecha.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'})}</span></div>
+    <div class="row bold"><span>${pedidoCobrado.modalidad === 'mesa' ? 'MESA ' + pedidoCobrado.mesa_numero : pedidoCobrado.modalidad === 'llevar' ? 'PARA LLEVAR' : 'DOMICILIO'}</span><span>${fecha.toLocaleTimeString('es-CO', {hour:'2-digit', minute:'2-digit'})}</span></div>
     ${pedidoCobrado.cliente_nombre ? `<div class="row"><span>Cliente:</span><span>${escapeHTML(pedidoCobrado.cliente_nombre)}</span></div>` : ''}
     <hr>
     ${pedidoCobrado.items.map(i => `
-      <div style="margin-bottom: 8px;">
-        <div class="bold">${i.cantidad}x ${escapeHTML(i.nombre)}</div>
-        ${i.opciones ? `<div class="small">→ ${escapeHTML(renderOpcionesTextoPlain(i.opciones))}</div>` : ''}
-        ${i.notas ? `<div class="small">📝 ${escapeHTML(i.notas)}</div>` : ''}
+      <div class="item-line">
+        <div class="row bold"><span>${i.cantidad}x ${escapeHTML(i.nombre)}</span></div>
+        ${i.opciones ? `<div class="item-opt">→ ${escapeHTML(renderOpcionesTextoPlain(i.opciones))}</div>` : ''}
+        ${i.notas ? `<div class="item-opt">📝 ${escapeHTML(i.notas)}</div>` : ''}
       </div>
     `).join('')}
     ${pedidoCobrado.notas ? `<hr><div class="bold">NOTAS:</div><div class="small">${escapeHTML(pedidoCobrado.notas)}</div>` : ''}
@@ -911,27 +1136,20 @@ function generarComandaHTML() {
 }
 
 window.imprimirRecibo = function() {
-  const div = document.getElementById('printableContent');
-  div.innerHTML = generarReciboHTML();
-  div.style.display = 'block';
-  window.print();
-  setTimeout(() => { div.style.display = 'none'; }, 1000);
+  if (!pedidoCobrado) { toast('Sin pedido para imprimir', 'error'); return; }
+  imprimirEnVentana(generarReciboHTML(), `Recibo #${pedidoCobrado.numero}`);
 };
 
 window.imprimirComanda = function() {
-  const div = document.getElementById('printableContent');
-  div.innerHTML = generarComandaHTML();
-  div.style.display = 'block';
-  window.print();
-  setTimeout(() => { div.style.display = 'none'; }, 1000);
+  if (!pedidoCobrado) { toast('Sin pedido para imprimir', 'error'); return; }
+  imprimirEnVentana(generarComandaHTML(), `Comanda #${pedidoCobrado.numero}`);
 };
 
 window.imprimirAmbos = function() {
-  const div = document.getElementById('printableContent');
-  div.innerHTML = generarComandaHTML() + '<div style="page-break-before: always;"></div>' + generarReciboHTML();
-  div.style.display = 'block';
-  window.print();
-  setTimeout(() => { div.style.display = 'none'; }, 1000);
+  if (!pedidoCobrado) { toast('Sin pedido para imprimir', 'error'); return; }
+  // Comanda primero (para cocina), luego recibo
+  const html = generarComandaHTML() + '<div style="page-break-before: always; height: 1px;"></div>' + generarReciboHTML();
+  imprimirEnVentana(html, `Pedido #${pedidoCobrado.numero}`);
 };
 
 // ============= REALTIME =============
