@@ -118,6 +118,11 @@ window.cambiarSede = function(id) {
   selectedSedeId = id;
   renderSedeSelector();
   loadCierres();
+  // Re-setup polling y datos POS para la nueva sede
+  if (typeof setupAutoRefreshPOS === 'function') setupAutoRefreshPOS();
+  if (typeof window.cargarDatosPOS === 'function') {
+    setTimeout(() => window.cargarDatosPOS({ silent: true }), 200);
+  }
 };
 
 window.logout = async function() {
@@ -223,6 +228,45 @@ function initFormNuevo() {
   renderEgresos();
   renderConciliacion();
   calcularTodo();
+
+  // Auto-cargar datos del POS al abrir el formulario (primera vez)
+  setTimeout(() => {
+    if (typeof window.cargarDatosPOS === 'function' && selectedSedeId) {
+      window.cargarDatosPOS({ silent: true });
+    }
+  }, 300);
+
+  // Polling cada 30 segundos
+  setupAutoRefreshPOS();
+}
+
+// ============= AUTO REFRESH POS (cada 30 seg) =============
+let autoRefreshInterval = null;
+
+function setupAutoRefreshPOS() {
+  // Cancelar interval anterior si existe
+  if (autoRefreshInterval) clearInterval(autoRefreshInterval);
+
+  if (!selectedSedeId) return;
+
+  // Refrescar cada 30 segundos
+  autoRefreshInterval = setInterval(() => {
+    // Solo si el formulario de cierre está visible y la sección POS también
+    const formCierre = document.getElementById('formCierre') || document.querySelector('.form-section');
+    const posDatos = document.getElementById('posDatosResumen');
+    
+    if (formCierre && typeof window.cargarDatosPOS === 'function') {
+      window.cargarDatosPOS({ silent: true });
+    }
+  }, 30000);
+}
+
+// Limpiar interval cuando se cierra/cancela
+function detenerAutoRefreshPOS() {
+  if (autoRefreshInterval) {
+    clearInterval(autoRefreshInterval);
+    autoRefreshInterval = null;
+  }
 }
 
 // ============= DENOMINACIONES =============
@@ -830,14 +874,15 @@ async function loadReportes() {
 // ============= INTEGRACIÓN CON POS =============
 let posResumenData = null;
 
-window.cargarDatosPOS = async function() {
+window.cargarDatosPOS = async function(options = {}) {
+  const silent = options.silent === true;
   const fecha = document.getElementById('cierreFecha').value;
   if (!fecha) {
-    toast('Selecciona una fecha primero', 'error');
+    if (!silent) toast('Selecciona una fecha primero', 'error');
     return;
   }
   if (!selectedSedeId) {
-    toast('Selecciona una sede', 'error');
+    if (!silent) toast('Selecciona una sede', 'error');
     return;
   }
 
@@ -851,8 +896,10 @@ window.cargarDatosPOS = async function() {
     posResumenData = data;
 
     if (!data || !data.total_pedidos || data.total_pedidos === 0) {
-      toast('No hay ventas POS para esta fecha', 'error');
+      if (!silent) toast('No hay ventas POS para esta fecha', 'error');
       document.getElementById('posDatosResumen').style.display = 'none';
+      // Limpiar campos auto-llenados
+      limpiarAutoLlenado();
       return;
     }
 
@@ -881,62 +928,81 @@ window.cargarDatosPOS = async function() {
     }
 
     document.getElementById('posDatosResumen').style.display = 'block';
-    toast('✓ Datos POS cargados');
+
+    // AUTO-APLICAR los datos del POS al formulario
+    autoAplicarDatosPOS(data);
+
+    if (!silent) toast('✓ Datos POS cargados y aplicados');
 
   } catch (err) {
-    console.error(err);
-    toast('Error: ' + err.message, 'error');
+    console.error('Error cargar POS:', err);
+    if (!silent) toast('Error: ' + err.message, 'error');
   }
 };
 
-window.autocompletarDesdePOS = function() {
-  if (!posResumenData) {
-    toast('Primero carga los datos del POS', 'error');
-    return;
-  }
+// Auto-aplicar datos POS sin intervención manual
+function autoAplicarDatosPOS(data) {
+  if (!data || !data.por_metodo) return;
+  const porMetodo = data.por_metodo;
+  const datafonoPOS = porMetodo.datafono?.total || 0;
 
-  if (!confirm('Se sobrescribirá el campo Datáfono y se agregarán las transferencias del POS. ¿Continuar?')) return;
-
-  const porMetodo = posResumenData.por_metodo || {};
-  const datafono = porMetodo.datafono?.total || 0;
-
-  // Llenar datáfono
+  // Solo sobreescribir si el campo está vacío o tiene el valor POS anterior
+  // (no pisar si el usuario ya escribió algo manual)
   const inputDatafono = document.getElementById('totalDatafono');
-  if (inputDatafono) {
-    inputDatafono.value = datafono;
+  const valorActual = parseFloat(inputDatafono.value) || 0;
+  
+  // Marcamos cuál fue el último valor del POS para detectar si el usuario lo modificó
+  if (!window.__ultimoDatafonoPOS || valorActual === 0 || valorActual === window.__ultimoDatafonoPOS) {
+    inputDatafono.value = datafonoPOS;
+    window.__ultimoDatafonoPOS = datafonoPOS;
   }
 
-  // Agregar transferencias por banco (si la función existe)
-  if (typeof window.agregarTransferencia === 'function' && posResumenData.por_banco) {
-    Object.entries(posResumenData.por_banco).forEach(([banco, info]) => {
-      // Buscar si la función acepta parámetros pre-llenados
-      // Si no, simplemente agregamos filas vacías y dejamos que el usuario las llene
-      // O las llenamos manualmente después
+  // Auto-actualizar transferencias del POS
+  if (data.por_banco && Object.keys(data.por_banco).length > 0) {
+    // Quitar transferencias previas marcadas como auto-POS
+    transferencias = transferencias.filter(t => !t._autoPOS);
+    
+    // Agregar las nuevas del POS
+    Object.entries(data.por_banco).forEach(([banco, info]) => {
+      transferencias.push({
+        banco,
+        monto: info.total,
+        nota: `Auto POS (${info.count} pedidos)`,
+        hora: null,
+        _autoPOS: true  // marca interna
+      });
     });
     
-    // Una alternativa: llenar directamente la lista de transferencias
-    if (window.transferencias && Array.isArray(window.transferencias)) {
-      Object.entries(posResumenData.por_banco).forEach(([banco, info]) => {
-        window.transferencias.push({
-          banco,
-          monto: info.total,
-          nota: `Auto del POS (${info.count} pedidos)`,
-          hora: null
-        });
-      });
-      if (typeof window.renderTransferencias === 'function') window.renderTransferencias();
-      if (typeof calcularTodo === 'function') calcularTodo();
-    } else {
-      // Fallback: alert con info para que el usuario llene
-      const info = Object.entries(posResumenData.por_banco).map(([b, i]) => `${b}: ${fmtMoney(i.total)} (${i.count} ped)`).join('\n');
-      alert(`Agrega manualmente estas transferencias:\n\n${info}`);
-    }
+    renderTransferencias();
   }
 
-  // Calcular totales
-  if (typeof calcularTodo === 'function') calcularTodo();
+  // Recalcular consolidado
+  calcularTodo();
+}
+
+function limpiarAutoLlenado() {
+  // Quitar transferencias auto-POS si no hay datos
+  transferencias = transferencias.filter(t => !t._autoPOS);
   
-  toast('✓ Auto-completado');
+  // Limpiar datáfono si era auto-POS
+  if (window.__ultimoDatafonoPOS) {
+    const inputDatafono = document.getElementById('totalDatafono');
+    if (parseFloat(inputDatafono.value) === window.__ultimoDatafonoPOS) {
+      inputDatafono.value = '';
+    }
+    window.__ultimoDatafonoPOS = 0;
+  }
+  
+  renderTransferencias();
+  calcularTodo();
+}
+
+window.autocompletarDesdePOS = function() {
+  // Re-sincronizar forzando que sobrescriba el datáfono
+  window.__ultimoDatafonoPOS = 0; // resetea la marca
+  if (typeof window.cargarDatosPOS === 'function') {
+    window.cargarDatosPOS();
+  }
 };
 
 window.verResumenCompletoPOS = function() {

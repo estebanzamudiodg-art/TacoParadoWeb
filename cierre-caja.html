@@ -218,7 +218,7 @@
       <div class="form-grid">
         <div class="field">
           <label>Fecha</label>
-          <input type="date" id="cierreFecha">
+          <input type="date" id="cierreFecha" onchange="if(typeof window.cargarDatosPOS==='function') window.cargarDatosPOS()">
         </div>
         <div class="field field-money">
           <label>💼 Base con la que iniciamos</label>
@@ -275,8 +275,11 @@
         <div id="posTransfDetalle" style="font-size: 12px; color: var(--ink); margin-bottom: 10px; padding: 8px; background: rgba(255, 144, 0, 0.1); border-radius: 6px; display: none;"></div>
 
         <button type="button" onclick="autocompletarDesdePOS()" style="background: var(--green); color: white; border: 2.5px solid var(--ink); padding: 8px 14px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer; box-shadow: 0 2px 0 var(--ink); width: 100%;">
-          ✅ Auto-completar Datáfono y Transferencias en el formulario
+          🔄 Re-sincronizar con POS
         </button>
+        <div style="text-align: center; font-size: 10px; color: var(--text-soft); margin-top: 6px; font-style: italic;">
+          🔄 Auto-sincronización cada 30 segundos · El datáfono y transferencias se actualizan automáticamente desde el POS
+        </div>
       </div>
     </div>
 
