@@ -227,6 +227,59 @@
       </div>
     </div>
 
+    <!-- Datos del POS (auto-completable) -->
+    <div class="form-section" style="background: linear-gradient(135deg, #FFF8E7, #fff7ed); border-color: var(--orange);">
+      <h3>📊 Datos del POS (Punto de Venta)</h3>
+      <p style="font-size:12px; color:var(--text-soft); margin-bottom:14px;">
+        Trae automáticamente los pedidos cobrados por el POS del día. Te ayuda a verificar que cuadra con lo físico.
+      </p>
+
+      <div style="display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+        <button type="button" onclick="cargarDatosPOS()" style="background: var(--orange); color: white; border: 2.5px solid var(--ink); padding: 10px 18px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 0 3px 0 var(--ink); font-family: 'Bungee', sans-serif; letter-spacing: 0.5px;">
+          🔄 CARGAR DATOS POS
+        </button>
+        <button type="button" onclick="verResumenCompletoPOS()" style="background: white; color: var(--ink); border: 2.5px solid var(--ink); padding: 10px 18px; border-radius: 10px; font-weight: 800; font-size: 13px; cursor: pointer; box-shadow: 0 3px 0 var(--ink);">
+          👁 Ver Resumen Completo
+        </button>
+      </div>
+
+      <div id="posDatosResumen" style="display: none;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px;">
+          <div style="background: white; border: 2px solid var(--ink); padding: 10px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 22px;">🛒</div>
+            <div style="font-family: 'Bungee', sans-serif; font-size: 18px; color: var(--orange);" id="posTotalPedidos">0</div>
+            <div style="font-size: 10px; color: var(--text-soft); text-transform: uppercase; letter-spacing: 1px;">Pedidos</div>
+          </div>
+          <div style="background: white; border: 2px solid var(--ink); padding: 10px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 22px;">💰</div>
+            <div style="font-family: 'Bungee', sans-serif; font-size: 18px; color: var(--green);" id="posTotalVentas">$0</div>
+            <div style="font-size: 10px; color: var(--text-soft); text-transform: uppercase; letter-spacing: 1px;">Ventas</div>
+          </div>
+          <div style="background: white; border: 2px solid var(--ink); padding: 10px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 22px;">💵</div>
+            <div style="font-family: 'Bungee', sans-serif; font-size: 16px; color: var(--ink);" id="posEfectivo">$0</div>
+            <div style="font-size: 10px; color: var(--text-soft); text-transform: uppercase; letter-spacing: 1px;">Efectivo</div>
+          </div>
+          <div style="background: white; border: 2px solid var(--ink); padding: 10px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 22px;">💳</div>
+            <div style="font-family: 'Bungee', sans-serif; font-size: 16px; color: var(--ink);" id="posDatafono">$0</div>
+            <div style="font-size: 10px; color: var(--text-soft); text-transform: uppercase; letter-spacing: 1px;">Datáfono</div>
+          </div>
+          <div style="background: white; border: 2px solid var(--ink); padding: 10px; border-radius: 8px; text-align: center;">
+            <div style="font-size: 22px;">📱</div>
+            <div style="font-family: 'Bungee', sans-serif; font-size: 16px; color: var(--ink);" id="posTransfer">$0</div>
+            <div style="font-size: 10px; color: var(--text-soft); text-transform: uppercase; letter-spacing: 1px;">Transferencias</div>
+          </div>
+        </div>
+
+        <div id="posTransfDetalle" style="font-size: 12px; color: var(--ink); margin-bottom: 10px; padding: 8px; background: rgba(255, 144, 0, 0.1); border-radius: 6px; display: none;"></div>
+
+        <button type="button" onclick="autocompletarDesdePOS()" style="background: var(--green); color: white; border: 2.5px solid var(--ink); padding: 8px 14px; border-radius: 8px; font-weight: 800; font-size: 12px; cursor: pointer; box-shadow: 0 2px 0 var(--ink); width: 100%;">
+          ✅ Auto-completar Datáfono y Transferencias en el formulario
+        </button>
+      </div>
+    </div>
+
     <!-- Conteo de efectivo -->
     <div class="form-section">
       <h3>💵 Conteo de Efectivo</h3>

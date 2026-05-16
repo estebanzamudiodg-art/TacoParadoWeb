@@ -118,6 +118,11 @@ window.changeTab = function(name) {
     renderCart('llevar');
   }
   if (name === 'historial') loadPedidos();
+  if (name === 'resumen') {
+    const fechaInput = document.getElementById('filtroFechaResumen');
+    if (!fechaInput.value) fechaInput.value = new Date().toISOString().slice(0, 10);
+    cargarResumen();
+  }
 };
 
 function nuevoPedidoVacio(modalidad) {
@@ -741,6 +746,12 @@ window.procesarCobro = async function() {
     await cargarMesas();
     await cargarStats();
     await loadPedidos();
+    
+    // Si el tab de resumen está activo, refrescar
+    const panelResumen = document.getElementById('panel-resumen');
+    if (panelResumen && panelResumen.classList.contains('active')) {
+      cargarResumen();
+    }
 
   } catch (err) {
     console.error(err);
@@ -1235,6 +1246,389 @@ function setupRealtime() {
     })
     .subscribe();
 }
+
+// ============= RESUMEN DE VENTAS =============
+let resumenData = null;
+
+window.cargarResumen = async function() {
+  const fecha = document.getElementById('filtroFechaResumen').value;
+  if (!fecha) return;
+
+  const cont = document.getElementById('resumenContenido');
+  cont.innerHTML = `
+    <div style="text-align: center; padding: 40px; color: var(--text-soft);">
+      <div style="font-size: 40px; margin-bottom: 10px;">⏳</div>
+      <div>Calculando resumen...</div>
+    </div>
+  `;
+
+  try {
+    const { data, error } = await window.supabase.rpc('resumen_ventas_dia', {
+      p_sede_id: selectedSedeId,
+      p_fecha: fecha
+    });
+    if (error) throw error;
+
+    resumenData = data;
+    renderResumen(data);
+  } catch (err) {
+    console.error('Error resumen:', err);
+    cont.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--red);">Error: ${err.message}</div>`;
+  }
+};
+
+function renderResumen(data) {
+  if (!data) return;
+
+  // === HERO (estadísticas principales) ===
+  const hero = document.getElementById('resumenHero');
+  hero.innerHTML = `
+    <div class="resumen-hero-card">
+      <div class="icon">🛒</div>
+      <div class="num">${data.total_pedidos || 0}</div>
+      <div class="lbl">Pedidos</div>
+    </div>
+    <div class="resumen-hero-card green">
+      <div class="icon">💰</div>
+      <div class="num">${fmtMoney(data.ventas_totales || 0)}</div>
+      <div class="lbl">Ventas Totales</div>
+    </div>
+    <div class="resumen-hero-card blue">
+      <div class="icon">📊</div>
+      <div class="num">${fmtMoney(data.promedio_ticket || 0)}</div>
+      <div class="lbl">Ticket Promedio</div>
+    </div>
+    <div class="resumen-hero-card">
+      <div class="icon">💵</div>
+      <div class="num">${fmtMoney(data.total_propinas || 0)}</div>
+      <div class="lbl">Propinas</div>
+    </div>
+  `;
+
+  // === CUERPO PRINCIPAL ===
+  const cont = document.getElementById('resumenContenido');
+  
+  if (!data.total_pedidos || data.total_pedidos === 0) {
+    cont.innerHTML = `
+      <div style="text-align: center; padding: 40px; color: var(--text-soft);">
+        <div style="font-size: 50px; margin-bottom: 10px;">📭</div>
+        <div style="font-family: 'Bungee', sans-serif; font-size: 16px; margin-bottom: 4px;">SIN VENTAS ESTE DÍA</div>
+        <div style="font-size: 12px;">No hay pedidos cobrados en esta fecha</div>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+
+  // === SECCIONES POR CATEGORÍA ===
+  html += `<h3 style="font-family: 'Bungee', sans-serif; font-size: 16px; color: var(--ink); margin: 16px 0 10px; padding-bottom: 6px; border-bottom: 3px solid var(--orange);">🍽️ VENTAS POR CATEGORÍA</h3>`;
+  
+  const categorias = data.por_categoria || [];
+  categorias.forEach((cat, idx) => {
+    html += `
+      <div class="resumen-categoria">
+        <div class="resumen-cat-header" onclick="toggleCategoria(${idx})">
+          <div class="resumen-cat-titulo">${getCategoriaIcon(cat.categoria)} ${escapeHTML(cat.categoria.toUpperCase())}</div>
+          <div class="resumen-cat-totals">
+            <span class="uds">${cat.total_uds} uds</span>
+            <span class="total">${fmtMoney(cat.total_ventas)}</span>
+            <span style="color: var(--mustard); font-size: 14px;">▼</span>
+          </div>
+        </div>
+        <div class="resumen-cat-body" id="cat-body-${idx}">
+          ${(cat.productos || []).map(p => `
+            <div class="resumen-producto-row">
+              <div class="resumen-producto-nombre">${escapeHTML(p.nombre)}</div>
+              <div class="resumen-producto-uds">${p.cantidad} uds</div>
+              <div class="resumen-producto-total">${fmtMoney(p.total)}</div>
+              ${renderOpcionesResumen(p.opciones)}
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  });
+
+  // === GRID INFERIOR: métodos, modalidades, top productos ===
+  html += `<div class="resumen-bottom-grid">`;
+
+  // Por método de pago
+  if (data.por_metodo && Object.keys(data.por_metodo).length > 0) {
+    html += `
+      <div class="resumen-info-box">
+        <div class="resumen-info-titulo">💳 Métodos de pago</div>
+        ${Object.entries(data.por_metodo).map(([metodo, info]) => `
+          <div class="resumen-info-row">
+            <span class="nombre">${getMetodoLabel(metodo)}</span>
+            <span class="valor">${info.count} · ${fmtMoney(info.total)}</span>
+          </div>
+        `).join('')}
+        ${data.por_banco && Object.keys(data.por_banco).length > 0 ? `
+          <div style="margin-top: 8px; padding-top: 8px; border-top: 1px dashed var(--border);">
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-soft); margin-bottom: 4px;">Detalle transferencias:</div>
+            ${Object.entries(data.por_banco).map(([banco, info]) => `
+              <div class="resumen-info-row" style="padding: 2px 0;">
+                <span class="resumen-info-sub">↳ ${escapeHTML(banco)}</span>
+                <span style="font-size: 11px; font-weight: 700;">${info.count}</span>
+              </div>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  }
+
+  // Por modalidad
+  if (data.por_modalidad && Object.keys(data.por_modalidad).length > 0) {
+    html += `
+      <div class="resumen-info-box">
+        <div class="resumen-info-titulo">🍽️ Modalidad</div>
+        ${Object.entries(data.por_modalidad).map(([mod, cnt]) => `
+          <div class="resumen-info-row">
+            <span class="nombre">${getModalidadLabel(mod)}</span>
+            <span class="valor">${cnt} pedidos</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  // Top 5 productos
+  if (data.top_productos && data.top_productos.length > 0) {
+    const medallas = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+    html += `
+      <div class="resumen-info-box">
+        <div class="resumen-info-titulo">⭐ Top Vendidos</div>
+        ${data.top_productos.map((p, i) => `
+          <div class="resumen-info-row">
+            <span class="nombre"><span class="resumen-top-medal">${medallas[i] || ''}</span>${escapeHTML(p.nombre)}</span>
+            <span class="valor">${p.uds} uds</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  // Hora pico
+  if (data.hora_pico && Object.keys(data.hora_pico).length > 0) {
+    const horas = Object.entries(data.hora_pico).sort((a, b) => b[1] - a[1]);
+    html += `
+      <div class="resumen-info-box">
+        <div class="resumen-info-titulo">⏰ Horas Pico</div>
+        ${horas.slice(0, 5).map(([hora, cnt]) => `
+          <div class="resumen-info-row">
+            <span class="nombre">${hora}:00 - ${parseInt(hora)+1}:00</span>
+            <span class="valor">${cnt} pedidos</span>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  html += `</div>`;
+  cont.innerHTML = html;
+}
+
+function getCategoriaIcon(cat) {
+  const map = {
+    'Tacos': '🌮',
+    'Bandejas': '🍽️',
+    'Hamburguesas': '🍔',
+    'Nachos': '🧀',
+    'Burritos': '🌯',
+    'Bebidas': '🥤',
+    'Extras': '➕',
+    'Adiciones': '➕'
+  };
+  return map[cat] || '🍴';
+}
+
+function getMetodoLabel(m) {
+  const map = {
+    efectivo: '💵 Efectivo',
+    datafono: '💳 Datáfono',
+    transferencia: '📱 Transferencia',
+    mixto: '🔀 Mixto',
+    pendiente: '⏳ Pendiente'
+  };
+  return map[m] || m;
+}
+
+function getModalidadLabel(m) {
+  const map = {
+    mesa: '🍽️ En mesa',
+    llevar: '🥡 Para llevar',
+    domicilio: '🛵 Domicilio'
+  };
+  return map[m] || m;
+}
+
+function renderOpcionesResumen(opcionesRaw) {
+  if (!opcionesRaw || opcionesRaw.length === 0) return '';
+  
+  // opcionesRaw es un array de arrays de opciones (una por venta)
+  // Necesitamos sumar las cantidades
+  const conteo = {};
+  
+  opcionesRaw.forEach(opcionesPedido => {
+    if (!Array.isArray(opcionesPedido)) return;
+    opcionesPedido.forEach(opcion => {
+      if (!opcion) return;
+      if (opcion.tipo === 'multi-quantity' && opcion.items) {
+        Object.entries(opcion.items).forEach(([nombre, cant]) => {
+          conteo[nombre] = (conteo[nombre] || 0) + cant;
+        });
+      } else if (opcion.valor) {
+        conteo[opcion.valor] = (conteo[opcion.valor] || 0) + 1;
+      }
+    });
+  });
+  
+  if (Object.keys(conteo).length === 0) return '';
+  
+  const items = Object.entries(conteo)
+    .sort((a, b) => b[1] - a[1])
+    .map(([nombre, cant]) => `<span class="resumen-opciones-item">${escapeHTML(nombre)}: ${cant}</span>`)
+    .join('');
+  
+  return `<div class="resumen-opciones">${items}</div>`;
+}
+
+window.toggleCategoria = function(idx) {
+  const body = document.getElementById('cat-body-' + idx);
+  if (body) body.classList.toggle('collapsed');
+};
+
+window.exportarResumenPDF = function() {
+  if (!resumenData) {
+    toast('Primero carga el resumen', 'error');
+    return;
+  }
+  
+  const fecha = document.getElementById('filtroFechaResumen').value;
+  const sede = sedes.find(s => s.id === selectedSedeId);
+  
+  // Generar HTML para impresión PDF
+  const win = window.open('', '_blank', 'width=800,height=900,scrollbars=yes');
+  if (!win) {
+    toast('⚠️ Permite popups para exportar PDF', 'error');
+    return;
+  }
+  
+  const html = `
+<!DOCTYPE html>
+<html><head><title>Resumen Ventas ${fecha}</title>
+<style>
+@page { size: A4; margin: 15mm; }
+body { font-family: Arial, sans-serif; font-size: 12px; max-width: 800px; margin: 0 auto; padding: 20px; }
+h1 { text-align: center; color: #0d2451; border-bottom: 3px solid #FF9000; padding-bottom: 8px; font-size: 20px; }
+h2 { color: #FF9000; font-size: 16px; margin-top: 18px; border-bottom: 2px solid #ddd; padding-bottom: 4px; }
+.hero { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0; }
+.hero-box { border: 2px solid #0d2451; padding: 10px; border-radius: 6px; text-align: center; }
+.hero-num { font-size: 18px; font-weight: 900; color: #FF9000; }
+.hero-lbl { font-size: 10px; color: #666; text-transform: uppercase; }
+table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 11px; }
+th, td { border: 1px solid #ddd; padding: 6px 8px; text-align: left; }
+th { background: #0d2451; color: white; }
+tr:nth-child(even) { background: #fafafa; }
+.cat-header { background: #FF9000 !important; color: white; font-weight: 900; }
+.opciones-cell { font-size: 10px; color: #666; padding-left: 18px; font-style: italic; }
+.actions { text-align: center; padding: 20px; }
+.actions button { padding: 10px 20px; font-size: 14px; cursor: pointer; border: 2px solid #0d2451; border-radius: 6px; background: #FF9000; color: white; margin: 0 4px; }
+@media print { .actions { display: none; } }
+</style></head>
+<body>
+<div class="actions"><button onclick="window.print()">🖨️ Imprimir / PDF</button> <button onclick="window.close()">✕ Cerrar</button></div>
+<h1>📊 RESUMEN DE VENTAS</h1>
+<div style="text-align: center; margin-bottom: 10px;">
+  <strong>${escapeHTML(sede?.nombre || '')}</strong> · ${new Date(fecha).toLocaleDateString('es-CO', {weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'})}
+</div>
+
+<div class="hero">
+  <div class="hero-box"><div class="hero-num">${resumenData.total_pedidos}</div><div class="hero-lbl">Pedidos</div></div>
+  <div class="hero-box"><div class="hero-num">${fmtMoney(resumenData.ventas_totales)}</div><div class="hero-lbl">Ventas</div></div>
+  <div class="hero-box"><div class="hero-num">${fmtMoney(resumenData.promedio_ticket)}</div><div class="hero-lbl">Ticket Prom.</div></div>
+  <div class="hero-box"><div class="hero-num">${fmtMoney(resumenData.total_propinas)}</div><div class="hero-lbl">Propinas</div></div>
+</div>
+
+<h2>Detalle por Categoría</h2>
+<table>
+  <thead><tr><th>Producto</th><th style="width:80px;">Uds</th><th style="width:100px;">Total</th></tr></thead>
+  <tbody>
+    ${(resumenData.por_categoria || []).map(cat => `
+      <tr class="cat-header"><td>${getCategoriaIcon(cat.categoria)} ${escapeHTML(cat.categoria.toUpperCase())}</td><td>${cat.total_uds}</td><td>${fmtMoney(cat.total_ventas)}</td></tr>
+      ${(cat.productos || []).map(p => {
+        const opc = renderOpcionesResumenPlain(p.opciones);
+        return `
+          <tr><td style="padding-left:20px;">${escapeHTML(p.nombre)}</td><td>${p.cantidad}</td><td>${fmtMoney(p.total)}</td></tr>
+          ${opc ? `<tr><td colspan="3" class="opciones-cell">↳ ${opc}</td></tr>` : ''}
+        `;
+      }).join('')}
+    `).join('')}
+  </tbody>
+</table>
+
+<h2>Métodos de Pago</h2>
+<table>
+  <thead><tr><th>Método</th><th>Pedidos</th><th>Total</th></tr></thead>
+  <tbody>
+    ${Object.entries(resumenData.por_metodo || {}).map(([m, info]) => 
+      `<tr><td>${getMetodoLabel(m)}</td><td>${info.count}</td><td>${fmtMoney(info.total)}</td></tr>`
+    ).join('')}
+  </tbody>
+</table>
+
+${resumenData.top_productos && resumenData.top_productos.length > 0 ? `
+<h2>Top 5 Productos</h2>
+<table>
+  <thead><tr><th>Producto</th><th>Unidades</th></tr></thead>
+  <tbody>
+    ${resumenData.top_productos.map((p, i) => 
+      `<tr><td>${['🥇','🥈','🥉','4️⃣','5️⃣'][i] || ''} ${escapeHTML(p.nombre)}</td><td>${p.uds}</td></tr>`
+    ).join('')}
+  </tbody>
+</table>
+` : ''}
+
+<div style="text-align: center; margin-top: 20px; color: #666; font-size: 10px;">
+  Generado: ${new Date().toLocaleString('es-CO')} · Taco Parado POS
+</div>
+</body></html>`;
+  
+  win.document.open();
+  win.document.write(html);
+  win.document.close();
+};
+
+function renderOpcionesResumenPlain(opcionesRaw) {
+  if (!opcionesRaw || opcionesRaw.length === 0) return '';
+  const conteo = {};
+  opcionesRaw.forEach(opcionesPedido => {
+    if (!Array.isArray(opcionesPedido)) return;
+    opcionesPedido.forEach(opcion => {
+      if (!opcion) return;
+      if (opcion.tipo === 'multi-quantity' && opcion.items) {
+        Object.entries(opcion.items).forEach(([nombre, cant]) => {
+          conteo[nombre] = (conteo[nombre] || 0) + cant;
+        });
+      } else if (opcion.valor) {
+        conteo[opcion.valor] = (conteo[opcion.valor] || 0) + 1;
+      }
+    });
+  });
+  if (Object.keys(conteo).length === 0) return '';
+  return Object.entries(conteo).sort((a, b) => b[1] - a[1])
+    .map(([nombre, cant]) => `${nombre}: ${cant}`).join(' · ');
+}
+
+// Auto-refresh del resumen si está visible cuando se cobra un pedido
+setInterval(() => {
+  const panel = document.getElementById('panel-resumen');
+  if (panel && panel.classList.contains('active')) {
+    cargarResumen();
+  }
+}, 30000); // cada 30 segundos
 
 // ============= INIT =============
 checkAuth();

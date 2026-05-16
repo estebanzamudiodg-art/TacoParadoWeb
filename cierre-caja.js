@@ -827,5 +827,127 @@ async function loadReportes() {
   `;
 }
 
+// ============= INTEGRACIÓN CON POS =============
+let posResumenData = null;
+
+window.cargarDatosPOS = async function() {
+  const fecha = document.getElementById('cierreFecha').value;
+  if (!fecha) {
+    toast('Selecciona una fecha primero', 'error');
+    return;
+  }
+  if (!selectedSedeId) {
+    toast('Selecciona una sede', 'error');
+    return;
+  }
+
+  try {
+    const { data, error } = await window.supabase.rpc('resumen_ventas_dia', {
+      p_sede_id: selectedSedeId,
+      p_fecha: fecha
+    });
+    if (error) throw error;
+
+    posResumenData = data;
+
+    if (!data || !data.total_pedidos || data.total_pedidos === 0) {
+      toast('No hay ventas POS para esta fecha', 'error');
+      document.getElementById('posDatosResumen').style.display = 'none';
+      return;
+    }
+
+    // Calcular totales por método
+    const porMetodo = data.por_metodo || {};
+    const efectivo = porMetodo.efectivo?.total || 0;
+    const datafono = porMetodo.datafono?.total || 0;
+    const transfer = porMetodo.transferencia?.total || 0;
+
+    document.getElementById('posTotalPedidos').textContent = data.total_pedidos;
+    document.getElementById('posTotalVentas').textContent = fmtMoney(data.ventas_totales);
+    document.getElementById('posEfectivo').textContent = fmtMoney(efectivo);
+    document.getElementById('posDatafono').textContent = fmtMoney(datafono);
+    document.getElementById('posTransfer').textContent = fmtMoney(transfer);
+
+    // Detalle de bancos
+    const detalleEl = document.getElementById('posTransfDetalle');
+    if (data.por_banco && Object.keys(data.por_banco).length > 0) {
+      const items = Object.entries(data.por_banco).map(([banco, info]) => 
+        `<strong>${banco}:</strong> ${info.count} pedidos · ${fmtMoney(info.total)}`
+      ).join(' · ');
+      detalleEl.innerHTML = `📱 <strong>Transferencias por banco:</strong> ${items}`;
+      detalleEl.style.display = 'block';
+    } else {
+      detalleEl.style.display = 'none';
+    }
+
+    document.getElementById('posDatosResumen').style.display = 'block';
+    toast('✓ Datos POS cargados');
+
+  } catch (err) {
+    console.error(err);
+    toast('Error: ' + err.message, 'error');
+  }
+};
+
+window.autocompletarDesdePOS = function() {
+  if (!posResumenData) {
+    toast('Primero carga los datos del POS', 'error');
+    return;
+  }
+
+  if (!confirm('Se sobrescribirá el campo Datáfono y se agregarán las transferencias del POS. ¿Continuar?')) return;
+
+  const porMetodo = posResumenData.por_metodo || {};
+  const datafono = porMetodo.datafono?.total || 0;
+
+  // Llenar datáfono
+  const inputDatafono = document.getElementById('totalDatafono');
+  if (inputDatafono) {
+    inputDatafono.value = datafono;
+  }
+
+  // Agregar transferencias por banco (si la función existe)
+  if (typeof window.agregarTransferencia === 'function' && posResumenData.por_banco) {
+    Object.entries(posResumenData.por_banco).forEach(([banco, info]) => {
+      // Buscar si la función acepta parámetros pre-llenados
+      // Si no, simplemente agregamos filas vacías y dejamos que el usuario las llene
+      // O las llenamos manualmente después
+    });
+    
+    // Una alternativa: llenar directamente la lista de transferencias
+    if (window.transferencias && Array.isArray(window.transferencias)) {
+      Object.entries(posResumenData.por_banco).forEach(([banco, info]) => {
+        window.transferencias.push({
+          banco,
+          monto: info.total,
+          nota: `Auto del POS (${info.count} pedidos)`,
+          hora: null
+        });
+      });
+      if (typeof window.renderTransferencias === 'function') window.renderTransferencias();
+      if (typeof calcularTodo === 'function') calcularTodo();
+    } else {
+      // Fallback: alert con info para que el usuario llene
+      const info = Object.entries(posResumenData.por_banco).map(([b, i]) => `${b}: ${fmtMoney(i.total)} (${i.count} ped)`).join('\n');
+      alert(`Agrega manualmente estas transferencias:\n\n${info}`);
+    }
+  }
+
+  // Calcular totales
+  if (typeof calcularTodo === 'function') calcularTodo();
+  
+  toast('✓ Auto-completado');
+};
+
+window.verResumenCompletoPOS = function() {
+  const fecha = document.getElementById('cierreFecha').value;
+  if (!fecha) {
+    toast('Selecciona una fecha primero', 'error');
+    return;
+  }
+  // Abrir la caja en otra pestaña en el tab de resumen
+  window.open(`caja.html?fecha=${fecha}#resumen`, '_blank');
+};
+
 // ============= INIT =============
 checkAuth();

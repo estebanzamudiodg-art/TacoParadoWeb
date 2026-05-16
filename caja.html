@@ -616,7 +616,180 @@
     letter-spacing: 1px;
   }
 
-  /* === LISTA PEDIDOS === */
+  /* === RESUMEN HERO STATS === */
+  .resumen-hero-card {
+    background: white;
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 3px 0 var(--ink);
+  }
+  .resumen-hero-card .icon { font-size: 28px; }
+  .resumen-hero-card .num {
+    font-family: 'Bungee', sans-serif;
+    font-size: 22px;
+    color: var(--orange);
+    margin-top: 4px;
+  }
+  .resumen-hero-card .lbl {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-soft);
+    font-weight: 700;
+    margin-top: 2px;
+  }
+  .resumen-hero-card.green .num { color: var(--green); }
+  .resumen-hero-card.blue .num { color: var(--blue); }
+
+  /* === SECCIÓN DE CATEGORÍA === */
+  .resumen-categoria {
+    background: white;
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    box-shadow: 0 3px 0 var(--ink);
+  }
+  .resumen-cat-header {
+    background: var(--ink);
+    color: white;
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+  }
+  .resumen-cat-titulo {
+    font-family: 'Bungee', sans-serif;
+    font-size: 15px;
+    letter-spacing: 0.5px;
+  }
+  .resumen-cat-totals {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .resumen-cat-totals .uds {
+    background: var(--mustard);
+    color: var(--ink);
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+  .resumen-cat-totals .total {
+    background: var(--green);
+    padding: 3px 10px;
+    border-radius: 6px;
+  }
+  .resumen-cat-body {
+    padding: 10px 14px;
+  }
+  .resumen-cat-body.collapsed { display: none; }
+
+  .resumen-producto-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border);
+    align-items: center;
+  }
+  .resumen-producto-row:last-child { border-bottom: none; }
+  .resumen-producto-nombre {
+    font-weight: 800;
+    color: var(--ink);
+    font-size: 13px;
+  }
+  .resumen-producto-uds {
+    background: var(--cream);
+    border: 1.5px solid var(--ink);
+    padding: 2px 10px;
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 800;
+    text-align: center;
+    min-width: 50px;
+  }
+  .resumen-producto-total {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 800;
+    color: var(--green);
+    font-size: 13px;
+    min-width: 80px;
+    text-align: right;
+  }
+  .resumen-opciones {
+    grid-column: 1 / -1;
+    padding-left: 12px;
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--text-soft);
+    font-style: italic;
+    border-left: 2px solid var(--orange);
+    padding-left: 10px;
+    margin-left: 4px;
+  }
+  .resumen-opciones-item {
+    display: inline-block;
+    background: rgba(255, 144, 0, 0.1);
+    color: var(--ink);
+    padding: 1px 8px;
+    border-radius: 4px;
+    margin: 2px 4px 2px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  /* === SECCIONES INFERIORES === */
+  .resumen-bottom-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+  .resumen-info-box {
+    background: white;
+    border: 3px solid var(--ink);
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 3px 0 var(--ink);
+  }
+  .resumen-info-titulo {
+    font-family: 'Bungee', sans-serif;
+    font-size: 14px;
+    color: var(--ink);
+    margin-bottom: 10px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--orange);
+  }
+  .resumen-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 0;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .resumen-info-row .nombre { font-weight: 700; color: var(--ink); }
+  .resumen-info-row .valor { font-weight: 800; color: var(--blue); }
+  .resumen-info-sub {
+    font-size: 10px;
+    color: var(--text-soft);
+    padding-left: 12px;
+  }
+
+  .resumen-top-medal {
+    font-size: 20px;
+    width: 30px;
+    text-align: center;
+    display: inline-block;
+  }
+
   .pedido-row {
     background: white;
     border: 2.5px solid var(--ink);
@@ -769,6 +942,7 @@
   <button class="tab active" data-panel="mesas" onclick="changeTab('mesas')">🍽️ Mesas</button>
   <button class="tab" data-panel="llevar" onclick="changeTab('llevar')">🥡 Para Llevar</button>
   <button class="tab" data-panel="historial" onclick="changeTab('historial')">📋 Historial</button>
+  <button class="tab" data-panel="resumen" onclick="changeTab('resumen')">📊 Resumen</button>
 </nav>
 
 <!-- ============ PANEL MESAS ============ -->
@@ -813,6 +987,33 @@
       <input type="date" id="filtroFecha" onchange="loadPedidos()" style="padding: 8px; border: 2px solid var(--ink); border-radius: 8px; font-weight: 700;">
     </div>
     <div id="pedidosListado"></div>
+  </div>
+</section>
+
+<!-- ============ PANEL RESUMEN ============ -->
+<section class="panel" id="panel-resumen">
+  <div style="background: var(--cream); border: 4px solid var(--ink); border-radius: 16px; padding: 16px; box-shadow: 0 5px 0 rgba(13,36,81,0.3);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+      <h2 style="font-family: 'Bungee', sans-serif; font-size: 22px;">📊 Resumen de Ventas</h2>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <input type="date" id="filtroFechaResumen" onchange="cargarResumen()" style="padding: 8px; border: 2px solid var(--ink); border-radius: 8px; font-weight: 700;">
+        <button onclick="cargarResumen()" style="background: var(--blue); color: white; border: 2.5px solid var(--ink); padding: 8px 14px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; box-shadow: 0 2px 0 var(--ink);">🔄 Refrescar</button>
+        <button onclick="exportarResumenPDF()" style="background: var(--orange); color: white; border: 2.5px solid var(--ink); padding: 8px 14px; border-radius: 10px; font-weight: 800; font-size: 12px; cursor: pointer; box-shadow: 0 2px 0 var(--ink);">📄 PDF</button>
+      </div>
+    </div>
+
+    <!-- Stats hero -->
+    <div id="resumenHero" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 16px;">
+      <!-- se llena dinámico -->
+    </div>
+
+    <!-- Contenido del resumen -->
+    <div id="resumenContenido">
+      <div style="text-align: center; padding: 40px; color: var(--text-soft);">
+        <div style="font-size: 40px; margin-bottom: 10px;">📊</div>
+        <div>Cargando resumen...</div>
+      </div>
+    </div>
   </div>
 </section>
 
