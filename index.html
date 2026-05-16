@@ -2141,6 +2141,7 @@
   // CARRITO DE COMPRAS - WHATSAPP ORDER SYSTEM
   // ============================================================
   let carrito = [];                          // [{id, nombre, precio, cantidad, emoji, imagen_url}]
+  window.carrito = carrito;                  // Expuesto para chatbot
   let checkoutData = {
     modo: 'recoger',                         // 'recoger' | 'domicilio'
     sedeId: null,
@@ -2171,7 +2172,15 @@
 
     // Re-render del menú para actualizar contadores en cards
     renderMenu();
+
+    // Notificar al chatbot widget (si existe)
+    if (window.tpChat && window.tpChat.actualizarCarrito) {
+      window.tpChat.actualizarCarrito();
+    }
   }
+
+  // Exponer al window para uso del chatbot
+  window.actualizarCarritoUI = actualizarCarritoUI;
 
   window.agregarAlCarrito = function(productoId) {
     const producto = menuProductos.find(p => p.id === productoId);
@@ -2629,7 +2638,8 @@
     // Mostrar mensaje de éxito y limpiar carrito después de un segundo
     setTimeout(() => {
       if (confirm('✅ ¡Pedido enviado!\n\n¿Quieres limpiar el carrito?')) {
-        carrito = [];
+        carrito.length = 0;       // mantiene la referencia
+        window.carrito = carrito; // re-asegurar
         actualizarCarritoUI();
       }
     }, 1000);
@@ -2653,6 +2663,9 @@
     lastScroll = cur;
   });
 </script>
+
+<!-- ============= CHATBOT WIDGET ============= -->
+<script src="chat-widget.js" defer></script>
 
 </body>
 </html>
